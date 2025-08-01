@@ -246,6 +246,7 @@ function ThreeDCar() {
       window.removeEventListener("resize", onResize);
       document.body.style.overflow = "";
     };
+    
   }, []);
 
   // Drag‐to‐rotate

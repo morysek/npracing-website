@@ -206,9 +206,9 @@ function AutoRotate({ modelRef, dragging }) {
     const obj = modelRef.current;
     if (!dragging.current && obj) {
       // adjust these speeds to taste:
-      obj.rotation.x += 0.1 * delta;
-      obj.rotation.y += 0.2 * delta;
-      obj.rotation.z += 0.15 * delta;
+      obj.rotation.x += 0.08 * delta;
+      obj.rotation.y += 0.08 * delta;
+      obj.rotation.z += 0.1 * delta;
     }
   });
   return null;

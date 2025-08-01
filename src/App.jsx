@@ -297,87 +297,98 @@ function ThreeDCar() {
       {loading && <LoadingScreen />}
 
       <Canvas
-        shadows
-        dpr={[1, 2]}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        camera={cameraSettings}
-        style={{ width: "100%", height: "100%" }}
-        onCreated={({ gl }) => {
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.useLegacyLights = false;
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 0.6;
-        }}
-      >
-        {/* subtle fill */}
-        <hemisphereLight skyColor={0x222222} groundColor={0x000000} intensity={0.05} />
+  shadows
+  dpr={[1, 2]}
+  camera={cameraSettings}
+  style={{ width: "100%", height: "100%" }}
+  onCreated={({ gl, scene }) => {
+    // 1) Enable shadows
+    gl.shadowMap.enabled = true;
+    gl.shadowMap.type    = THREE.PCFSoftShadowMap;
 
-        {/* main key light */}
-        <directionalLight
-          castShadow
-          intensity={3}
-          position={[200000, 300000, 200000]}
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-bias={-0.0005}
-          shadow-normalBias={0.05}
-        />
+    // 2) Correct color space
+    gl.outputColorSpace = THREE.SRGBColorSpace;
 
-        <Suspense fallback={null}>
-          <Environment preset="city" background={false} />
+    // 3) Tone mapping
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 0.6;
 
-          <Center>
-            <InteractiveModel
-              onLoad={() => setLoading(false)}
-              controlRef={modelRef}
-              scale={modelScale}
-            />
-          </Center>
-          
-          <AutoRotate modelRef={modelRef} dragging={dragging} />
-          
-          <ContactShadows
-            rotation-x={-Math.PI / 2}
-            position={[0, 0, 0]}
-            width={300000}
-            height={300000}
-            blur={2}
-            opacity={0.7}
-            far={500000}
-          />
+    // 4) Make sure scene background is black
+    scene.background = new THREE.Color(0x000000);
+  }}
+>
+  {/* --- LIGHTS --- */}
 
-          <AccumulativeShadows
-            frames={60}
-            temporal
-            color="black"
-            colorBlend={2}
-            opacity={1}
-            scale={1.2}
-            alphaTest={0.85}
-          >
-            <RandomizedLight
-              amount={8}
-              radius={2}
-              ambient={0.2}
-              intensity={1.5}
-              position={[100000, 300000, 100000]}
-              bias={0.0001}
-            />
-          </AccumulativeShadows>
-          <EffectComposer multisampling={0}>
-            <SSAO
-              samples={32}
-              radius={0.5}
-              intensity={20}
-              luminanceInfluence={0.1}
-              color="black"
-            />
-          </EffectComposer>
-        </Suspense>
-      </Canvas>
+  {/* A dim ambient so nothing is pitch-black */}
+  <ambientLight intensity={0.1} />
+
+  {/* KEY light: strong directional */}
+  <directionalLight
+    castShadow
+    intensity={3}
+    position={[200, 300, 200]}
+    shadow-mapSize-width={2048}
+    shadow-mapSize-height={2048}
+    shadow-bias={-0.0005}
+    shadow-normalBias={0.05}
+    // tighten the shadow camera to your model extents:
+    shadow-camera-far={1000}
+    shadow-camera-left={-200}
+    shadow-camera-right={200}
+    shadow-camera-top={200}
+    shadow-camera-bottom={-200}
+  />
+
+  {/* RIM/HALO light to pick out edges */}
+  <directionalLight
+    intensity={0.5}
+    position={[-200, 100, -200]}
+  />
+
+  <Suspense fallback={null}>
+    {/* Environment for reflections but no extra lighting */}
+    <Environment preset="city" background={false} />
+
+    <Center>
+      <InteractiveModel
+        onLoad={() => setLoading(false)}
+        controlRef={modelRef}
+        scale={modelScale}
+      />
+    </Center>
+
+    {/* Invisible ground to catch hard shadows */}
+    <ContactShadows
+      rotation-x={-Math.PI / 2}
+      position={[0, 0, 0]}
+      width={500}
+      height={500}
+      blur={2}
+      opacity={0.7}
+      far={1000}
+    />
+
+    {/* Soft self‐occlusion shadows */}
+    <AccumulativeShadows
+      frames={60}
+      temporal
+      color="black"
+      colorBlend={2}
+      opacity={1}
+      scale={1.5}
+      alphaTest={0.85}
+    >
+      <RandomizedLight
+        amount={8}
+        radius={2}
+        ambient={0.2}
+        intensity={1.5}
+        position={[100, 300, 100]}
+        bias={0.0001}
+      />
+    </AccumulativeShadows>
+  </Suspense>
+</Canvas>
     </div>
   );
 }

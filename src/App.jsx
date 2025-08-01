@@ -201,14 +201,18 @@ function ShadowPlane() {
   );
 }
 
-function AutoRotate({ modelRef, dragging }) {
+function AutoRotate({ modelRef, dragging, isMobile }) {
+  
+  const speed = isMobile ? 0.08 : 0.04;
+  const speedZ = isMobile ? 0.1 : 0.06;
+  
   useFrame((_, delta) => {
     const obj = modelRef.current;
     if (!dragging.current && obj) {
       // adjust these speeds to taste:
-      obj.rotation.x += 0.08 * delta;
-      obj.rotation.y += 0.08 * delta;
-      obj.rotation.z += 0.1 * delta;
+      obj.rotation.x += speed * delta;
+      obj.rotation.y += speed * delta;
+      obj.rotation.z += speedZ * delta;
     }
   });
   return null;
@@ -367,7 +371,7 @@ function ThreeDCar() {
             <SSAO
               samples={32}
               radius={0.5}
-              intensity={30}
+              intensity={20}
               luminanceInfluence={0.1}
               color="black"
             />

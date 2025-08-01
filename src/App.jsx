@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Suspense, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas, useLoader, useFrame } from "@react-three/fiber";
 import {
   Environment,
   Center,
@@ -201,6 +201,19 @@ function ShadowPlane() {
   );
 }
 
+function AutoRotate({ modelRef, dragging }) {
+  useFrame((_, delta) => {
+    const obj = modelRef.current;
+    if (!dragging.current && obj) {
+      // adjust these speeds to taste:
+      obj.rotation.x += 0.1 * delta;
+      obj.rotation.y += 0.2 * delta;
+      obj.rotation.z += 0.15 * delta;
+    }
+  });
+  return null;
+}
+
 function ThreeDCar() {
   const [loading, setLoading] = useState(true);
   const modelRef = useRef();
@@ -319,7 +332,9 @@ function ThreeDCar() {
               scale={modelScale}
             />
           </Center>
-
+          
+          <AutoRotate modelRef={modelRef} dragging={dragging} />
+          
           <ContactShadows
             rotation-x={-Math.PI / 2}
             position={[0, 0, 0]}

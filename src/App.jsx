@@ -298,56 +298,37 @@ function ThreeDCar() {
 
       <Canvas
   shadows
-  dpr={[1, 2]}
   camera={cameraSettings}
-  style={{ width: "100%", height: "100%" }}
   onCreated={({ gl, scene }) => {
-    // 1) Enable shadows
     gl.shadowMap.enabled = true;
     gl.shadowMap.type    = THREE.PCFSoftShadowMap;
-
-    // 2) Correct color space
-    gl.outputColorSpace = THREE.SRGBColorSpace;
-
-    // 3) Tone mapping
-    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.outputColorSpace  = THREE.SRGBColorSpace;
+    gl.toneMapping       = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = 0.6;
-
-    // 4) Make sure scene background is black
     scene.background = new THREE.Color(0x000000);
   }}
 >
-  {/* --- LIGHTS --- */}
-
-  {/* A dim ambient so nothing is pitch-black */}
+  {/* 1) Dim ambient fill */}
   <ambientLight intensity={0.1} />
 
-  {/* KEY light: strong directional */}
+  {/* 2) Single directional key light */}
   <directionalLight
     castShadow
-    intensity={3}
-    position={[200, 300, 200]}
-    shadow-mapSize-width={2048}
-    shadow-mapSize-height={2048}
+    intensity={2}
+    position={[5, 10, 5]}        // units in same scale as your model
+    shadow-mapSize-width={1024}
+    shadow-mapSize-height={1024}
     shadow-bias={-0.0005}
-    shadow-normalBias={0.05}
-    // tighten the shadow camera to your model extents:
-    shadow-camera-far={1000}
-    shadow-camera-left={-200}
-    shadow-camera-right={200}
-    shadow-camera-top={200}
-    shadow-camera-bottom={-200}
-  />
-
-  {/* RIM/HALO light to pick out edges */}
-  <directionalLight
-    intensity={0.5}
-    position={[-200, 100, -200]}
+    shadow-camera-near={1}
+    shadow-camera-far={50}
+    shadow-camera-left={-10}
+    shadow-camera-right={10}
+    shadow-camera-top={10}
+    shadow-camera-bottom={-10}
   />
 
   <Suspense fallback={null}>
-    {/* Environment for reflections but no extra lighting */}
-    <Environment preset="city" background={false} />
+    <Environment preset="city" background={false}/>
 
     <Center>
       <InteractiveModel
@@ -357,36 +338,19 @@ function ThreeDCar() {
       />
     </Center>
 
-    {/* Invisible ground to catch hard shadows */}
-    <ContactShadows
-      rotation-x={-Math.PI / 2}
-      position={[0, 0, 0]}
-      width={500}
-      height={500}
-      blur={2}
-      opacity={0.7}
-      far={1000}
-    />
+    {/* Auto-rotate */}
+    <AutoRotate modelRef={modelRef} dragging={dragging} isMobile={isMobile} />
 
-    {/* Soft self‐occlusion shadows */}
-    <AccumulativeShadows
-      frames={60}
-      temporal
-      color="black"
-      colorBlend={2}
-      opacity={1}
-      scale={1.5}
-      alphaTest={0.85}
-    >
-      <RandomizedLight
-        amount={8}
-        radius={2}
-        ambient={0.2}
-        intensity={1.5}
-        position={[100, 300, 100]}
-        bias={0.0001}
-      />
-    </AccumulativeShadows>
+    {/* Invisible shadow-catcher */}
+    <ContactShadows
+      rotation-x={-Math.PI/2}
+      position={[0, -1, 0]}     // drop the plane 1 unit below model origin
+      width={20}
+      height={20}
+      blur={1}
+      opacity={0.5}
+      far={10}
+    />
   </Suspense>
 </Canvas>
     </div>

@@ -173,6 +173,7 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
           c.castShadow = true;
           c.receiveShadow = true;
           c.material.polygonOffset = true;
+          c.material.depthWrite = true;
           c.material.polygonOffsetFactor = 5;
           c.material.polygonOffsetUnits = 5;
           c.material.needsUpdate = true;
@@ -307,9 +308,6 @@ function ThreeDCar() {
           shadow-bias={-0.0005}
           shadow-normalBias={0.05}
         />
-
-        {/* rim light */}
-        <directionalLight intensity={0.3} position={[-200000, -100000, -200000]} />
 
         <Suspense fallback={null}>
           <Environment preset="city" background={false} />

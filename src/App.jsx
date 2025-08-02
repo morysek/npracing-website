@@ -374,8 +374,7 @@ export default function App() {
       fontFamily: "'Inconsolata', monospace"
     }}>
       <Canvas
-      shadows
-    >
+      shadows />
       <TopBar />
       <ThreeDCar />
     </div>

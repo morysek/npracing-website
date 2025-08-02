@@ -331,6 +331,7 @@ function ThreeDCar() {
     shadow-camera-right={10}
     shadow-camera-top={10}
     shadow-camera-bottom={-10}
+    shadow-radius={4}
   />
 
   <Suspense fallback={null}>
@@ -372,6 +373,9 @@ export default function App() {
       overflow: "hidden",
       fontFamily: "'Inconsolata', monospace"
     }}>
+      <Canvas
+      shadows
+    >
       <TopBar />
       <ThreeDCar />
     </div>

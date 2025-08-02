@@ -197,6 +197,17 @@ function ShadowPlane() {
     <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <planeGeometry args={[300000, 300000]} />
       <shadowMaterial opacity={0.7} />
+      <meshStandardMaterial color="#111" metalness={0} roughness={1} />
+      <mesh castShadow receiveShadow position={[0, 1, 0]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshPhysicalMaterial 
+          color="white" 
+          metalness={0.1} 
+          roughness={0.5} 
+          clearcoat={1} 
+          clearcoatRoughness={0.1}
+        />
+      </mesh>
     </mesh>
   );
 }
@@ -358,6 +369,10 @@ function ThreeDCar() {
       opacity={0.5}
       far={10}
     />
+
+    <EffectComposer>
+        <SSAO samples={31} radius={0.1} intensity={30} luminanceInfluence={0.8} />
+      </EffectComposer>
   </Suspense>
 </Canvas>
     </div>

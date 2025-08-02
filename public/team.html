@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>NP Racing | Team</title>
+    <title>NP Racing - Team</title>
     <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet" />
     <style>
       html, body {
@@ -15,11 +15,12 @@
 
       .topbar {
         width: 100%;
-        height: 90px;
+        height: 80px;
         background-color: #000;
         display: flex;
         align-items: center;
-        padding: 0 48px;
+        justify-content: flex-start;
+        padding: 0 24px;
         box-sizing: border-box;
         position: fixed;
         top: 0;
@@ -28,54 +29,41 @@
         border-bottom: 1px solid #222;
       }
 
-      .logo {
-        min-width: 180px;
-      }
-
       .menu {
         display: flex;
         align-items: center;
-        margin-left: 48px;
+        font-size: 14px;
+        font-weight: 700;
       }
 
       .menu a {
         color: #fff;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        margin-right: 8px;
         text-decoration: none;
+        margin-right: 12px;
       }
 
-      .menu a.active,
       .menu .dot {
         color: #ffcc00;
+        margin-right: 12px;
       }
 
-      .menu .dot {
-        font-size: 20px;
-        font-weight: 700;
-        margin-right: 16px;
+      .menu a.active {
+        color: #ffcc00;
       }
 
       .content {
-        padding: 140px 80px 80px;
-        max-width: 1200px;
+        padding: 120px 32px 80px;
+        max-width: 1000px;
         margin: 0 auto;
-        line-height: 1.8;
-        font-size: 12px;
+        font-size: 16px;
+        line-height: 2.2;
         display: flex;
         flex-direction: column;
-        gap: 80px;
+        gap: 100px;
       }
 
       .section {
-        max-width: 600px;
-      }
-
-      .section.highlight {
-        color: #ffcc00;
-        font-weight: 700;
+        max-width: 500px;
       }
 
       .right-align {
@@ -85,39 +73,35 @@
       }
 
       @media (max-width: 768px) {
-        .content {
-          padding: 120px 24px 40px;
-          gap: 40px;
+        .topbar {
+          padding: 0 16px;
+          height: 70px;
         }
 
-        .section, .right-align {
-          max-width: 100%;
-        }
-
-        .menu a {
+        .menu {
           font-size: 12px;
-          margin-right: 8px;
         }
 
+        .menu a,
         .menu .dot {
-          font-size: 12px;
           margin-right: 8px;
+        }
+
+        .content {
+          padding: 100px 16px 40px;
+          gap: 60px;
+          font-size: 14px;
+        }
+
+        .section,
+        .right-align {
+          max-width: 100%;
         }
       }
     </style>
   </head>
   <body>
     <div class="topbar">
-      <div class="logo">
-        <a href="/">
-          <!-- sem dat logo-->
-          <svg width="220" height="65" viewBox="0 0 104.1419 30.962112" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-            <g transform="translate(-54.124261,-130.25079)">
-              <!-- svg paths sem prej -->
-            </g>
-          </svg>
-        </a>
-      </div>
       <nav class="menu">
         <a href="/">Home</a>
         <span class="dot">•</span>
@@ -130,8 +114,6 @@
     </div>
 
     <div class="content">
-      <div class="section highlight">• Team •</div>
-
       <div class="section">
         We are the only Czech team and a top contender in the prestigious international STEM racing competition.
       </div>

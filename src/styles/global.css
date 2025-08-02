@@ -9,8 +9,11 @@
 
 html, body {
   touch-action: manipulation;
-  -webkit-user-select: none;
   user-select: none;
+  -webkit-user-drag: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
   background: var(--primary);
   color: var(--neutral);
   font-family: var(--font-main);

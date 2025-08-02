@@ -214,8 +214,8 @@ function ShadowPlane() {
 
 function AutoRotate({ modelRef, dragging, isMobile }) {
   
-  const speed = isMobile ? 0.08 : 0.04;
-  const speedZ = isMobile ? 0.1 : 0.06;
+  const speed = isMobile ? 0.1 : 0.03;
+  const speedZ = isMobile ? 0.12 : 0.07;
   
   useFrame((_, delta) => {
     const obj = modelRef.current;

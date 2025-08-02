@@ -1,122 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>NP Racing - Team</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%;
-      background: #000;
-      color: #fff;
-      font-family: 'Inconsolata', monospace;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>NP Racing - Team</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #fff;
+        font-family: 'Inconsolata', monospace;
+      }
 
-    .topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 90px;
-      background: #000;
-      border-bottom: 1px solid #222;
-      display: flex;
-      align-items: center;
-      padding: 0 48px;
-      box-sizing: border-box;
-      z-index: 10;
-    }
+      .topbar {
+        width: 100%;
+        height: 90px;
+        background-color: #000;
+        display: flex;
+        align-items: center;
+        padding: 0 48px;
+        box-sizing: border-box;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        border-bottom: 1px solid #222;
+      }
 
-    .logo {
-      min-width: 180px;
-    }
+      .logo {
+        min-width: 180px;
+      }
 
-    .logo a {
-      display: block;
-    }
+      .menu {
+        display: flex;
+        align-items: center;
+        margin-left: 48px;
+      }
 
-    nav.menu {
-      display: flex;
-      align-items: center;
-      margin-left: 48px;
-      user-select: none;
-    }
+      .menu a {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-right: 16px;
+        text-decoration: none;
+      }
 
-    nav.menu a {
-      font-weight: 700;
-      font-size: 28px;
-      color: #fff;
-      letter-spacing: 1px;
-      margin-right: 32px;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
+      .menu a.active,
+      .menu .dot {
+        color: #ffcc00;
+      }
 
-    nav.menu a.active {
-      color: #ffcc00;
-    }
+      .menu .dot {
+        font-size: 20px;
+        font-weight: 700;
+        margin-right: 16px;
+      }
 
-    nav.menu .dot {
-      font-size: 36px;
-      font-weight: 700;
-      color: #ffcc00;
-      margin-right: 32px;
-      user-select: none;
-    }
+      .content {
+        padding: 140px 80px 80px;
+        max-width: 1200px;
+        margin: 0 auto;
+        line-height: 1.8;
+        font-size: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 80px;
+      }
 
-    .content {
-      padding-top: 110px; /* leave space for fixed topbar */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: calc(100vh - 110px);
-      text-align: center;
-      padding-left: 24px;
-      padding-right: 24px;
-      box-sizing: border-box;
-    }
+      .section {
+        max-width: 600px;
+      }
 
-    .content h1 {
-      color: #ffcc00;
-      font-size: 54px;
-      margin: 0 0 24px 0;
-      font-weight: 700;
-    }
+      .section.highlight {
+        color: #ffcc00;
+        font-weight: 700;
+      }
 
-    .content p {
-      font-size: 28px;
-      margin: 0;
-      max-width: 850px;
-      line-height: 1.4;
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="logo">
-      <a href="/">
-        <!-- Your logo SVG here -->
-        <svg width="220" height="65" viewBox="0 0 104.1419 30.962112" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-          <g transform="translate(-54.124261,-130.25079)">
-            <!-- SVG content -->
-          </g>
-        </svg>
-      </a>
+      .right-align {
+        align-self: flex-end;
+        text-align: right;
+        max-width: 500px;
+      }
+
+      @media (max-width: 768px) {
+        .content {
+          padding: 120px 24px 40px;
+          gap: 40px;
+        }
+
+        .section, .right-align {
+          max-width: 100%;
+        }
+
+        .menu a {
+          font-size: 16px;
+          margin-right: 12px;
+        }
+
+        .menu .dot {
+          font-size: 18px;
+          margin-right: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="logo">
+        <a href="/">
+          <!-- Insert your SVG logo here -->
+          <svg width="220" height="65" viewBox="0 0 104.1419 30.962112" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+            <g transform="translate(-54.124261,-130.25079)">
+              <!-- SVG paths go here -->
+            </g>
+          </svg>
+        </a>
+      </div>
+      <nav class="menu">
+        <a href="/">Home</a>
+        <span class="dot">•</span>
+        <a href="/team.html" class="active">Team</a>
+        <span class="dot">•</span>
+        <a href="/schedule.html">Schedule</a>
+        <span class="dot">•</span>
+        <a href="/contact.html">Contact</a>
+      </nav>
     </div>
-    <nav class="menu">
-      <a href="/">Home</a>
-      <span class="dot">•</span>
-      <a href="/team.html" class="active">Team</a>
-      <span class="dot">•</span>
-      <a href="/schedule.html">Schedule</a>
-      <span class="dot">•</span>
-      <a href="/contact.html">Contact</a>
-    </nav>
-  </header>
 
-  <main class="content">
-    <h1>Our Team</h1>
-    <p>Meet the talented members behind NP Racing. (Team bios, roles, photos go here.)</p>
-  </main>
-</body>
+    <div class="content">
+      <div class="section highlight">• Team •</div>
+
+      <div class="section">
+        We are the only Czech team and a top contender in the prestigious international STEM racing competition.
+      </div>
+
+      <div class="right-align">
+        We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.
+      </div>
+
+      <div class="section">
+        Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
+      </div>
+
+      <div class="right-align">
+        We collaborate with partners like the Czech Technical University to enhance our expertise.
+      </div>
+    </div>
+  </body>
 </html>

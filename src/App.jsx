@@ -297,18 +297,23 @@ function ThreeDCar() {
     >
       {loading && <LoadingScreen />}
 
-      <Canvas
-  shadows
-  camera={cameraSettings}
-  onCreated={({ gl, scene }) => {
-    gl.shadowMap.enabled = true;
-    gl.shadowMap.type    = THREE.PCFSoftShadowMap;
-    gl.outputColorSpace  = THREE.SRGBColorSpace;
-    gl.toneMapping       = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 0.6;
-    scene.background = new THREE.Color(0x000000);
-  }}
->
+       <Canvas
+        shadows
+        dpr={[1, 2]}
+        camera={cameraSettings}
+        style={{ width: "100%", height: "100%", pointerEvents: "all" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onCreated={({ gl, scene }) => {
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type    = THREE.PCFSoftShadowMap;
+          gl.outputColorSpace  = THREE.SRGBColorSpace;
+          gl.toneMapping       = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 0.6;
+          scene.background = new THREE.Color(0x000000);
+        }}
+      >
   {/* 1) Dim ambient fill */}
   <ambientLight intensity={0.1} />
 

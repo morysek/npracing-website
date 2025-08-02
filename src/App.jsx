@@ -373,7 +373,7 @@ function ThreeDCar() {
         <EffectComposer multisampling={4}>
          <SSAO
            samples={16}            // rays per pixel
-           radius={60000}              // how far to search for occlusion
+           radius={6000000}              // how far to search for occlusion
            intensity={20}          // darkness of occlusion
            luminanceInfluence={0.1}// how much light affects AO
            color="black"

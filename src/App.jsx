@@ -81,7 +81,6 @@ function TopBar() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Responsive sizes
   const logoSize = isMobile ? 80 : 120;
   const linkFontSize = isMobile ? 14 : 16;
   const linkSpacing = isMobile ? 8 : 12;
@@ -91,7 +90,7 @@ function TopBar() {
     fontSize: linkFontSize,
     fontWeight: 600,
     letterSpacing: 1,
-    marginRight: linkSpacing,
+    margin: `0 ${linkSpacing / 2}px`,
     fontFamily: "'Inconsolata', monospace",
     textDecoration: "none",
     whiteSpace: "nowrap",
@@ -100,7 +99,7 @@ function TopBar() {
   const dotStyle = {
     color: "#ffcc00",
     fontSize: linkFontSize + 2,
-    marginRight: linkSpacing,
+    margin: `0 ${linkSpacing / 2}px`,
   };
 
   return (
@@ -114,36 +113,30 @@ function TopBar() {
         background: "#000",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "center", // Center the whole group
         padding: "0 16px",
         boxSizing: "border-box",
         zIndex: 10,
-        borderBottom: "1px solid #222",
       }}
     >
-      <a href="/" style={{ display: "block" }}>
-        <NPLogo size={logoSize} />
-      </a>
-
-      <nav
-        style={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",     // allow wrapping if needed
-          overflowX: "auto",    // scroll instead of overlap
-        }}
-      >
-        <a href="/" style={linkStyle}>Home</a>
-        <span style={dotStyle}>•</span>
-        <a href="/team.html" style={linkStyle}>Team</a>
-        <span style={dotStyle}>•</span>
-        <a href="/schedule.html" style={linkStyle}>Schedule</a>
-        <span style={dotStyle}>•</span>
-        <a href="/contact.html" style={linkStyle}>Contact</a>
-      </nav>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <a href="/" style={{ display: "block", marginRight: linkSpacing }}>
+          <NPLogo size={logoSize} />
+        </a>
+        <nav style={{ display: "flex", alignItems: "center" }}>
+          <a href="/" style={linkStyle}>Home</a>
+          <span style={dotStyle}>•</span>
+          <a href="/team.html" style={linkStyle}>Team</a>
+          <span style={dotStyle}>•</span>
+          <a href="/schedule.html" style={linkStyle}>Schedule</a>
+          <span style={dotStyle}>•</span>
+          <a href="/contact.html" style={linkStyle}>Contact</a>
+        </nav>
+      </div>
     </div>
   );
 }
+
 
 function LoadingScreen() {
   return (

@@ -11,7 +11,6 @@ import {
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-// NP Racing SVG Logo (20% smaller)
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -42,7 +41,7 @@ function NPLogo({ size = 300 }) {
               strokeWidth: 2.21112
             }}
           >
-            {/* RACING text paths */}
+            {/*NP RACING text paths */}
             <path d="m 53.020878,195.78621 h -2.060221 l -2.610554,-2.65289 h -1.509887 v 2.65289 H 45.23155 v -7.02733 h 6.02544 q 1.580443,0 1.580443,1.22767 v 1.91911 q 0,0.889 -0.818444,1.22766 h -1.693332 z m -1.763888,-4.41678 v -0.84666 q 0,-0.55033 -0.465666,-0.55033 h -3.951108 v 1.96144 h 3.951108 q 0.465666,0 0.465666,-0.56445 z" />
             <path d="m 69.474419,195.78621 h -1.566332 l -0.917222,-1.53811 h -4.571996 l -0.874888,1.53811 h -1.622777 l 3.965219,-7.05555 h 1.566332 z m -3.217331,-2.82222 -1.580443,-2.86455 -1.566332,2.86455 z" />
             <path d="m 84.756759,194.1211 q 0,0.98778 -0.380999,1.32644 -0.366889,0.33867 -1.368777,0.33867 h -4.190997 q -1.001888,0 -1.382888,-0.33867 -0.366888,-0.33866 -0.366888,-1.32644 v -3.71122 q 0,-0.97367 0.366888,-1.31233 0.381,-0.35278 1.382888,-0.35278 h 4.190997 q 1.693332,0.0141 1.749776,1.17122 v 1.03011 h -1.636887 v -0.94544 h -4.416775 v 4.45911 h 4.416775 v -1.03011 h 1.636887 z" />
@@ -109,30 +108,29 @@ function TopBar() {
         top: 0,
         left: 0,
         width: "100%",
-        height: 80,
+        height: isMobile ? 120 : 160,
         background: "#000",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center", // Center the whole group
-        padding: "0 16px",
+        flexDirection: "column", // stack vertically
+        alignItems: "center", // center horizontally
+        justifyContent: "center",
+        padding: "10px 16px",
         boxSizing: "border-box",
         zIndex: 10,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <a href="/" style={{ display: "block", marginRight: linkSpacing }}>
-          <NPLogo size={logoSize} />
-        </a>
-        <nav style={{ display: "flex", alignItems: "center" }}>
-          <a href="/" style={linkStyle}>Home</a>
-          <span style={dotStyle}>•</span>
-          <a href="/team.html" style={linkStyle}>Team</a>
-          <span style={dotStyle}>•</span>
-          <a href="/schedule.html" style={linkStyle}>Schedule</a>
-          <span style={dotStyle}>•</span>
-          <a href="/contact.html" style={linkStyle}>Contact</a>
-        </nav>
-      </div>
+      <a href="/" style={{ marginBottom: 8, display: "block" }}>
+        <NPLogo size={logoSize} />
+      </a>
+      <nav style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <a href="/" style={linkStyle}>Home</a>
+        <span style={dotStyle}>•</span>
+        <a href="/team.html" style={linkStyle}>Team</a>
+        <span style={dotStyle}>•</span>
+        <a href="/schedule.html" style={linkStyle}>Schedule</a>
+        <span style={dotStyle}>•</span>
+        <a href="/contact.html" style={linkStyle}>Contact</a>
+      </nav>
     </div>
   );
 }

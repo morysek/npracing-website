@@ -11,6 +11,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   html, body {
+    overscroll-behavior: none;
     margin: 0;
     padding: 0;
     background: var(--primary);

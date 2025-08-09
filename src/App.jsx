@@ -361,7 +361,6 @@ function ThreeDCar() {
     />
   </Suspense>
         <EffectComposer multisampling={4}>
-          <NormalPass/>
          <SSAO
            samples={31}            // rays per pixel
            radius={60000000}              // how far to search for occlusion

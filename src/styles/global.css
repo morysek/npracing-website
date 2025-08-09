@@ -8,6 +8,7 @@
 }
 
 html, body {
+  overscroll-behavior: none;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-drag: none;

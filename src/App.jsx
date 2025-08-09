@@ -80,7 +80,7 @@ function TopBar() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const logoSize = isMobile ? 100 : 140;
+  const logoSize = isMobile ? 110 : 160;
   const linkFontSize = isMobile ? 14 : 16;
   const linkSpacing = isMobile ? 8 : 12;
 
@@ -118,7 +118,7 @@ function TopBar() {
         boxSizing: "border-box",
       }}
     >
-      <a href="/" style={{ display: "block", marginBottom: 25 }}>
+      <a href="/" style={{ display: "block", marginBottom: 20 }}>
         <NPLogo size={logoSize} />
       </a>
       <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>

@@ -9,7 +9,7 @@ import {
   RandomizedLight,
 } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { EffectComposer, NormalPass, SSAO } from "@react-three/postprocessing";
+import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
 function NPLogo({ size = 300 }) {
   return (
@@ -361,8 +361,7 @@ function ThreeDCar() {
     />
   </Suspense>
         <EffectComposer multisampling={4}>
-        <NormalPass />
-         <SSAOEffect
+         <SSAO
            samples={31}            // rays per pixel
            radius={60000000}              // how far to search for occlusion
            intensity={50}          // darkness of occlusion

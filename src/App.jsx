@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useState, Suspense, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useLoader, useFrame } from "@react-three/fiber";
@@ -5,43 +6,27 @@ import {
   Environment,
   Center,
   ContactShadows,
-  AccumulativeShadows,
-  RandomizedLight,
 } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
+/* -----------------------------
+   NPLogo
+   ----------------------------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
-      //src="/npracing.svg"
       alt="NP Racing Logo"
       width={size}
       viewBox="0 0 104.1419 30.962112"
       height={(size * 30.96) / 104.14}
       xmlns="http://www.w3.org/2000/svg"
-      style={{ display: "block" }}>
+      style={{ display: "block" }}
+      preserveAspectRatio="xMidYMid meet"
+    >
       <g transform="translate(-54.124261,-130.25079)">
-        <g
-          transform="translate(0,-2.4052947)"
-          style={{
-            fontSize: 17.6389,
-            fontFamily: "Inconsolata, monospace",
-            fill: "#fff",
-            strokeWidth: 0.264583
-          }}
-        >
-          <g
-            transform="scale(1.1966041,0.83569829)"
-            style={{
-              fontSize: 14.1111,
-              fontFamily: "Inconsolata, monospace",
-              letterSpacing: 5.29167,
-              fill: "#fff",
-              strokeWidth: 2.21112
-            }}
-          >
-            {/*NP RACING text paths */}
+        <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
+          <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
             <path d="m 53.020878,195.78621 h -2.060221 l -2.610554,-2.65289 h -1.509887 v 2.65289 H 45.23155 v -7.02733 h 6.02544 q 1.580443,0 1.580443,1.22767 v 1.91911 q 0,0.889 -0.818444,1.22766 h -1.693332 z m -1.763888,-4.41678 v -0.84666 q 0,-0.55033 -0.465666,-0.55033 h -3.951108 v 1.96144 h 3.951108 q 0.465666,0 0.465666,-0.56445 z" />
             <path d="m 69.474419,195.78621 h -1.566332 l -0.917222,-1.53811 h -4.571996 l -0.874888,1.53811 h -1.622777 l 3.965219,-7.05555 h 1.566332 z m -3.217331,-2.82222 -1.580443,-2.86455 -1.566332,2.86455 z" />
             <path d="m 84.756759,194.1211 q 0,0.98778 -0.380999,1.32644 -0.366889,0.33867 -1.368777,0.33867 h -4.190997 q -1.001888,0 -1.382888,-0.33867 -0.366888,-0.33866 -0.366888,-1.32644 v -3.71122 q 0,-0.97367 0.366888,-1.31233 0.381,-0.35278 1.382888,-0.35278 h 4.190997 q 1.693332,0.0141 1.749776,1.17122 v 1.03011 h -1.636887 v -0.94544 h -4.416775 v 4.45911 h 4.416775 v -1.03011 h 1.636887 z" />
@@ -50,27 +35,17 @@ function NPLogo({ size = 300 }) {
             <path d="m 130.26509,194.1211 q 0,0.98778 -0.381,1.32644 -0.36688,0.33867 -1.36877,0.33867 h -4.84011 q -1.00189,0 -1.38289,-0.33867 -0.36689,-0.33866 -0.36689,-1.32644 v -3.69711 q 0,-0.98778 0.36689,-1.32644 0.381,-0.33867 1.38289,-0.33867 h 4.84011 q 1.04422,0 1.397,0.36689 0.35277,0.35278 0.35277,1.38289 h -1.59455 v -0.49389 h -5.10822 v 4.445 h 5.10822 v -1.56634 h -2.94922 v -1.19944 h 4.54377 z" />
           </g>
         </g>
-        <path
-          style={{
-            fill: "#ffcc00",
-            strokeWidth: 1.61928,
-            strokeLinecap: "round"
-          }}
-          d="m 64.083427,130.25096 -9.959082,21.06022 h 4.532023 l 9.959082,-21.06022 z m 11.342977,0 -9.959082,21.06022 h 1.139465 4.505151 3.62872 l 9.959082,-21.06022 h -3.628719 -4.505152 z m 14.738635,0 -9.959082,21.06022 h 1.783354 v 5.1e-4 h 13.889591 l 0.535368,-1.13223 h -0.001 l 9.42371,-19.9285 H 97.007033 91.94791 Z"
-        />
-        <path
-          style={{
-            fill: "#fff",
-            strokeLinejoin: "round"
-          }}
-          d="m 111.60859,130.25083 c -0.96683,0.005 -1.91905,0.53479 -2.3828,1.51567 L 101.76888,147.53246 100,151.27435 h 5.85287 l 0.69867,-1.47846 h 5.2e-4 l 5.77949,-12.22045 11.88247,12.88242 c 1.27166,1.38021 3.53608,1.03468 4.33824,-0.66197 l 6.74016,-14.25185 h 16.1463 l -2.44895,5.17747 h -8.20725 l -2.50217,5.29115 h 12.38477 c 1.02253,-1.7e-4 1.95344,-0.58946 2.39107,-1.51361 l 4.95267,-10.46861 c 0.83036,-1.75547 -0.45016,-3.77762 -2.3921,-3.77755 h -21.99814 c -1.02309,-4.3e-4 -1.95475,0.58896 -2.39262,1.51361 l -5.7795,12.22096 -11.88247,-12.88294 c -0.53648,-0.58227 -1.24991,-0.85758 -1.95544,-0.85369 z"
-        />
+        <path style={{ fill: "#ffcc00", strokeWidth: 1.61928, strokeLinecap: "round" }} d="m 64.083427,130.25096 -9.959082,21.06022 h 4.532023 l 9.959082,-21.06022 z m 11.342977,0 -9.959082,21.06022 h 1.139465 4.505151 3.62872 l 9.959082,-21.06022 h -3.628719 -4.505152 z m 14.738635,0 -9.959082,21.06022 h 1.783354 v 5.1e-4 h 13.889591 l 0.535368,-1.13223 h -0.001 l 9.42371,-19.9285 H 97.007033 91.94791 Z" />
+        <path style={{ fill: "#fff", strokeLinejoin: "round" }} d="m 111.60859,130.25083 c -0.96683,0.005 -1.91905,0.53479 -2.3828,1.51567 L 101.76888,147.53246 100,151.27435 h 5.85287 l 0.69867,-1.47846 h 5.2e-4 l 5.77949,-12.22045 11.88247,12.88242 c 1.27166,1.38021 3.53608,1.03468 4.33824,-0.66197 l 6.74016,-14.25185 h 16.1463 l -2.44895,5.17747 h -8.20725 l -2.50217,5.29115 h 12.38477 c 1.02253,-1.7e-4 1.95344,-0.58946 2.39107,-1.51361 l 4.95267,-10.46861 c 0.83036,-1.75547 -0.45016,-3.77762 -2.3921,-3.77755 h -21.99814 c -1.02309,-4.3e-4 -1.95475,0.58896 -2.39262,1.51361 l -5.7795,12.22096 -11.88247,-12.88294 c -0.53648,-0.58227 -1.24991,-0.85758 -1.95544,-0.85369 z" />
       </g>
     </svg>
   );
 }
 
-function TopBar() {
+/* -----------------------------
+   TopBar (client-side navigation)
+   ----------------------------- */
+function TopBar({ currentPage, onNavigate }) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -93,12 +68,30 @@ function TopBar() {
     fontFamily: "'Inconsolata', monospace",
     textDecoration: "none",
     whiteSpace: "nowrap",
+    cursor: "pointer",
   };
 
   const dotStyle = {
     color: "#ffcc00",
     fontSize: linkFontSize + 2,
     margin: `0 ${linkSpacing / 2}px`,
+    userSelect: "none",
+    pointerEvents: "none",
+  };
+
+  const NavLink = ({ page, children }) => {
+    const activeStyle = currentPage === page ? { opacity: 1 } : { opacity: 0.85 };
+    return (
+      <span
+        onClick={() => onNavigate(page)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => (e.key === "Enter" ? onNavigate(page) : null)}
+        style={{ ...linkStyle, ...activeStyle }}
+      >
+        {children}
+      </span>
+    );
   };
 
   return (
@@ -109,32 +102,94 @@ function TopBar() {
         left: 0,
         width: "100%",
         background: "#000",
-        zIndex: 10,
+        zIndex: 999,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: 25,
-        paddingBottom: 0,
+        paddingBottom: 8,
         boxSizing: "border-box",
       }}
     >
-      <a href="/" style={{ display: "block", marginBottom: 20 }}>
+      <a
+        style={{ display: "block", marginBottom: 24, cursor: "pointer" }}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate("home");
+        }}
+        href="/"
+        aria-label="Home"
+      >
         <NPLogo size={logoSize} />
       </a>
+
       <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <a href="/" style={linkStyle}>Home</a>
+        <NavLink page="home">Home</NavLink>
         <span style={dotStyle}>•</span>
-        <a href="/team.html" style={linkStyle}>Team</a>
+        <NavLink page="team">Team</NavLink>
         <span style={dotStyle}>•</span>
-        <a href="/schedule.html" style={linkStyle}>Schedule</a>
+        <NavLink page="schedule">Schedule</NavLink>
         <span style={dotStyle}>•</span>
-        <a href="/contact.html" style={linkStyle}>Contact</a>
+        <NavLink page="contact">Contact</NavLink>
       </nav>
     </div>
   );
 }
 
+/* -----------------------------
+   Page content — simple text
+   (User said these correspond to team.html, schedule.html, contact.html — but here we render inline.)
+   ----------------------------- */
+function TeamContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+      <h1>Team</h1>
+      <p>
+        Welcome to the Team page. This is simple placeholder text for the team page.
+        Replace this block with the contents of <code>team.html</code> or a React component.
+      </p>
+      <ul>
+        <li>Driver: Jane Doe</li>
+        <li>Engineer: John Smith</li>
+        <li>Mechanic: Alex Lee</li>
+      </ul>
+    </div>
+  );
+}
 
+function ScheduleContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+      <h1>Schedule</h1>
+      <p>
+        Upcoming events and schedule info would appear here. This is simple placeholder text
+        replacing <code>schedule.html</code>.
+      </p>
+      <ol>
+        <li>Round 1 — Apr 12</li>
+        <li>Round 2 — May 10</li>
+        <li>Round 3 — Jun 7</li>
+      </ol>
+    </div>
+  );
+}
+
+function ContactContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+      <h1>Contact</h1>
+      <p>
+        Contact details and a simple contact form can go here. This replaces
+        <code>contact.html</code> as inline content.
+      </p>
+      <p>Email: <a style={{ color: "#ffcc00" }} href="mailto:info@example.com">info@example.com</a></p>
+    </div>
+  );
+}
+
+/* -----------------------------
+   LoadingScreen
+   ----------------------------- */
 function LoadingScreen() {
   return (
     <div style={{
@@ -146,11 +201,14 @@ function LoadingScreen() {
       fontSize: 13, letterSpacing: 2, zIndex: 1000
     }}>
       <NPLogo size={200} />
-      <div style={{ position: "absolute", alignItems: "center", paddingTop: 150, }}>Loading…</div>
+      <div style={{ position: "absolute", alignItems: "center", paddingTop: 150 }}>Loading…</div>
     </div>
   );
 }
 
+/* -----------------------------
+   3D model components (unchanged logic)
+   ----------------------------- */
 function InteractiveModel({ onLoad, controlRef, scale }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
   const group = useRef();
@@ -169,9 +227,9 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
           c.material.needsUpdate = true;
         }
       });
-      onLoad();
+      onLoad && onLoad();
       setInitialized(true);
-      controlRef.current = group.current;
+      if (controlRef) controlRef.current = group.current;
     }
   }, [obj, initialized, onLoad, controlRef]);
 
@@ -182,35 +240,13 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
   );
 }
 
-function ShadowPlane() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[300000, 300000]} />
-      <shadowMaterial opacity={0.7} />
-      <meshStandardMaterial color="#111" metalness={0} roughness={1} />
-      <mesh castShadow receiveShadow position={[0, 1, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshPhysicalMaterial 
-          color="white" 
-          metalness={0.1} 
-          roughness={0.5} 
-          clearcoat={1} 
-          clearcoatRoughness={0.1}
-        />
-      </mesh>
-    </mesh>
-  );
-}
-
 function AutoRotate({ modelRef, dragging, isMobile }) {
-  
   const speed = isMobile ? 0.1 : 0.03;
   const speedY = isMobile ? 0.12 : 0.07;
-  
+
   useFrame((_, delta) => {
     const obj = modelRef.current;
     if (!dragging.current && obj) {
-      // adjust these speeds to taste:
       obj.rotation.x += speed * delta;
       obj.rotation.y += speedY * delta;
       obj.rotation.z += speed * delta;
@@ -219,7 +255,7 @@ function AutoRotate({ modelRef, dragging, isMobile }) {
   return null;
 }
 
-function ThreeDCar() {
+function ThreeDCar({ show = true }) {
   const [loading, setLoading] = useState(true);
   const modelRef = useRef();
   const dragging = useRef(false);
@@ -227,11 +263,9 @@ function ThreeDCar() {
   const [isMobile, setIsMobile] = useState(false);
   const [modelScale, setModelScale] = useState(600000);
 
-  // Mobile detection, scale & disable scroll
   useEffect(() => {
     const link = document.createElement("link");
-    link.href =
-      "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
 
@@ -242,15 +276,13 @@ function ThreeDCar() {
     };
     onResize();
     window.addEventListener("resize", onResize);
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = show ? "hidden" : "";
     return () => {
       window.removeEventListener("resize", onResize);
       document.body.style.overflow = "";
     };
-    
-  }, []);
+  }, [show]);
 
-  // Drag‐to‐rotate
   const onPointerDown = (e) => {
     e.preventDefault();
     dragging.current = true;
@@ -265,27 +297,22 @@ function ThreeDCar() {
     e.preventDefault();
     const dx = e.clientX - prev.current.x;
     const dy = e.clientY - prev.current.y;
-    modelRef.current.rotateOnWorldAxis(
-      new THREE.Vector3(0, 1, 0),
-      dx * 0.005
-    );
-    modelRef.current.rotateOnWorldAxis(
-      new THREE.Vector3(1, 0, 0),
-      dy * 0.005
-    );
+    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), dx * 0.005);
+    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), dy * 0.005);
     prev.current = { x: e.clientX, y: e.clientY };
   };
 
-  // Responsive camera
   const cameraSettings = isMobile
     ? { position: [0, 0, modelScale * 0.33], fov: 10, near: 10000, far: 500000 }
     : { position: [0, 0, 200000], fov: 7, near: 10000, far: 500000 };
+
+  if (!show) return null;
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 80,
+        top: "var(--topbar-height, 140px)",
         left: 0,
         right: 0,
         bottom: 0,
@@ -294,11 +321,12 @@ function ThreeDCar() {
         justifyContent: "center",
         alignItems: "center",
         touchAction: "none",
+        zIndex: 1,
       }}
     >
       {loading && <LoadingScreen />}
 
-       <Canvas
+      <Canvas
         shadows
         dpr={[1, 2]}
         camera={cameraSettings}
@@ -308,85 +336,110 @@ function ThreeDCar() {
         onPointerUp={onPointerUp}
         onCreated={({ gl, scene }) => {
           gl.shadowMap.enabled = true;
-          gl.shadowMap.type    = THREE.PCFSoftShadowMap;
-          gl.outputColorSpace  = THREE.SRGBColorSpace;
-          gl.toneMapping       = THREE.ACESFilmicToneMapping;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 0.6;
           scene.background = new THREE.Color(0x000000);
         }}
       >
-  {/* 1) Dim ambient fill */}
-  <ambientLight intensity={0.1} />
+        <ambientLight intensity={0.1} />
+        <directionalLight
+          castShadow
+          intensity={2}
+          position={[5, 10, 5]}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.0005}
+          shadow-camera-near={1}
+          shadow-camera-far={50}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+          shadow-radius={4}
+        />
 
-  {/* 2) Single directional key light */}
-  <directionalLight
-    castShadow
-    intensity={2}
-    position={[5, 10, 5]}        // units in same scale as your model
-    shadow-mapSize-width={1024}
-    shadow-mapSize-height={1024}
-    shadow-bias={-0.0005}
-    shadow-camera-near={1}
-    shadow-camera-far={50}
-    shadow-camera-left={-10}
-    shadow-camera-right={10}
-    shadow-camera-top={10}
-    shadow-camera-bottom={-10}
-    shadow-radius={4}
-  />
+        <Suspense fallback={null}>
+          <Environment preset="city" background={false} />
+          <Center>
+            <InteractiveModel onLoad={() => setLoading(false)} controlRef={modelRef} scale={modelScale} />
+          </Center>
+          <AutoRotate modelRef={modelRef} dragging={dragging} isMobile={isMobile} />
+          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
+        </Suspense>
 
-  <Suspense fallback={null}>
-    <Environment preset="city" background={false}/>
-
-    <Center>
-      <InteractiveModel
-        onLoad={() => setLoading(false)}
-        controlRef={modelRef}
-        scale={modelScale}
-      />
-    </Center>
-
-    {/* Auto-rotate */}
-    <AutoRotate modelRef={modelRef} dragging={dragging} isMobile={isMobile} />
-
-    {/* Invisible shadow-catcher */}
-    <ContactShadows
-      rotation-x={-Math.PI/2}
-      position={[0, -1, 0]}     // drop the plane 1 unit below model origin
-      width={20}
-      height={20}
-      blur={1}
-      opacity={0.5}
-      far={10}
-    />
-  </Suspense>
         <EffectComposer multisampling={4}>
-         <SSAO
-           samples={31}            // rays per pixel
-           radius={60000000}              // how far to search for occlusion
-           intensity={50}          // darkness of occlusion
-           luminanceInfluence={0.6}// how much light affects AO
-           color="black"
-         />
-       </EffectComposer>
-</Canvas>
+          <SSAO samples={31} radius={60000000} intensity={50} luminanceInfluence={0.6} color="black" />
+        </EffectComposer>
+      </Canvas>
     </div>
   );
 }
 
+/* -----------------------------
+   App: page state, topbar height CSS var and content rendering
+   ----------------------------- */
 export default function App() {
+  const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact'
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // topbar height kept in a CSS var used by ThreeDCar and layout
+  const topbarHeight = isMobile ? 160 : 180; // tweak to match your TopBar sizing
+  useEffect(() => {
+    document.documentElement.style.setProperty("--topbar-height", `${topbarHeight}px`);
+  }, [topbarHeight]);
+
+  const renderContent = () => {
+    switch (page) {
+      case "home":
+        return null; // Home shows the full-screen ThreeDCar canvas — no extra content here
+      case "team":
+        return <TeamContent />;
+      case "schedule":
+        return <ScheduleContent />;
+      case "contact":
+        return <ContactContent />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div style={{
       width: "100vw",
-      height: "100vh",
+      minHeight: "100vh",
       background: "#000",
-      overflow: "hidden",
-      fontFamily: "'Inconsolata', monospace"
+      overflowX: "hidden",
+      fontFamily: "'Inconsolata', monospace",
+      color: "#fff",
     }}>
-      <Canvas
-      shadows />
-      <TopBar />
-      <ThreeDCar />
+      <TopBar currentPage={page} onNavigate={setPage} />
+
+      {/* 3D canvas only on Home */}
+      <ThreeDCar show={page === "home"} />
+
+      {/* Content area below topbar. We push it down using the CSS variable ---topbar-height */}
+      <div style={{
+        position: "relative",
+        marginTop: "var(--topbar-height, 160px)",
+        zIndex: 2,
+        display: "flex",
+        justifyContent: "center",
+        padding: "24px 16px",
+      }}>
+        <div style={{ width: "100%", maxWidth: 1200 }}>
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 }
+

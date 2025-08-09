@@ -131,7 +131,7 @@ function TopBar({ currentPage, onNavigate }) {
 
 function TeamContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
       <h1 style={{ color: "#ffcc00" }}>Team</h1>
       <p>
         The Team
@@ -148,7 +148,7 @@ function TeamContent() {
 
 function ScheduleContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
       <h1 style={{ color: "#ffcc00" }}>Schedule</h1>
       <p>
         Next up: Poland
@@ -162,7 +162,7 @@ function ScheduleContent() {
 
 function ContactContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
       <h1 style={{ color: "#ffcc00" }}>Contact</h1>
       <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
     </div>

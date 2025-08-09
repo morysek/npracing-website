@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState, Suspense, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useLoader, useFrame } from "@react-three/fiber";
@@ -10,9 +9,6 @@ import {
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-/* -----------------------------
-   NPLogo
-   ----------------------------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -42,9 +38,6 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* -----------------------------
-   TopBar (client-side navigation)
-   ----------------------------- */
 function TopBar({ currentPage, onNavigate }) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -136,22 +129,19 @@ function TopBar({ currentPage, onNavigate }) {
   );
 }
 
-/* -----------------------------
-   Page content — simple text
-   (User said these correspond to team.html, schedule.html, contact.html — but here we render inline.)
-   ----------------------------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
       <h1>Team</h1>
       <p>
-        Welcome to the Team page. This is simple placeholder text for the team page.
-        Replace this block with the contents of <code>team.html</code> or a React component.
+        The Team
       </p>
+        //Replace this block with the contents of <code>team.html</code> or a React component.
       <ul>
-        <li>Driver: Jane Doe</li>
-        <li>Engineer: John Smith</li>
-        <li>Mechanic: Alex Lee</li>
+        <li>Team Leader: Matěj Prokop</li>
+        <li>Engineer: Lukáš Moravec</li>
+        <li>Finance manager: Lukáš Martin</li>
+        <li>Marketing manager: Veronika Lindová</li>
       </ul>
     </div>
   );
@@ -162,13 +152,10 @@ function ScheduleContent() {
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
       <h1>Schedule</h1>
       <p>
-        Upcoming events and schedule info would appear here. This is simple placeholder text
-        replacing <code>schedule.html</code>.
+        Next up: Poland
       </p>
       <ol>
-        <li>Round 1 — Apr 12</li>
-        <li>Round 2 — May 10</li>
-        <li>Round 3 — Jun 7</li>
+        <li>Oct 8-10</li>
       </ol>
     </div>
   );
@@ -178,18 +165,11 @@ function ContactContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
       <h1>Contact</h1>
-      <p>
-        Contact details and a simple contact form can go here. This replaces
-        <code>contact.html</code> as inline content.
-      </p>
-      <p>Email: <a style={{ color: "#ffcc00" }} href="mailto:info@example.com">info@example.com</a></p>
+      <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
     </div>
   );
 }
 
-/* -----------------------------
-   LoadingScreen
-   ----------------------------- */
 function LoadingScreen() {
   return (
     <div style={{
@@ -206,9 +186,6 @@ function LoadingScreen() {
   );
 }
 
-/* -----------------------------
-   3D model components (unchanged logic)
-   ----------------------------- */
 function InteractiveModel({ onLoad, controlRef, scale }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
   const group = useRef();
@@ -377,9 +354,6 @@ function ThreeDCar({ show = true }) {
   );
 }
 
-/* -----------------------------
-   App: page state, topbar height CSS var and content rendering
-   ----------------------------- */
 export default function App() {
   const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact'
   const [isMobile, setIsMobile] = useState(false);

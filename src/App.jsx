@@ -80,7 +80,7 @@ function TopBar() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const logoSize = isMobile ? 90 : 140;
+  const logoSize = isMobile ? 100 : 140;
   const linkFontSize = isMobile ? 14 : 16;
   const linkSpacing = isMobile ? 8 : 12;
 

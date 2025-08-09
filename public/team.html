@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Top Bar — Standalone</title>
+  <title>Top Bar — Centered</title>
 
   <!-- Inconsolata font -->
   <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap" rel="stylesheet">
@@ -32,23 +32,42 @@
       z-index: 9999;
       display:flex;
       flex-direction: column; /* logo above nav */
-      align-items: center;
-      padding-top: 25px; /* same as your code */
+      align-items: stretch;   /* stretch children full width so inner centering works reliably */
+      padding-top: 25px;
       padding-bottom: 0;
       box-sizing: border-box;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
     }
 
-    .logo-link { display:block; margin-bottom: 20px; line-height:0; }
-    .logo-svg { display:block; height:auto; }
+    /* make the logo link stretch full width and center its content */
+    .logo-link {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 20px;
+      line-height: 0;
+      text-decoration: none;
+    }
 
+    /* SVG: center contents within the svg viewport */
+    .logo-svg {
+      display:block;
+      height: auto;
+      max-width: 90%;
+      /* allow the SVG to preserve aspect ratio and center the visible graphic */
+      transform-origin: center;
+    }
+
+    /* nav stretches full width too and centers the items inside it */
     nav {
+      width: 100%;
       display:flex;
       align-items:center;
       justify-content:center;
       white-space:nowrap;
-      padding-bottom: 10px; /* small bottom spacing so content below won't be flush */
+      padding-bottom: 10px;
     }
 
     nav a {
@@ -58,7 +77,7 @@
       letter-spacing: 1px;
       font-family: 'Inconsolata', monospace;
       white-space: nowrap;
-      /* font-size + margin set by JS to match responsive values */
+      /* font-size + margin set by JS so they remain responsive */
     }
 
     .dot {
@@ -68,18 +87,21 @@
 
     /* page filler so you can scroll and see the fixed top bar */
     .page-content {
-      padding-top: 180px; /* leaves space under top bar for page content */
+      padding-top: 220px; /* leaves space under top bar for page content — adjust if you change top-bar height */
       min-height: 200vh;
       background: linear-gradient(180deg,#000 0,#020202 100%);
     }
+
+    /* small utility for debugging: outlines (remove when happy) */
+    /* .top-bar * { outline: 0.5px dashed rgba(255,255,255,0.03); } */
   </style>
 </head>
 <body>
 
   <div class="top-bar" id="topBar">
     <a class="logo-link" id="logoLink" href="/">
-      <!-- NPLogo SVG inline -->
-      <svg id="npLogo" class="logo-svg" width="140" viewBox="0 0 104.1419 30.962112" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NP Racing Logo">
+      <!-- NPLogo SVG inline (preserveAspectRatio centered) -->
+      <svg id="npLogo" class="logo-svg" width="140" viewBox="0 0 104.1419 30.962112" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NP Racing Logo">
         <g transform="translate(-54.124261,-130.25079)">
           <g transform="translate(0,-2.4052947)" style="font-size:17.6389;font-family:Inconsolata, monospace;fill:#fff;stroke-width:0.264583">
             <g transform="scale(1.1966041,0.83569829)" style="font-size:14.1111;font-family:Inconsolata, monospace;letter-spacing:5.29167;fill:#fff;stroke-width:2.21112">
@@ -121,19 +143,24 @@
       const dots = nav.querySelectorAll('.dot');
 
       function applySizes(isMobile) {
+        // Values based on your React code
         const logoSize = isMobile ? 100 : 140;           // px
         const linkFontSize = isMobile ? 14 : 16;         // px
         const linkSpacing = isMobile ? 8 : 12;          // px (total spacing used to compute margins)
 
+        // set svg width
         if (logo) {
           logo.setAttribute('width', String(logoSize));
         }
 
+        // apply link font-size and spacing
         links.forEach(a => {
           a.style.fontSize = linkFontSize + 'px';
+          // margin-left/right half of linkSpacing (to match original)
           a.style.margin = '0 ' + (linkSpacing / 2) + 'px';
         });
 
+        // dot size is linkFontSize + 2
         dots.forEach(d => {
           d.style.fontSize = (linkFontSize + 2) + 'px';
           d.style.margin = '0 ' + (linkSpacing / 2) + 'px';
@@ -145,10 +172,13 @@
         applySizes(isMobile);
       }
 
+      // initial run
       check();
 
+      // resize listener
       let rafId = null;
       window.addEventListener('resize', () => {
+        // throttle with requestAnimationFrame
         if (rafId) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(() => {
           check();

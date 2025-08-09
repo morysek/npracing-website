@@ -113,12 +113,12 @@ function TopBar() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: 20,
-        paddingBottom: 20,
+        paddingTop: 25,
+        paddingBottom: 0,
         boxSizing: "border-box",
       }}
     >
-      <a href="/" style={{ display: "block", marginBottom: 4 }}>
+      <a href="/" style={{ display: "block", marginBottom: 25 }}>
         <NPLogo size={logoSize} />
       </a>
       <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -361,6 +361,7 @@ function ThreeDCar() {
     />
   </Suspense>
         <EffectComposer multisampling={4}>
+          <NormalPass/>
          <SSAO
            samples={31}            // rays per pixel
            radius={60000000}              // how far to search for occlusion

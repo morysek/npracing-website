@@ -132,11 +132,10 @@ function TopBar({ currentPage, onNavigate }) {
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
-      <h1>Team</h1>
+      <h1 style={{ color: "#ffcc00" }}>Team</h1>
       <p>
         The Team
       </p>
-        //Replace this block with the contents of <code>team.html</code> or a React component.
       <ul>
         <li>Team Leader: Matěj Prokop</li>
         <li>Engineer: Lukáš Moravec</li>
@@ -150,7 +149,7 @@ function TeamContent() {
 function ScheduleContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
-      <h1>Schedule</h1>
+      <h1 style={{ color: "#ffcc00" }}>Schedule</h1>
       <p>
         Next up: Poland
       </p>
@@ -164,7 +163,7 @@ function ScheduleContent() {
 function ContactContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1000 }}>
-      <h1>Contact</h1>
+      <h1 style={{ color: "#ffcc00" }}>Contact</h1>
       <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
     </div>
   );

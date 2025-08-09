@@ -80,7 +80,7 @@ function TopBar() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const logoSize = isMobile ? 80 : 120;
+  const logoSize = isMobile ? 100 : 140;
   const linkFontSize = isMobile ? 14 : 16;
   const linkSpacing = isMobile ? 8 : 12;
 
@@ -108,21 +108,20 @@ function TopBar() {
         top: 0,
         left: 0,
         width: "100%",
-        height: isMobile ? 120 : 160,
         background: "#000",
-        display: "flex",
-        flexDirection: "column", // stack vertically
-        alignItems: "center", // center horizontally
-        justifyContent: "center",
-        padding: "10px 16px",
-        boxSizing: "border-box",
         zIndex: 10,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: 8,
+        paddingBottom: 8,
+        boxSizing: "border-box",
       }}
     >
-      <a href="/" style={{ marginBottom: 8, display: "block" }}>
+      <a href="/" style={{ display: "block", marginBottom: 4 }}>
         <NPLogo size={logoSize} />
       </a>
-      <nav style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <a href="/" style={linkStyle}>Home</a>
         <span style={dotStyle}>•</span>
         <a href="/team.html" style={linkStyle}>Team</a>

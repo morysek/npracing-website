@@ -365,7 +365,7 @@ export default function App() {
   }, []);
 
   // topbar height kept in a CSS var used by ThreeDCar and layout
-  const topbarHeight = isMobile ? 160 : 180; // tweak to match your TopBar sizing
+  const topbarHeight = isMobile ? 80 : 60; // tweak to match your TopBar sizing
   useEffect(() => {
     document.documentElement.style.setProperty("--topbar-height", `${topbarHeight}px`);
   }, [topbarHeight]);

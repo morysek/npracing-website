@@ -121,6 +121,8 @@ function TopBar({ currentPage, onNavigate }) {
         <span style={dotStyle}>•</span>
         <NavLink page="team">Team</NavLink>
         <span style={dotStyle}>•</span>
+        <NavLink page="joinus">Join Us</NavLink>
+        <span style={dotStyle}>•</span>
         <NavLink page="schedule">Schedule</NavLink>
         <span style={dotStyle}>•</span>
         <NavLink page="contact">Contact</NavLink>
@@ -154,7 +156,7 @@ function ScheduleContent() {
         Next up: Poland
       </p>
       <ol>
-        <li>Oct 8-10</li>
+        <li>Oct 11</li>
       </ol>
     </div>
   );
@@ -165,6 +167,14 @@ function ContactContent() {
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
       <h1 style={{ color: "#ffcc00" }}>Contact</h1>
       <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
+    </div>
+  );
+}
+function JoinUsContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00" }}>Join Us</h1>
+      <p>Want to have the chance to compete for a scholarship in a prestigeous Formula One-backed competition? Contact us!</p>
     </div>
   );
 }
@@ -376,6 +386,8 @@ export default function App() {
         return null; // Home shows the full-screen ThreeDCar canvas — no extra content here
       case "team":
         return <TeamContent />;
+      case "joinus":
+        return <JoinUsContent />;
       case "schedule":
         return <ScheduleContent />;
       case "contact":

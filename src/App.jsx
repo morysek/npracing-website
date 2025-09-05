@@ -144,9 +144,9 @@ function TeamContent() {
         <li>Finance manager: Lukáš Martin</li>
         <li>Marketing manager: Veronika Lindová</li>
       </ul>
-      <h6 style={{ color: "#ffcc00" }}>About Us</h6>
+      <h1 style={{ color: "#ffcc00" }}>About Us</h1>
       <p>
-        We are the only Czech team and a top contender in the prestigious international STEM racing competition
+        We are the only Czech team and a top contender in the prestigious international STEM racing competition. We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
       </p>
     </div>
   );

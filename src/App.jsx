@@ -146,8 +146,14 @@ function TeamContent() {
       </ul>
       <h1 style={{ color: "#ffcc00" }}>About Us</h1>
       <p>
-        We are the only Czech team and a top contender in the prestigious international STEM racing competition. We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
-      </p>
+        We are the only Czech team and a top contender in the prestigious international STEM racing competition.
+      <p>
+        We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.
+      <p>
+        Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
+      <p>
+        We collaborate with partners like the Czech Technical University to enhance our expertise.
+      </p> 
     </div>
   );
 }

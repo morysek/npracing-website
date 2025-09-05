@@ -144,7 +144,7 @@ function TeamContent() {
         <li>Finance manager: Lukáš Martin</li>
         <li>Marketing manager: Veronika Lindová</li>
       </ul>
-      <h1 style={{ color: "#ffcc00" }}>About Us</h1>
+      <h6 style={{ color: "#ffcc00" }}>About Us</h1>
       <p>
         We are the only Czech team and a top contender in the prestigious international STEM racing competition
       </p>

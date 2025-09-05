@@ -34,8 +34,14 @@ const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3, h4, h5 {
     font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--neutral);
+  }
+
+  h6 {
+    font-weight: 600;
     letter-spacing: 0.01em;
     color: var(--neutral);
   }

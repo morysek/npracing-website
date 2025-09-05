@@ -144,6 +144,9 @@ function TeamContent() {
         <li>Finance manager: Lukáš Martin</li>
         <li>Marketing manager: Veronika Lindová</li>
       </ul>
+      <p>
+        We are the only Czech team and a top contender in the prestigious international STEM racing competition
+      </p>
     </div>
   );
 }

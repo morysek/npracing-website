@@ -41,7 +41,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   h6 {
-    font-weight: 600;
+    font-weight: 300;
     letter-spacing: 0.01em;
     color: var(--neutral);
   }

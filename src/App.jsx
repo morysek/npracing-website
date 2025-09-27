@@ -38,7 +38,7 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-function TopBar({ onNavigate }) {
+function TopBar({ onNavigate, showSmall }) {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -48,7 +48,7 @@ function TopBar({ onNavigate }) {
   }, []);
 
   return (
-    <div style={{ position: "fixed", top: 12, left: 16, zIndex: 1001 }}>
+    <div style={{ position: "fixed", top: 12, left: 16, zIndex: 1001, transition: 'opacity 0.4s ease, transform 0.4s ease', opacity: showSmall ? 1 : 0, transform: showSmall ? 'translateY(0)' : 'translateY(-6px)' }}>
       <a
         style={{ display: "block", cursor: "pointer" }}
         onClick={(e) => {
@@ -58,13 +58,44 @@ function TopBar({ onNavigate }) {
         href="/"
         aria-label="Home"
       >
-        <NPLogo size={isMobile ? 80 : 120} />
+        <NPLogo size={isMobile ? 60 : 90} />
       </a>
     </div>
   );
 }
 
-// Team visual effect: images appear/reveal while scrolling
+// image overlay that pops images while scrolling (like thevariable.com)
+function ImageOverlay({ images = TEAM_IMAGES, activeIndex }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      {images.map((src, i) => {
+        const active = i === activeIndex;
+        return (
+          <img
+            key={i}
+            src={src}
+            alt={`overlay-${i}`}
+            style={{
+              position: 'absolute',
+              width: '60vw',
+              maxWidth: 1100,
+              height: '60vh',
+              objectFit: 'cover',
+              borderRadius: 12,
+              boxShadow: '0 60px 120px rgba(0,0,0,0.6)',
+              transform: active ? 'translateY(-4vh) scale(1)' : 'translateY(20vh) scale(0.9)',
+              opacity: active ? 1 : 0,
+              transition: 'opacity 0.9s cubic-bezier(.2,.9,.2,1), transform 0.9s cubic-bezier(.2,.9,.2,1)',
+              willChange: 'transform, opacity',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// Team visual: keep small inline stacked images but main overlay handles the big pop
 function TeamVisual({ images = TEAM_IMAGES }) {
   const containerRef = useRef();
   const imgRefs = useRef([]);
@@ -78,11 +109,11 @@ function TeamVisual({ images = TEAM_IMAGES }) {
 
       imgRefs.current.forEach((img, i) => {
         if (!img) return;
-        const offset = (i - (images.length - 1) / 2) * 40; // horizontal offset
-        const translateY = (1 - progress) * 60 + offset * (1 - progress);
-        const opacity = progress;
+        const offset = (i - (images.length - 1) / 2) * 28;
+        const translateY = (1 - progress) * 40 + offset * (1 - progress);
+        const opacity = Math.max(0, Math.min(1, progress * 1.4 - i * 0.05));
         const rotate = (1 - progress) * (i % 2 === 0 ? -6 : 6);
-        img.style.transform = `translate3d(${offset * (1 - progress)}px, ${translateY}px, 0) rotate(${rotate}deg) scale(${1 + (1 - progress) * 0.05})`;
+        img.style.transform = `translate3d(${offset * (1 - progress)}px, ${translateY}px, 0) rotate(${rotate}deg) scale(${1 + (1 - progress) * 0.04})`;
         img.style.opacity = opacity;
         img.style.filter = `grayscale(${Math.max(0, 1 - progress)})`;
       });
@@ -126,7 +157,7 @@ function TeamVisual({ images = TEAM_IMAGES }) {
 function TeamContent() {
   return (
     <section id="team" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
-      <h1 className="microgramma">Team</h1>
+      <h1 className="microgramma colored">Team</h1>
       <p className="zalando">The Team</p>
       <ul className="zalando">
         <li>Team Leader: Matěj Prokop</li>
@@ -137,7 +168,7 @@ function TeamContent() {
 
       <TeamVisual images={TEAM_IMAGES} />
 
-      <h1 className="microgramma">About Us</h1>
+      <h1 className="microgramma colored">About Us</h1>
       <p className="zalando">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
       <p className="zalando">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
       <p className="zalando">Founded at Nový PORG, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
@@ -149,7 +180,7 @@ function TeamContent() {
 function ScheduleContent() {
   return (
     <section id="schedule" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
-      <h1 className="microgramma">Schedule</h1>
+      <h1 className="microgramma colored">Schedule</h1>
       <p className="zalando">Next up: Poland</p>
       <ol className="zalando">
         <li>Oct 11</li>
@@ -161,7 +192,7 @@ function ScheduleContent() {
 function ContactContent() {
   return (
     <section id="contact" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
-      <h1 className="microgramma">Contact</h1>
+      <h1 className="microgramma colored">Contact</h1>
       <p className="zalando">
         For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a>
       </p>
@@ -172,7 +203,7 @@ function ContactContent() {
 function JoinUsContent() {
   return (
     <section id="joinus" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
-      <h1 className="microgramma">Join Us</h1>
+      <h1 className="microgramma colored">Join Us</h1>
       <p className="zalando">Want the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
     </section>
   );
@@ -317,7 +348,6 @@ function ThreeDCar({ show = true }) {
       targetZ.current = progress * Math.PI * 1.5;
     };
 
-    // attach to the right container
     if (scrollContainer) {
       scrollContainer.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onScroll);
@@ -412,6 +442,11 @@ function ThreeDCar({ show = true }) {
 export default function App() {
   const [page, setPage] = useState("home");
   const [isMobile, setIsMobile] = useState(false);
+  const [showSmallLogo, setShowSmallLogo] = useState(false);
+  const [activeOverlayIndex, setActiveOverlayIndex] = useState(null);
+
+  const centerRef = useRef(null);
+  const teamRef = useRef(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -436,32 +471,96 @@ export default function App() {
     };
   }, []);
 
+  // observe hero to toggle small top-left logo visibility
+  useEffect(() => {
+    const hero = document.getElementById('hero');
+    if (!hero) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        // If hero is not intersecting (i.e., scrolled past) show small logo
+        setShowSmallLogo(!entry.isIntersecting);
+      });
+    }, { threshold: 0.01 });
+    io.observe(hero);
+    return () => io.disconnect();
+  }, []);
+
+  // attach scroll handler to center scroll to control overlay images
+  useEffect(() => {
+    const container = centerRef.current;
+    if (!container) return;
+
+    const onScroll = () => {
+      const team = document.getElementById('team');
+      if (!team) return setActiveOverlayIndex(null);
+      const teamRect = team.getBoundingClientRect();
+      const centerY = container.clientHeight / 2; // center of the scroll viewport
+      // compute progress of team's center relative to container
+      const start = teamRect.top - centerY + teamRect.height * 0.15; // tweak
+      const end = teamRect.top - centerY + teamRect.height * 0.85;
+      const range = end - start || 1;
+      const progress = Math.min(Math.max((centerY - teamRect.top) / teamRect.height, 0), 1);
+
+      // map progress to image index
+      const idx = Math.floor(progress * TEAM_IMAGES.length);
+      if (progress > 0.08 && progress < 0.95) {
+        setActiveOverlayIndex(Math.min(Math.max(idx, 0), TEAM_IMAGES.length - 1));
+      } else {
+        setActiveOverlayIndex(null);
+      }
+    };
+
+    // hide native scrollbar visually while keeping scrolling functional
+    container.style.scrollbarWidth = 'none';
+    container.style.msOverflowStyle = 'none';
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+    return () => {
+      container.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
   const renderScrollableCenter = () => (
     // This is the centered scrollable area the user asked for
     <div
       id="center-scroll"
+      ref={centerRef}
       style={{
-        height: `calc(100vh - var(--topbar-height, 160px))`,
+        height: `calc(100vh)`,
         width: "100%",
         maxWidth: 900,
         margin: "0 auto",
         overflowY: "auto",
-        padding: "24px 16px",
+        padding: "0", // hero will handle padding so overlay lines up
         boxSizing: "border-box",
         zIndex: 2,
         position: "relative",
         WebkitOverflowScrolling: "touch",
       }}
     >
-      <TeamContent />
-      <ScheduleContent />
-      <JoinUsContent />
-      <ContactContent />
-      <section style={{ padding: "40px 0" }}>
-        <h2 className="microgramma">More</h2>
-        <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows in this centered column.</p>
-        <div style={{ height: 800 }} />
+      {/* HERO: only huge logo visible on first view */}
+      <section id="hero" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <NPLogo size={isMobile ? 260 : 520} />
+        </div>
       </section>
+
+      {/* Content columns — these will scroll inside the centered container */}
+      <div style={{ padding: '40px 20px', background: '#000' }}>
+        <div style={{ minHeight: 90 }} />
+        <TeamContent />
+        <ScheduleContent />
+        <JoinUsContent />
+        <ContactContent />
+        <section style={{ padding: '40px 0' }}>
+          <h2 className="microgramma colored">More</h2>
+          <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows in this centered column.</p>
+          <div style={{ height: 800 }} />
+        </section>
+      </div>
     </div>
   );
 
@@ -478,6 +577,7 @@ export default function App() {
     >
       <style>{`
         html { scroll-behavior: smooth; }
+        body { background: #000; }
         @font-face {
           font-family: 'MicrogrammaBold';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -487,15 +587,26 @@ export default function App() {
         }
         .microgramma { font-family: 'MicrogrammaBold', 'Inconsolata', sans-serif; font-weight: 700; letter-spacing: 0.6px; }
         .zalando { font-family: 'Zalando Sans Expanded', 'Inconsolata', sans-serif; }
+
+        /* remove visible scrollbar for the centered scroll container */
+        #center-scroll::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        #center-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+
+        /* colored titles */
+        .colored { color: #ffcc00; }
       `}</style>
 
-      <TopBar onNavigate={setPage} />
+      {/* top-left small logo appears only after hero is out of view */}
+      <TopBar onNavigate={setPage} showSmall={showSmallLogo} />
 
       {/* fixed 3D canvas */}
       <ThreeDCar show={page === "home"} />
 
+      {/* overlay images that pop up */}
+      <ImageOverlay images={TEAM_IMAGES} activeIndex={activeOverlayIndex} />
+
       {/* Centered scrollable text column */}
-      <main style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "var(--topbar-height, 160px)", zIndex: 2 }}>
+      <main style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "0px", zIndex: 2 }}>
         {renderScrollableCenter()}
       </main>
     </div>

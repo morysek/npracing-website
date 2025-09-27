@@ -12,30 +12,8 @@ import { EffectComposer, SSAO } from "@react-three/postprocessing";
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function tween({ from = 0, to = 1, duration = 1000, delay = 0, ease = (x) => x, onUpdate = () => {}, onComplete = () => {} }) {
-  let rafId = 0;
-  let start = 0;
-  const loop = (now) => {
-    if (!start) start = now + delay;
-    if (now < start) {
-      rafId = requestAnimationFrame(loop);
-      return;
-    }
-    const t = clamp((now - start) / duration);
-    const v = from + (to - from) * ease(t);
-    onUpdate(v);
-    if (t < 1) {
-      rafId = requestAnimationFrame(loop);
-    } else {
-      onComplete(v);
-    }
-  };
-  rafId = requestAnimationFrame(loop);
-  return () => cancelAnimationFrame(rafId);
-}
-
 /* -----------------------------
-   Labels data (match the picture)
+   Labels (match the reference layout)
    ----------------------------- */
 const RIGHT_TAGS = ["waapi", "timeline", "stagger", "svg", "spring", "animation"];
 const LEFT_TAGS = ["timer", "easings", "draggable", "scroll", "scope"];
@@ -73,10 +51,9 @@ function NPLogo({ size = 300 }) {
 }
 
 /* -----------------------------
-   3D model that "appears" from the middle
-   (time-based, not scroll-based)
+   3D model appears from center (scroll-based over full range)
    ----------------------------- */
-function InteractiveModel({ onModelLoaded, appear = 0, scale = 600000, isMobile }) {
+function InteractiveModel({ onModelLoaded, progress, scale = 600000, isMobile }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
   const group = useRef();
 
@@ -94,16 +71,19 @@ function InteractiveModel({ onModelLoaded, appear = 0, scale = 600000, isMobile 
 
   useFrame(() => {
     if (!group.current) return;
-    const eased = easeInOutCubic(clamp(appear));
-    const fromZ = isMobile ? 280000 : 420000;
 
-    group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
-    group.current.rotation.y = (1 - eased) * 0.45;
-    group.current.scale.setScalar(0.0001 + eased);
+    // Whole animation plays across the entire scroll [0..1]
+    const p = easeInOutCubic(clamp(progress));
+
+    // Scale up from 0 and move from deep Z toward camera
+    const fromZ = isMobile ? 280000 : 420000;
+    group.current.position.set(0, (1 - p) * (isMobile ? 2.5 : 4), -fromZ * (1 - p));
+    group.current.rotation.y = (1 - p) * 0.45;
+    group.current.scale.setScalar(0.0001 + p);
 
     if (obj) {
       obj.traverse((c) => {
-        if (c.isMesh && c.material) c.material.opacity = clamp(eased);
+        if (c.isMesh && c.material) c.material.opacity = clamp(p);
       });
     }
   });
@@ -116,7 +96,7 @@ function InteractiveModel({ onModelLoaded, appear = 0, scale = 600000, isMobile 
 }
 
 /* -----------------------------
-   Labels + connectors overlay follower
+   Edge labels + connectors (now white, 20px)
    ----------------------------- */
 function LabelsFollower({
   modelObjRef,
@@ -144,7 +124,7 @@ function LabelsFollower({
       const poly = lineRefs.current[i];
       if (!labelEl || !poly) continue;
 
-      // Project anchor
+      // Project anchor to screen
       tmp.current.copy(anchors[i]);
       model.localToWorld(tmp.current);
       tmp.current.project(camera);
@@ -152,7 +132,7 @@ function LabelsFollower({
       const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
       const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
 
-      // Place label at the page edge
+      // Label at edge
       const labelRect = labelEl.getBoundingClientRect();
       const left = isRight ? size.width - edgePadding - labelRect.width : edgePadding;
       const top = ay - labelRect.height / 2;
@@ -160,7 +140,7 @@ function LabelsFollower({
       labelEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       labelEl.style.opacity = tmp.current.z < 1 ? String(a) : "0";
 
-      // Polyline: anchor → diagonal elbow → horizontal to label
+      // Connector: anchor → elbow → horizontal to label
       const dx = isRight ? 120 : -120;
       const dy = isRight ? -60 : 60;
       const elbowX = ax + dx;
@@ -177,10 +157,15 @@ function LabelsFollower({
 }
 
 /* -----------------------------
-   App (no scrollbars, autoplay intro)
+   App: scroll-based timeline over the full hero
+   - Logo starts perfectly centered
+   - Entire animation scrubs with scroll 0→1
+   - Lines + labels visible (white, 20px)
+   - Scrollbars hidden but scrolling works
    ----------------------------- */
 export default function App() {
-  // Refs
+  const heroRef = useRef(null);
+
   const heroLogoRef = useRef(null);
   const modelObjRef = useRef(null);
   const anchorsRef = useRef([]);
@@ -188,12 +173,9 @@ export default function App() {
   const labelDomRefs = useRef([]);
   const lineRefs = useRef([]);
 
-  // State
   const [isMobile, setIsMobile] = useState(false);
-  const [appear, setAppear] = useState(0);
-  const [labelsAlpha, setLabelsAlpha] = useState(0);
+  const [progress, setProgress] = useState(0); // 0..1
 
-  // Responsive
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
     onResize();
@@ -201,7 +183,56 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Create SVG overlay + labels (RIGHT first, then LEFT)
+  // Scroll progress across the hero section
+  useEffect(() => {
+    const onScroll = () => {
+      const el = heroRef.current;
+      if (!el) return;
+      const vh = window.innerHeight;
+      const total = el.offsetHeight - vh; // scrollable distance within hero
+      const y = clamp(window.scrollY, 0, total);
+      const t = total > 0 ? y / total : 0;
+      setProgress(clamp(t));
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Logo transform based on full-range progress
+  useEffect(() => {
+    const el = heroLogoRef.current;
+    if (!el) return;
+
+    // Always start perfectly centered
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.top = "50%";
+    el.style.pointerEvents = "none";
+    el.style.zIndex = "40";
+
+    const startSize = isMobile ? 260 : 520;
+    const endSize = isMobile ? 56 : 90;
+
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    const finalLeft = 16;
+    const finalTop = 14;
+
+    const dx = finalLeft - centerX;
+    const dy = finalTop - centerY;
+
+    const p = easeInOutCubic(clamp(progress));
+    const size = startSize + (endSize - startSize) * p;
+    const scale = size / startSize;
+
+    // Keep the initial center translation permanently, then add the path offset
+    el.style.transform = `translate(-50%, -50%) translate(${dx * p}px, ${dy * p}px) scale(${scale})`;
+    el.style.transformOrigin = "center center";
+  }, [progress, isMobile]);
+
+  // SVG overlay + labels (white, 20px)
   useEffect(() => {
     labelDomRefs.current = [];
     lineRefs.current = [];
@@ -217,29 +248,30 @@ export default function App() {
     svg.style.width = "100%";
     svg.style.height = "100%";
     svg.style.pointerEvents = "none";
-    svg.style.zIndex = "30"; // above canvas, below logo
+    svg.style.zIndex = "35"; // above canvas, below logo
     svg.style.overflow = "visible";
     document.body.appendChild(svg);
 
     const baseLabelCSS = {
-      position: "absolute",
+      position: "fixed", // fixed so they follow the viewport
       left: "0px",
       top: "0px",
       transform: "translate3d(-9999px,-9999px,0)",
       pointerEvents: "none",
       opacity: "0",
-      color: "#d6d3ce",
+      color: "#ffffff", // WHITE
       fontFamily:
         "'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif",
       fontWeight: 700,
-      letterSpacing: "0.02em",
+      letterSpacing: "0.01em",
       textTransform: "lowercase",
-      fontSize: isMobile ? "12px" : "14px",
+      fontSize: "20px", // ~20 as requested
       lineHeight: "1",
       padding: "0",
       background: "transparent",
       border: "none",
       textShadow: "none",
+      zIndex: 36,
     };
 
     const texts = [...RIGHT_TAGS, ...LEFT_TAGS];
@@ -252,11 +284,12 @@ export default function App() {
 
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       poly.setAttribute("fill", "none");
-      poly.setAttribute("stroke", "#8b8781");
-      poly.setAttribute("stroke-width", String(isMobile ? 1 : 1.5));
+      poly.setAttribute("stroke", "#ffffff"); // WHITE lines
+      poly.setAttribute("stroke-width", String(isMobile ? 1.5 : 2));
       poly.setAttribute("stroke-linecap", "round");
       poly.setAttribute("stroke-linejoin", "round");
       poly.setAttribute("opacity", "0");
+      poly.setAttribute("vector-effect", "non-scaling-stroke");
       svg.appendChild(poly);
       lineRefs.current.push(poly);
     });
@@ -267,10 +300,8 @@ export default function App() {
     };
   }, [isMobile]);
 
-  // Compute anchors when model loads: RIGHT side first, then LEFT
+  // Anchors on model (RIGHT first, then LEFT)
   const handleModelLoaded = (loadedObj) => {
-    modelObjRef.current = loadedObj;
-
     const bbox = new THREE.Box3().setFromObject(loadedObj);
     const size = bbox.getSize(new THREE.Vector3());
     const min = bbox.min;
@@ -278,185 +309,121 @@ export default function App() {
 
     const anchors = [];
 
+    // RIGHT (upper spread)
     for (let i = 0; i < RIGHT_TAGS.length; i++) {
       const t = (i + 1) / (RIGHT_TAGS.length + 1);
       const x = max.x - size.x * 0.02;
       const y = max.y - t * size.y;
-      const z = min.z + 0.4 * size.z;
+      const z = min.z + 0.45 * size.z;
       anchors.push(new THREE.Vector3(x, y, z));
     }
 
+    // LEFT (lower spread)
     for (let i = 0; i < LEFT_TAGS.length; i++) {
       const t = (i + 1) / (LEFT_TAGS.length + 1);
       const x = min.x + size.x * 0.02;
       const y = min.y + t * size.y * 0.85;
-      const z = min.z + 0.6 * size.z;
+      const z = min.z + 0.55 * size.z;
       anchors.push(new THREE.Vector3(x, y, z));
     }
 
     anchorsRef.current = anchors;
+    modelObjRef.current = loadedObj;
   };
 
-  // Autoplay intro: center logo → top-left, car appears, then labels fade in
-  useEffect(() => {
-    const el = heroLogoRef.current;
-    if (!el) return;
-
-    // Ensure perfectly centered at start
-    el.style.left = "50%";
-    el.style.top = "50%";
-    el.style.position = "fixed";
-    el.style.transform = "translate3d(-50%,-50%,0) scale(1)";
-    el.style.transformOrigin = "left top";
-    el.style.zIndex = "40";
-    el.style.pointerEvents = "none";
-    el.style.willChange = "transform";
-
-    const startSize = isMobile ? 260 : 520;
-    const endSize = isMobile ? 56 : 90;
-
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const finalLeft = 16;
-    const finalTop = 14;
-    const dx = finalLeft - centerX;
-    const dy = finalTop - centerY;
-
-    const cancels = [];
-
-    // 1) Logo fly + resize to top-left
-    cancels.push(
-      tween({
-        duration: 1100,
-        ease: easeInOutCubic,
-        onUpdate: (t) => {
-          const size = startSize + (endSize - startSize) * t;
-          const scale = size / startSize;
-          el.style.transform = `translate3d(${dx * t}px, ${dy * t}px, 0) scale(${scale})`;
-        },
-        onComplete: () => {
-          // lock at exact pixel values (no fractional transforms)
-          el.style.transition = "none";
-          el.style.left = `${finalLeft}px`;
-          el.style.top = `${finalTop}px`;
-          el.style.transform = `translate3d(0,0,0) scale(${endSize / startSize})`;
-          el.style.transformOrigin = "left top";
-        },
-      })
-    );
-
-    // 2) Car appearance (slight delay)
-    cancels.push(
-      tween({
-        delay: 200,
-        duration: 1200,
-        ease: easeInOutCubic,
-        onUpdate: setAppear,
-      })
-    );
-
-    // 3) Labels fade-in (start after car settles)
-    cancels.push(
-      tween({
-        delay: 1100,
-        duration: 500,
-        ease: (t) => t,
-        onUpdate: setLabelsAlpha,
-      })
-    );
-
-    return () => cancels.forEach((c) => c && c());
-  }, [isMobile]);
-
-  // No scrollbars at all
-  useEffect(() => {
-    const prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = prevOverflow;
-    };
-  }, []);
+  // Hide scrollbars but keep page scrollable
+  const heroHeightVh = 220;
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#191919", position: "relative" }}>
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative" }}>
       <style>{`
         html, body, #root { height: 100%; background: #191919; }
-        body { margin: 0; overscroll-behavior: contain; }
-        /* hide scrollbars cross-browser (defensive) */
-        body::-webkit-scrollbar { display: none; }
+        body { margin: 0; overflow-y: scroll; overscroll-behavior-y: none; }
+        /* Hide scrollbars while keeping scrolling functional */
+        body::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        body { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
 
-      {/* Site-level logo (centered at start, animates to top-left) */}
-      <div
-        ref={heroLogoRef}
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: "50%",
-          transform: "translate3d(-50%,-50%,0) scale(1)",
-          zIndex: 40,
-          pointerEvents: "none",
-          willChange: "transform",
-        }}
-        aria-hidden
-      >
-        <NPLogo size={isMobile ? 260 : 520} />
-      </div>
+      {/* HERO section drives the scroll progress */}
+      <section ref={heroRef} style={{ height: `${heroHeightVh}vh`, position: "relative" }}>
+        {/* Sticky stack */}
+        <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
+          {/* Site-level logo (centered at start; scrubs to top-left) */}
+          <div
+            ref={heroLogoRef}
+            style={{
+              position: "fixed",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 40,
+              pointerEvents: "none",
+              willChange: "transform",
+            }}
+            aria-hidden
+          >
+            <NPLogo size={isMobile ? 260 : 520} />
+          </div>
 
-      {/* Canvas */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
-        <Canvas
-          shadows
-          dpr={[1, 2]}
-          camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
-          style={{ width: "100%", height: "100%" }}
-          onCreated={({ gl, scene }) => {
-            gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap;
-            if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
-            gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 0.6;
-            scene.background = new THREE.Color(0x191919);
-          }}
-        >
-          <ambientLight intensity={0.12} />
-          <directionalLight intensity={1.8} position={[5, 10, 5]} />
-          <Suspense fallback={null}>
-            <Environment preset="city" background={false} />
-            <Center>
-              <InteractiveModel
-                onModelLoaded={handleModelLoaded}
-                appear={appear}
-                isMobile={isMobile}
-                scale={isMobile ? 300000 : 600000}
+          {/* Canvas */}
+          <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
+            <Canvas
+              shadows
+              dpr={[1, 2]}
+              camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
+              style={{ width: "100%", height: "100%" }}
+              onCreated={({ gl, scene }) => {
+                gl.shadowMap.enabled = true;
+                gl.shadowMap.type = THREE.PCFSoftShadowMap;
+                if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
+                gl.toneMapping = THREE.ACESFilmicToneMapping;
+                gl.toneMappingExposure = 0.6;
+                scene.background = new THREE.Color(0x191919);
+              }}
+            >
+              <ambientLight intensity={0.12} />
+              <directionalLight intensity={1.8} position={[5, 10, 5]} />
+              <Suspense fallback={null}>
+                <Environment preset="city" background={false} />
+                <Center>
+                  <InteractiveModel
+                    onModelLoaded={handleModelLoaded}
+                    progress={progress} // full-range scroll
+                    isMobile={isMobile}
+                    scale={isMobile ? 300000 : 600000}
+                  />
+                </Center>
+                <ContactShadows
+                  rotation-x={-Math.PI / 2}
+                  position={[0, -1, 0]}
+                  width={20}
+                  height={20}
+                  blur={1}
+                  opacity={0.45}
+                  far={10}
+                />
+              </Suspense>
+
+              {/* White edge labels + lines (visible across the range) */}
+              <LabelsFollower
+                modelObjRef={modelObjRef}
+                anchorsRef={anchorsRef}
+                labelDomRefs={labelDomRefs}
+                lineRefs={lineRefs}
+                alpha={Math.max(0, Math.min(1, (progress - 0.2) / 0.2))} // fade in around 20% scroll
+                rightCount={RIGHT_TAGS.length}
               />
-            </Center>
-            <ContactShadows
-              rotation-x={-Math.PI / 2}
-              position={[0, -1, 0]}
-              width={20}
-              height={20}
-              blur={1}
-              opacity={0.45}
-              far={10}
-            />
-          </Suspense>
 
-          {/* Edge labels + polylines (visible after labelsAlpha > 0) */}
-          <LabelsFollower
-            modelObjRef={modelObjRef}
-            anchorsRef={anchorsRef}
-            labelDomRefs={labelDomRefs}
-            lineRefs={lineRefs}
-            alpha={labelsAlpha}
-            rightCount={RIGHT_TAGS.length}
-          />
+              <EffectComposer multisampling={4}>
+                <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
+              </EffectComposer>
+            </Canvas>
+          </div>
+        </div>
+      </section>
 
-          <EffectComposer multisampling={4}>
-            <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
-          </EffectComposer>
-        </Canvas>
-      </div>
+      {/* Minimal content after hero to allow scrolling beyond it (optional) */}
+      <div style={{ height: "40vh" }} />
     </div>
   );
 }

@@ -64,38 +64,7 @@ function TopBar({ onNavigate, showSmall }) {
   );
 }
 
-// image overlay that pops images while scrolling (like thevariable.com)
-function ImageOverlay({ images = TEAM_IMAGES, activeIndex }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      {images.map((src, i) => {
-        const active = i === activeIndex;
-        return (
-          <img
-            key={i}
-            src={src}
-            alt={`overlay-${i}`}
-            style={{
-              position: 'absolute',
-              width: '60vw',
-              maxWidth: 1100,
-              height: '60vh',
-              objectFit: 'cover',
-              borderRadius: 12,
-              boxShadow: '0 60px 120px rgba(0,0,0,0.6)',
-              transform: active ? 'translateY(-4vh) scale(1)' : 'translateY(20vh) scale(0.9)',
-              opacity: active ? 1 : 0,
-              transition: 'opacity 0.9s cubic-bezier(.2,.9,.2,1), transform 0.9s cubic-bezier(.2,.9,.2,1)',
-              willChange: 'transform, opacity',
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-// Team visual: keep small inline stacked images but main overlay handles the big pop
+// Team visual: small inline images with corrected aspect-ratio
 function TeamVisual({ images = TEAM_IMAGES }) {
   const containerRef = useRef();
   const imgRefs = useRef([]);
@@ -139,7 +108,8 @@ function TeamVisual({ images = TEAM_IMAGES }) {
             alt={`team-${i}`}
             style={{
               width: 320,
-              height: 220,
+              aspectRatio: '16/9',
+              height: 'auto',
               objectFit: "cover",
               position: "absolute",
               boxShadow: "0 30px 60px rgba(0,0,0,0.6)",
@@ -294,11 +264,20 @@ function AutoRotate({ modelRef }) {
 }
 
 // This component runs inside the Canvas and animates the Z rotation
-function ScrollDrivenRotation({ modelRef, targetZRef }) {
+function ScrollDrivenRotation({ modelRef, targetZRef, showCar }) {
   const currentZ = useRef(0);
   useFrame(() => {
     const obj = modelRef.current;
     if (!obj) return;
+    // if the car hasn't been revealed yet, keep it hidden/invisible by scaling down
+    if (!showCar) {
+      obj.scale.setScalar(0.001);
+      return;
+    }
+
+    // once revealed, ensure the model scales to normal and apply rotation
+    obj.scale.lerp(new THREE.Vector3(1, 1, 1), 0.07);
+
     // lerp currentZ -> targetZ
     currentZ.current += (targetZRef.current - currentZ.current) * 0.12;
     obj.rotation.z = currentZ.current;
@@ -306,7 +285,7 @@ function ScrollDrivenRotation({ modelRef, targetZRef }) {
   return null;
 }
 
-function ThreeDCar({ show = true }) {
+function ThreeDCar({ show = true, reveal }) {
   const [loading, setLoading] = useState(true);
   const modelRef = useRef();
   const [isMobile, setIsMobile] = useState(false);
@@ -345,6 +324,7 @@ function ThreeDCar({ show = true }) {
     const onScroll = () => {
       const { scrollTop, maxScroll } = getScrollInfo();
       const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
+      // rotate up to 1.5 * PI radians around Z as user scrolls from top -> bottom
       targetZ.current = progress * Math.PI * 1.5;
     };
 
@@ -367,6 +347,16 @@ function ThreeDCar({ show = true }) {
       }
     };
   }, []);
+
+  // when reveal flips to true, snap the model into its reveal orientation (45deg Y)
+  useEffect(() => {
+    if (!modelRef.current) return;
+    if (reveal) {
+      // set a nice preview angle: tilt slightly down and rotate to 45deg
+      modelRef.current.rotation.set(-0.25, Math.PI / 4, 0);
+      modelRef.current.scale.set(0.001, 0.001, 0.001); // start small and scale in via ScrollDrivenRotation
+    }
+  }, [reveal]);
 
   if (!show) return null;
 
@@ -427,7 +417,7 @@ function ThreeDCar({ show = true }) {
           </Center>
 
           <AutoRotate modelRef={modelRef} />
-          <ScrollDrivenRotation modelRef={modelRef} targetZRef={targetZ} />
+          <ScrollDrivenRotation modelRef={modelRef} targetZRef={targetZ} showCar={reveal} />
           <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
         </Suspense>
 
@@ -439,14 +429,54 @@ function ThreeDCar({ show = true }) {
   );
 }
 
+// overlay labels that point to parts of the car
+function LabelsOverlay({ show }) {
+  // coordinates are relative to the center of viewport
+  const size = { w: window.innerWidth, h: window.innerHeight };
+  const centerX = size.w / 2;
+  const centerY = size.h / 2;
+
+  // simple positions for 4 labels around the car
+  const labels = [
+    { text: 'Team', x: centerX - 380, y: centerY - 120, toX: centerX - 80, toY: centerY - 60 },
+    { text: 'Schedule', x: centerX + 220, y: centerY - 160, toX: centerX + 60, toY: centerY - 20 },
+    { text: 'Contact', x: centerX - 420, y: centerY + 60, toX: centerX - 60, toY: centerY + 60 },
+    { text: 'Join Us', x: centerX + 240, y: centerY + 80, toX: centerX + 80, toY: centerY + 80 },
+  ];
+
+  if (!show) return null;
+
+  return (
+    <svg style={{ position: 'fixed', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
+      {labels.map((l, i) => (
+        <g key={i}>
+          <line
+            x1={l.x}
+            y1={l.y}
+            x2={l.toX}
+            y2={l.toY}
+            stroke="#ffcc00"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            opacity={0.9}
+          />
+          <rect x={l.x - 6} y={l.y - 18} rx={3} ry={3} width={80} height={28} fill="#000" opacity={0.6} />
+          <text x={l.x + 8} y={l.y} fill="#ffcc00" fontFamily="'Zalando Sans Expanded', sans-serif" fontSize={14} fontWeight={600}>
+            {l.text}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [isMobile, setIsMobile] = useState(false);
   const [showSmallLogo, setShowSmallLogo] = useState(false);
-  const [activeOverlayIndex, setActiveOverlayIndex] = useState(null);
+  const [revealCar, setRevealCar] = useState(false);
 
   const centerRef = useRef(null);
-  const teamRef = useRef(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -471,48 +501,50 @@ export default function App() {
     };
   }, []);
 
-  // observe hero to toggle small top-left logo visibility
+  // observe hero to toggle small top-left logo visibility (we still keep hero visible but shrinking)
   useEffect(() => {
     const hero = document.getElementById('hero');
     if (!hero) return;
     const io = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        // If hero is not intersecting (i.e., scrolled past) show small logo
+        // If hero is mostly visible, hide small logo. When hero shrinks away, show small one
         setShowSmallLogo(!entry.isIntersecting);
       });
-    }, { threshold: 0.01 });
+    }, { threshold: 0.15 });
     io.observe(hero);
     return () => io.disconnect();
   }, []);
 
-  // attach scroll handler to center scroll to control overlay images
+  // scroll handler on the center container to animate logo -> top-left and reveal car
   useEffect(() => {
     const container = centerRef.current;
     if (!container) return;
 
     const onScroll = () => {
-      const team = document.getElementById('team');
-      if (!team) return setActiveOverlayIndex(null);
-      const teamRect = team.getBoundingClientRect();
-      const centerY = container.clientHeight / 2; // center of the scroll viewport
-      // compute progress of team's center relative to container
-      const start = teamRect.top - centerY + teamRect.height * 0.15; // tweak
-      const end = teamRect.top - centerY + teamRect.height * 0.85;
-      const range = end - start || 1;
-      const progress = Math.min(Math.max((centerY - teamRect.top) / teamRect.height, 0), 1);
+      const hero = document.getElementById('hero');
+      if (!hero) return;
+      const heroRect = hero.getBoundingClientRect();
+      // progress 0..1 where 0 = top-of-hero, 1 = hero collapsed to its final small state
+      const start = 0; // hero top
+      const end = heroRect.height * 0.6; // when scrolled 60% of hero height
+      const scrollTop = container.scrollTop;
+      const progress = Math.min(Math.max(scrollTop / Math.max(end, 1), 0), 1);
 
-      // map progress to image index
-      const idx = Math.floor(progress * TEAM_IMAGES.length);
-      if (progress > 0.08 && progress < 0.95) {
-        setActiveOverlayIndex(Math.min(Math.max(idx, 0), TEAM_IMAGES.length - 1));
-      } else {
-        setActiveOverlayIndex(null);
+      // when progress passes 0.18 reveal the car
+      if (progress > 0.18) setRevealCar(true);
+      else setRevealCar(false);
+
+      // transform the hero logo: scale and translate
+      const logoEl = document.getElementById('hero-logo');
+      if (logoEl) {
+        const startSize = isMobile ? 260 : 520;
+        const endSize = isMobile ? 60 : 90;
+        const size = startSize + (endSize - startSize) * progress;
+        logoEl.style.transform = `translate3d(${ - (window.innerWidth / 2 - 56) * progress}px, ${- (heroRect.height / 2 - 28) * progress}px, 0) scale(${size / startSize})`;
+        logoEl.style.transition = 'transform 0s';
+        logoEl.style.transformOrigin = 'center left';
       }
     };
-
-    // hide native scrollbar visually while keeping scrolling functional
-    container.style.scrollbarWidth = 'none';
-    container.style.msOverflowStyle = 'none';
 
     container.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
@@ -521,7 +553,7 @@ export default function App() {
       container.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, []);
+  }, [isMobile]);
 
   const renderScrollableCenter = () => (
     // This is the centered scrollable area the user asked for
@@ -534,32 +566,28 @@ export default function App() {
         maxWidth: 900,
         margin: "0 auto",
         overflowY: "auto",
-        padding: "0", // hero will handle padding so overlay lines up
+        padding: "0",
         boxSizing: "border-box",
         zIndex: 2,
         position: "relative",
         WebkitOverflowScrolling: "touch",
       }}
     >
-      {/* HERO: only huge logo visible on first view */}
-      <section id="hero" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* HERO: only huge logo visible on first view; keeps sticky so user doesn't scroll past it */}
+      <section id="hero" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', position: 'relative' }}>
+        <div id="hero-logo" style={{ willChange: 'transform', transition: 'transform 0.15s linear' }}>
           <NPLogo size={isMobile ? 260 : 520} />
         </div>
       </section>
 
       {/* Content columns — these will scroll inside the centered container */}
       <div style={{ padding: '40px 20px', background: '#000' }}>
-        <div style={{ minHeight: 90 }} />
+        <div style={{ minHeight: 20 }} />
         <TeamContent />
         <ScheduleContent />
         <JoinUsContent />
         <ContactContent />
-        <section style={{ padding: '40px 0' }}>
-          <h2 className="microgramma colored">More</h2>
-          <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows in this centered column.</p>
-          <div style={{ height: 800 }} />
-        </section>
+        <div style={{ height: 140 }} />
       </div>
     </div>
   );
@@ -594,16 +622,19 @@ export default function App() {
 
         /* colored titles */
         .colored { color: #ffcc00; }
+
+        /* ensure hero logo transforms smoothly */
+        #hero-logo svg { display: block; }
       `}</style>
 
       {/* top-left small logo appears only after hero is out of view */}
       <TopBar onNavigate={setPage} showSmall={showSmallLogo} />
 
-      {/* fixed 3D canvas */}
-      <ThreeDCar show={page === "home"} />
+      {/* fixed 3D canvas. reveal prop toggles appearance once logo moves */}
+      <ThreeDCar show={page === "home"} reveal={revealCar} />
 
-      {/* overlay images that pop up */}
-      <ImageOverlay images={TEAM_IMAGES} activeIndex={activeOverlayIndex} />
+      {/* labels that point to parts of the car (appear when car revealed) */}
+      <LabelsOverlay show={revealCar} />
 
       {/* Centered scrollable text column */}
       <main style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "0px", zIndex: 2 }}>

@@ -6,17 +6,9 @@ import { Environment, Center, ContactShadows } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-/**
- * Notes:
- * - Put your fonts in /public/fonts (or keep using Google Fonts).
- * - Put F1.obj in /public/models/F1.obj
- * - This file hides textual sections (per your request) and exposes only the
- *   fixed logo + 3D car reveal interaction.
- */
-
-/* -------------------------
-   Simple NP Logo component
-   ------------------------- */
+/* -----------------------
+   Simple NP Logo (SVG)
+   ----------------------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -28,7 +20,7 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* SVG body (same as before) */}
+      {/* full SVG content copied from your original */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -47,13 +39,13 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* ---------------------------
-   Manual OBJ loader component
-   (no R3F hooks outside Canvas)
-   --------------------------- */
+/* -------------------------
+   Manual OBJ loader (no R3F hooks outside Canvas)
+   ------------------------- */
 function InteractiveModel({ onLoad, controlRef, scale }) {
   const [obj, setObj] = useState(null);
   const group = useRef();
+
   useEffect(() => {
     let cancelled = false;
     const loader = new OBJLoader();
@@ -80,12 +72,10 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
       },
       undefined,
       (err) => {
-        console.error("Failed to load OBJ:", err);
+        console.error("OBJ load error:", err);
       }
     );
-    return () => {
-      cancelled = true;
-    };
+    return () => (cancelled = true);
   }, [onLoad, controlRef]);
 
   if (!obj) return null;
@@ -97,54 +87,51 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
 }
 
 /* -------------------------
-   Scroll-driven rotation hook
-   (runs inside Canvas)
+   Simple subtle model rotation (auto, not bound to scroll)
    ------------------------- */
-function ScrollDrivenRotation({ modelRef, targetZRef, showCar }) {
-  const currentZ = useRef(0);
-  useFrame(() => {
+function AutoRotate({ modelRef }) {
+  useFrame((_, delta) => {
     const obj = modelRef.current;
     if (!obj) return;
-    if (!showCar) {
-      // keep tiny when not revealed
-      obj.scale.setScalar(0.001);
-      return;
-    }
-    // scale in gently
-    obj.scale.lerp(new THREE.Vector3(1, 1, 1), 0.07);
-    // lerp rotation Z
-    currentZ.current += (targetZRef.current - currentZ.current) * 0.12;
-    obj.rotation.z = currentZ.current;
+    // slow idle rotation so the model feels alive
+    obj.rotation.y += 0.002 * delta;
+    obj.rotation.x += 0.001 * delta;
   });
   return null;
 }
 
 /* -------------------------
-   3D canvas wrapper
+   3D Canvas wrapper (appears on reveal)
    ------------------------- */
-function ThreeDCar({ reveal }) {
+function ThreeDCar({ reveal, scaleMultiplier = 1 }) {
   const modelRef = useRef();
   const [loaded, setLoaded] = useState(false);
-  const targetZ = useRef(0);
 
-  // NOTE: camera and scale are set large because the model is in its own units.
+  // camera based on device
+  const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
+  const cameraPos = isMobile ? [0, 0, 100000 * scaleMultiplier] : [0, 0, 200000 * scaleMultiplier];
+  const modelScale = isMobile ? 300000 * scaleMultiplier : 600000 * scaleMultiplier;
+
+  if (!reveal) return null;
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
         background: "transparent",
-        display: reveal ? "flex" : "none", // only show canvas when reveal true
+        display: "flex",
         justifyContent: "center",
         alignItems: "center",
         pointerEvents: "none",
-        zIndex: 2,
+        zIndex: 5,
       }}
+      aria-hidden
     >
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0, 200000], fov: 7, near: 10000, far: 500000 }}
+        camera={{ position: cameraPos, fov: 7, near: 10000, far: 500000 }}
         style={{ width: "100%", height: "100%", pointerEvents: "none" }}
         onCreated={({ gl, scene }) => {
           gl.shadowMap.enabled = true;
@@ -152,26 +139,24 @@ function ThreeDCar({ reveal }) {
           if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 0.6;
-          scene.background = new THREE.Color(0x101720);
+          scene.background = new THREE.Color(0x191919);
         }}
       >
         <ambientLight intensity={0.12} />
-        <directionalLight intensity={2} position={[5, 10, 5]} />
+        <directionalLight intensity={1.8} position={[5, 10, 5]} />
 
         <Suspense fallback={null}>
           <Environment preset="city" background={false} />
           <Center>
-            <InteractiveModel onLoad={() => setLoaded(true)} controlRef={modelRef} scale={600000} />
+            <InteractiveModel onLoad={() => setLoaded(true)} controlRef={modelRef} scale={modelScale} />
           </Center>
 
-          {/* subtle breathing */}
-          <ScrollDrivenRotation modelRef={modelRef} targetZRef={targetZ} showCar={reveal} />
-
-          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
+          <AutoRotate modelRef={modelRef} />
+          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
         </Suspense>
 
         <EffectComposer multisampling={4}>
-          <SSAO samples={21} radius={60000000} intensity={35} luminanceInfluence={0.6} color="black" />
+          <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
         </EffectComposer>
       </Canvas>
     </div>
@@ -179,19 +164,59 @@ function ThreeDCar({ reveal }) {
 }
 
 /* -------------------------
-   Main App — smooth/virtual scroll + fixed logo
+   Labels overlay (SVG)
+   ------------------------- */
+function LabelsOverlay({ visible, mobileScale = 1 }) {
+  if (!visible) return null;
+
+  // Positions are approximate and relative to viewport center; adjust to taste.
+  const w = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const h = typeof window !== "undefined" ? window.innerHeight : 900;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  // Points outward from the car center toward labels
+  const labels = [
+    { text: "Team", x: cx - 360 * mobileScale, y: cy - 120 * mobileScale, toX: cx - 80 * mobileScale, toY: cy - 40 * mobileScale },
+    { text: "Schedule", x: cx + 240 * mobileScale, y: cy - 170 * mobileScale, toX: cx + 60 * mobileScale, toY: cy - 20 * mobileScale },
+    { text: "Contact", x: cx - 420 * mobileScale, y: cy + 60 * mobileScale, toX: cx - 60 * mobileScale, toY: cy + 60 * mobileScale },
+    { text: "Join Us", x: cx + 260 * mobileScale, y: cy + 90 * mobileScale, toX: cx + 80 * mobileScale, toY: cy + 80 * mobileScale },
+  ];
+
+  return (
+    <svg style={{ position: "fixed", inset: 0, zIndex: 10, pointerEvents: "none" }}>
+      {labels.map((l, i) => (
+        <g key={i}>
+          <line x1={l.x} y1={l.y} x2={l.toX} y2={l.toY} stroke="#ffcc00" strokeWidth={2} strokeLinecap="round" opacity={0.95} />
+          <rect x={l.x - 8} y={l.y - 20} rx={4} ry={4} width={88} height={28} fill="#000" opacity={0.6} />
+          <text x={l.x + 8} y={l.y - 1} fill="#ffcc00" fontFamily="'Zalando Sans Expanded', sans-serif" fontSize={14} fontWeight={700}>
+            {l.text}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* -------------------------
+   Main App — one-time animation
    ------------------------- */
 export default function App() {
-  // virtual scroll
-  const containerRef = useRef(null);
-  const targetScroll = useRef(0);
-  const currentScroll = useRef(0);
-  const rafRef = useRef(null);
-
-  // reveal flags
+  const fixedLogoRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [animationStarted, setAnimationStarted] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
   const [revealCar, setRevealCar] = useState(false);
 
-  // set up Google font for Zalando Expanded (optional)
+  // responsive sizes
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // load Google font (optional)
   useEffect(() => {
     const link = document.createElement("link");
     link.href = "https://fonts.googleapis.com/css2?family=Zalando+Sans+Expanded:wght@400;600;700&display=swap";
@@ -200,169 +225,146 @@ export default function App() {
     return () => document.head.removeChild(link);
   }, []);
 
-  // create a big scroll area to let user scroll and drive the animation
-  // we hide textual content — per your request — so we only provide space for scroll
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // compute transform endpoints for logo: center -> top-left
+  function computeLogoMotion() {
+    const startSize = isMobile ? 260 : 520;
+    const endSize = isMobile ? 56 : 90; // small top-left logo size
+    // starting center position
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    // final top-left position (absolute coordinates relative to viewport)
+    const finalLeft = 24; // px from left
+    const finalTop = 16; // px from top
+    // delta from center to final target
+    const dx = finalLeft - centerX;
+    const dy = finalTop - centerY;
+    return { startSize, endSize, dx, dy, centerX, centerY };
+  }
 
-    // hide native scrollbar visually
-    el.style.scrollbarWidth = "none";
-    el.style.msOverflowStyle = "none";
+  // one-time animation: lerp progress 0 -> 1 over duration ms
+  function startOneTimeAnimation(duration = 900) {
+    if (animationStarted) return;
+    setAnimationStarted(true);
+    const start = performance.now();
+    const { startSize, endSize, dx, dy } = computeLogoMotion();
+    const el = fixedLogoRef.current;
+    if (!el) {
+      // fallback: just reveal car
+      setRevealCar(true);
+      setAnimationDone(true);
+      return;
+    }
 
-    // update target on native scroll
-    const onScroll = () => {
-      targetScroll.current = el.scrollTop;
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-
-    // animation frame loop: lerp currentScroll -> targetScroll, compute progress
-    const tick = () => {
-      currentScroll.current += (targetScroll.current - currentScroll.current) * 0.12;
-      const heroHeight = el.clientHeight; // use viewport height as hero size
-      const progress = Math.min(Math.max(currentScroll.current / Math.max(heroHeight * 0.6, 1), 0), 1); // 0..1
-      // trigger reveal when logo starts shrinking (small threshold)
-      setRevealCar(progress > 0.05);
-      // compute a desired Z rotation for the car (we store it on window so ThreeDCar can read if needed)
-      // but instead we'll place it into a shared ref via window (or a custom event). Simpler: expose on window.
-      // (Better: we could use a context or prop drilling — but ThreeDCar uses its own internal targetZ ref; we'll set it via a small custom event)
-      window.__NPRACING_scroll_progress = progress;
-
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-
-    // cleanup
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  // For ThreeDCar rotation we will poll window.__NPRACING_scroll_progress inside a small RAF hook
-  // We'll pass the targetZ via a global ref the ThreeDCar's ScrollDrivenRotation can access.
-  // But to keep things self-contained, we'll update a small global target used by ScrollDrivenRotation.
-  useEffect(() => {
-    // provide a small updater that transforms progress -> targetZ and writes to window.__NPRACING_targetZ
-    const loop = () => {
-      const progress = window.__NPRACING_scroll_progress || 0;
-      const z = progress * Math.PI * 1.5; // same mapping as before
-      window.__NPRACING_targetZ = z;
-      requestAnimationFrame(loop);
-    };
-    const id = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  /* Logo transform calculation:
-     - logo is a fixed element so it never disappears
-     - we lerp its transform based on the smoothed scroll progress (window.__NPRACING_scroll_progress)
-  */
-  useEffect(() => {
-    // small RAF loop to apply logo transform smoothly (uses same virtual progress value)
-    let raf = null;
-    const el = document.getElementById("fixed-logo");
-    const loop = () => {
-      const p = window.__NPRACING_scroll_progress || 0; // 0..1
-      // ease the progress a bit
-      const eased = Math.min(1, Math.pow(p, 0.9));
-      if (el) {
-        // interpolate size from big to small
-        const startSize = window.innerWidth <= 768 ? 260 : 520;
-        const endSize = window.innerWidth <= 768 ? 60 : 90;
-        const size = startSize + (endSize - startSize) * eased;
-        // compute translation: move from center to top-left (we'll offset center -> left 56px, top 28px)
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const targetLeft = 56; // final left margin
-        const targetTop = 28; // final top margin
-        // when at eased=0: translate to center with scale 1
-        // when at eased=1: translate to top-left with scale endSize/startSize
-        // compute translation in px; easier to compute a transform with translate and scale:
-        // compute deltaX from center to targetLeft
-        const dx = targetLeft - centerX;
-        const dy = targetTop - centerY;
-        // We will translate by dx*eased, dy*eased and scale by (size/startSize)
-        const scale = size / startSize;
-        el.style.transform = `translate3d(${dx * eased}px, ${dy * eased}px, 0) scale(${scale})`;
-        // ensure transform origin top-left-ish for a nicer look
-        el.style.transformOrigin = "center left";
+    // animation loop
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      // ease - smoothstep-like
+      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      // compute scale and translation
+      const size = startSize + (endSize - startSize) * eased;
+      const scale = size / startSize;
+      const translateX = dx * eased;
+      const translateY = dy * eased;
+      el.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+      if (t >= 0.18 && !revealCar) {
+        // reveal car once logo begins moving (small threshold)
+        setRevealCar(true);
       }
-      raf = requestAnimationFrame(loop);
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        // finalize
+        setAnimationDone(true);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // attach first-user interaction listeners to trigger the one-time animation
+  useEffect(() => {
+    function onFirstInteraction() {
+      startOneTimeAnimation(900);
+      // remove listeners (one-time)
+      window.removeEventListener("wheel", onFirstInteraction);
+      window.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("mousedown", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+    }
+    window.addEventListener("wheel", onFirstInteraction, { passive: true });
+    window.addEventListener("touchstart", onFirstInteraction, { passive: true });
+    window.addEventListener("mousedown", onFirstInteraction);
+    window.addEventListener("keydown", onFirstInteraction);
+    // also allow clicking the centered logo
+    const logo = fixedLogoRef.current;
+    if (logo) logo.addEventListener("click", onFirstInteraction);
+    return () => {
+      window.removeEventListener("wheel", onFirstInteraction);
+      window.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("mousedown", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+      if (logo) logo.removeEventListener("click", onFirstInteraction);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Render
-     - fixed logo always visible and independent of scroll container
-     - scroll container exists to provide scroll interaction
-     - hide textual content (per your ask)
-  */
+  // small top-left logo is always visible; we show it in top-left absolutely.
+  // center logo is fixed and will animate to top-left.
+  // when animationDone true we can hide the center-logo's pointer-events (already none) — it's fine.
+
+  // mobile scale pass to overlays
+  const mobileScale = isMobile ? 0.7 : 1;
+
   return (
     <div
       style={{
         width: "100vw",
         minHeight: "100vh",
-        background: "#101720",
+        background: "#191919",
         overflow: "hidden",
         position: "relative",
         fontFamily: "'Zalando Sans Expanded', 'Inconsolata', sans-serif",
         color: "#fff",
       }}
     >
-      {/* Inject small CSS: hide native scrollbars from the center container, etc. */}
+      {/* global styles */}
       <style>{`
-        /* hide scrollbar for the centered scroll container */
-        #center-scroll::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
-        #center-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        body { background: #191919; margin:0; }
       `}</style>
 
-      {/* Fixed logo that is always on screen (separate from the scroll container) */}
+      {/* top-left logo (always present, absolute to top) */}
+      <div style={{ position: "fixed", left: 16, top: 12, zIndex: 40, pointerEvents: "none" }} aria-hidden>
+        <NPLogo size={isMobile ? 56 : 90} />
+      </div>
+
+      {/* centered fixed logo (the big one that animates to top-left once) */}
       <div
-        id="fixed-logo"
+        id="centered-logo"
+        ref={fixedLogoRef}
         style={{
           position: "fixed",
           left: "50%",
           top: "50%",
           transform: "translate3d(-50%, -50%, 0) scale(1)",
-          zIndex: 10,
-          pointerEvents: "none",
-          transition: "transform 0.12s linear",
+          zIndex: 30,
+          pointerEvents: "auto", // allow click to trigger animation
           willChange: "transform",
+          touchAction: "manipulation",
         }}
-        aria-hidden
-      >
-        <NPLogo size={520} />
-      </div>
-
-      {/* ThreeDCar: reveal when logo starts shrinking */}
-      <ThreeDCar reveal={revealCar} />
-
-      {/* Centered scroll container provides the scroll energy to drive the reveal.
-          We intentionally hide textual sections. A large spacer is used so the user can scroll
-          and move the logo — you can reduce/increase spacerHeight to control how much scroll is required. */}
-      <div
-        id="center-scroll"
-        ref={containerRef}
-        style={{
-          height: "100vh",
-          width: "100%",
-          maxWidth: 900,
-          margin: "0 auto",
-          overflowY: "auto",
-          position: "relative",
-          zIndex: 1,
+        onClick={() => {
+          // clicking the big logo should trigger the one-time animation too
+          startOneTimeAnimation(900);
         }}
       >
-        {/* HERO area (visually empty since the logo is fixed) */}
-        <section id="hero" style={{ height: "100vh", background: "transparent" }} />
-
-        {/* Hidden textual content — we keep this area empty / hidden per your request.
-            Put content here later when you're ready. */}
-        <section style={{ height: 1600 /* big scrollable spacer */ }} />
-
+        <NPLogo size={isMobile ? 260 : 520} />
       </div>
+
+      {/* 3D model (appears when revealCar turns true) */}
+      <ThreeDCar reveal={revealCar} scaleMultiplier={isMobile ? 0.9 : 1} />
+
+      {/* labels overlay (show only after reveal) */}
+      <LabelsOverlay visible={revealCar} mobileScale={mobileScale} />
+
+      {/* NOTE: textual content removed/hidden per request; nothing else rendered */}
     </div>
   );
 }

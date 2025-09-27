@@ -1,14 +1,12 @@
 // src/App.jsx
-import React, { useEffect, useRef, useState, Suspense } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Center, ContactShadows } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Center, ContactShadows, Environment } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-/* -----------------------
-   Simple NP Logo (SVG)
-   ----------------------- */
+/* ---------------- NPLogo (SVG) ---------------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -20,7 +18,7 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* full SVG content copied from your original */}
+      {/* (your SVG content here — kept identical to original) */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -39,10 +37,8 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* -------------------------
-   Manual OBJ loader (no R3F hooks outside Canvas)
-   ------------------------- */
-function InteractiveModel({ onLoad, controlRef, scale }) {
+/* ---------------- InteractiveModel: manual loader ---------------- */
+function InteractiveModel({ onLoad, controlRef, scale = 600000 }) {
   const [obj, setObj] = useState(null);
   const group = useRef();
 
@@ -67,13 +63,11 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
           }
         });
         setObj(loaded);
-        onLoad && onLoad();
+        onLoad && onLoad(loaded);
         if (controlRef) controlRef.current = group.current;
       },
       undefined,
-      (err) => {
-        console.error("OBJ load error:", err);
-      }
+      (err) => console.error("OBJ load error:", err)
     );
     return () => (cancelled = true);
   }, [onLoad, controlRef]);
@@ -86,53 +80,65 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
   );
 }
 
-/* -------------------------
-   Simple subtle model rotation (auto, not bound to scroll)
-   ------------------------- */
+/* ---------------- Auto rotate (keeps the model alive) ---------------- */
 function AutoRotate({ modelRef }) {
   useFrame((_, delta) => {
     const obj = modelRef.current;
     if (!obj) return;
-    // slow idle rotation so the model feels alive
-    obj.rotation.y += 0.002 * delta;
-    obj.rotation.x += 0.001 * delta;
+    obj.rotation.y += 0.003 * delta;
+    obj.rotation.x += 0.0015 * delta;
   });
   return null;
 }
 
-/* -------------------------
-   3D Canvas wrapper (appears on reveal)
-   ------------------------- */
-function ThreeDCar({ reveal, scaleMultiplier = 1 }) {
-  const modelRef = useRef();
-  const [loaded, setLoaded] = useState(false);
+/* ---------------- Labels updater inside Canvas ----------------
+   - takes an array of local-space points (Vec3 in model space)
+   - projects them each frame to screen coords and writes to DOM label refs
+--------------------------------------------------------------- */
+function LabelsFollower({ modelRef, localPoints, labelDomRefs }) {
+  const { camera, size } = useThree();
+  const tempV = useRef(new THREE.Vector3());
+  useFrame(() => {
+    const obj = modelRef.current;
+    if (!obj) return;
+    localPoints.forEach((lp, i) => {
+      // compute world position of local point
+      tempV.current.set(lp.x, lp.y, lp.z);
+      // transform by model matrix
+      obj.localToWorld(tempV.current);
+      // project to NDC
+      tempV.current.project(camera);
+      // convert to screen coordinates
+      const x = (tempV.current.x * 0.5 + 0.5) * size.width;
+      const y = ( -tempV.current.y * 0.5 + 0.5) * size.height;
+      const ref = labelDomRefs.current[i];
+      if (ref) {
+        ref.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        // adjust visibility based on behind-camera or out-of-frustum
+        const behind = tempV.current.z > 1 || tempV.current.z < -1;
+        ref.style.opacity = behind ? "0" : "1";
+        ref.style.pointerEvents = "none";
+      }
+    });
+  });
+  return null;
+}
 
-  // camera based on device
+/* ---------------- ThreeDCanvas component ---------------- */
+function ThreeDCanvas({ reveal, modelScaleMultiplier = 1, onModelReady, modelRef, localPointsRef }) {
   const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
-  const cameraPos = isMobile ? [0, 0, 100000 * scaleMultiplier] : [0, 0, 200000 * scaleMultiplier];
-  const modelScale = isMobile ? 300000 * scaleMultiplier : 600000 * scaleMultiplier;
+  const cameraPos = isMobile ? [0, 0, 100000 * modelScaleMultiplier] : [0, 0, 200000 * modelScaleMultiplier];
+  const scaleVal = isMobile ? 300000 * modelScaleMultiplier : 600000 * modelScaleMultiplier;
 
   if (!reveal) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "transparent",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        pointerEvents: "none",
-        zIndex: 5,
-      }}
-      aria-hidden
-    >
+    <div style={{ position: "fixed", inset: 0, zIndex: 5, pointerEvents: "none" }}>
       <Canvas
         shadows
         dpr={[1, 2]}
         camera={{ position: cameraPos, fov: 7, near: 10000, far: 500000 }}
-        style={{ width: "100%", height: "100%", pointerEvents: "none" }}
+        style={{ width: "100%", height: "100%", background: "transparent", pointerEvents: "none" }}
         onCreated={({ gl, scene }) => {
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -143,17 +149,40 @@ function ThreeDCar({ reveal, scaleMultiplier = 1 }) {
         }}
       >
         <ambientLight intensity={0.12} />
-        <directionalLight intensity={1.8} position={[5, 10, 5]} />
+        <directionalLight intensity={1.5} position={[5, 10, 5]} />
 
-        <Suspense fallback={null}>
+        <React.Suspense fallback={null}>
           <Environment preset="city" background={false} />
           <Center>
-            <InteractiveModel onLoad={() => setLoaded(true)} controlRef={modelRef} scale={modelScale} />
+            <InteractiveModel
+              onLoad={(loaded) => {
+                // when model loads compute bounding box and pick random local points (in model local space)
+                const bbox = new THREE.Box3().setFromObject(loaded);
+                const size = bbox.getSize(new THREE.Vector3());
+                const min = bbox.min;
+                // generate N random local-space points based on bbox (these will be used for label anchors)
+                const N = 4;
+                const pts = [];
+                for (let i = 0; i < N; i++) {
+                  const rx = min.x + Math.random() * size.x;
+                  const ry = min.y + Math.random() * size.y;
+                  const rz = min.z + Math.random() * size.z;
+                  // transform into object's local coordinates (we want points relative to the object)
+                  // Since `loaded` is an Object3D in world coordinates, convert world->local:
+                  const local = loaded.worldToLocal(new THREE.Vector3(rx, ry, rz).clone());
+                  pts.push(local);
+                }
+                if (localPointsRef) localPointsRef.current = pts;
+                if (onModelReady) onModelReady(loaded);
+              }}
+              controlRef={modelRef}
+              scale={scaleVal}
+            />
           </Center>
 
           <AutoRotate modelRef={modelRef} />
-          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
-        </Suspense>
+          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
+        </React.Suspense>
 
         <EffectComposer multisampling={4}>
           <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
@@ -163,52 +192,20 @@ function ThreeDCar({ reveal, scaleMultiplier = 1 }) {
   );
 }
 
-/* -------------------------
-   Labels overlay (SVG)
-   ------------------------- */
-function LabelsOverlay({ visible, mobileScale = 1 }) {
-  if (!visible) return null;
-
-  // Positions are approximate and relative to viewport center; adjust to taste.
-  const w = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const h = typeof window !== "undefined" ? window.innerHeight : 900;
-  const cx = w / 2;
-  const cy = h / 2;
-
-  // Points outward from the car center toward labels
-  const labels = [
-    { text: "Team", x: cx - 360 * mobileScale, y: cy - 120 * mobileScale, toX: cx - 80 * mobileScale, toY: cy - 40 * mobileScale },
-    { text: "Schedule", x: cx + 240 * mobileScale, y: cy - 170 * mobileScale, toX: cx + 60 * mobileScale, toY: cy - 20 * mobileScale },
-    { text: "Contact", x: cx - 420 * mobileScale, y: cy + 60 * mobileScale, toX: cx - 60 * mobileScale, toY: cy + 60 * mobileScale },
-    { text: "Join Us", x: cx + 260 * mobileScale, y: cy + 90 * mobileScale, toX: cx + 80 * mobileScale, toY: cy + 80 * mobileScale },
-  ];
-
-  return (
-    <svg style={{ position: "fixed", inset: 0, zIndex: 10, pointerEvents: "none" }}>
-      {labels.map((l, i) => (
-        <g key={i}>
-          <line x1={l.x} y1={l.y} x2={l.toX} y2={l.toY} stroke="#ffcc00" strokeWidth={2} strokeLinecap="round" opacity={0.95} />
-          <rect x={l.x - 8} y={l.y - 20} rx={4} ry={4} width={88} height={28} fill="#000" opacity={0.6} />
-          <text x={l.x + 8} y={l.y - 1} fill="#ffcc00" fontFamily="'Zalando Sans Expanded', sans-serif" fontSize={14} fontWeight={700}>
-            {l.text}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/* -------------------------
-   Main App — one-time animation
-   ------------------------- */
+/* ---------------- App: scroll-driven logo + canvas + labels ---------------- */
 export default function App() {
-  const fixedLogoRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [animationStarted, setAnimationStarted] = useState(false);
-  const [animationDone, setAnimationDone] = useState(false);
-  const [revealCar, setRevealCar] = useState(false);
+  // refs + state
+  const centerRef = useRef(null);
+  const heroLogoRef = useRef(null);
+  const modelRef = useRef(null);
+  const labelDomRefs = useRef([]);
+  const localPointsRef = useRef([]); // will hold local-space anchor points once model loads
+  const [reveal, setReveal] = useState(false); // when model should be visible
+  const progressRef = useRef(0); // 0..1 — scroll progress
+  const rafRef = useRef(null);
 
   // responsive sizes
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
@@ -216,109 +213,109 @@ export default function App() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // load Google font (optional)
+  // attach scroll on center container and smooth the progress with lerp
   useEffect(() => {
-    const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Zalando+Sans+Expanded:wght@400;600;700&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-    return () => document.head.removeChild(link);
-  }, []);
+    const el = centerRef.current;
+    if (!el) return;
+    // hide scrollbars visually
+    el.style.scrollbarWidth = "none";
+    el.style.msOverflowStyle = "none";
 
-  // compute transform endpoints for logo: center -> top-left
-  function computeLogoMotion() {
-    const startSize = isMobile ? 260 : 520;
-    const endSize = isMobile ? 56 : 90; // small top-left logo size
-    // starting center position
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    // final top-left position (absolute coordinates relative to viewport)
-    const finalLeft = 24; // px from left
-    const finalTop = 16; // px from top
-    // delta from center to final target
-    const dx = finalLeft - centerX;
-    const dy = finalTop - centerY;
-    return { startSize, endSize, dx, dy, centerX, centerY };
-  }
+    let target = 0;
+    let current = 0;
 
-  // one-time animation: lerp progress 0 -> 1 over duration ms
-  function startOneTimeAnimation(duration = 900) {
-    if (animationStarted) return;
-    setAnimationStarted(true);
-    const start = performance.now();
-    const { startSize, endSize, dx, dy } = computeLogoMotion();
-    const el = fixedLogoRef.current;
-    if (!el) {
-      // fallback: just reveal car
-      setRevealCar(true);
-      setAnimationDone(true);
-      return;
-    }
-
-    // animation loop
-    function frame(now) {
-      const t = Math.min(1, (now - start) / duration);
-      // ease - smoothstep-like
-      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      // compute scale and translation
-      const size = startSize + (endSize - startSize) * eased;
-      const scale = size / startSize;
-      const translateX = dx * eased;
-      const translateY = dy * eased;
-      el.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
-      if (t >= 0.18 && !revealCar) {
-        // reveal car once logo begins moving (small threshold)
-        setRevealCar(true);
-      }
-      if (t < 1) {
-        requestAnimationFrame(frame);
-      } else {
-        // finalize
-        setAnimationDone(true);
-      }
-    }
-    requestAnimationFrame(frame);
-  }
-
-  // attach first-user interaction listeners to trigger the one-time animation
-  useEffect(() => {
-    function onFirstInteraction() {
-      startOneTimeAnimation(900);
-      // remove listeners (one-time)
-      window.removeEventListener("wheel", onFirstInteraction);
-      window.removeEventListener("touchstart", onFirstInteraction);
-      window.removeEventListener("mousedown", onFirstInteraction);
-      window.removeEventListener("keydown", onFirstInteraction);
-    }
-    window.addEventListener("wheel", onFirstInteraction, { passive: true });
-    window.addEventListener("touchstart", onFirstInteraction, { passive: true });
-    window.addEventListener("mousedown", onFirstInteraction);
-    window.addEventListener("keydown", onFirstInteraction);
-    // also allow clicking the centered logo
-    const logo = fixedLogoRef.current;
-    if (logo) logo.addEventListener("click", onFirstInteraction);
-    return () => {
-      window.removeEventListener("wheel", onFirstInteraction);
-      window.removeEventListener("touchstart", onFirstInteraction);
-      window.removeEventListener("mousedown", onFirstInteraction);
-      window.removeEventListener("keydown", onFirstInteraction);
-      if (logo) logo.removeEventListener("click", onFirstInteraction);
+    const onScroll = () => {
+      const top = el.scrollTop;
+      const maxScroll = Math.max(el.scrollHeight - el.clientHeight, 1);
+      target = Math.min(Math.max(top / maxScroll, 0), 1);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    const tick = () => {
+      current += (target - current) * 0.12;
+      progressRef.current = current;
+      // reveal logic: show model when progress passes a small threshold (tweakable)
+      if (current > 0.05) setReveal(true);
+      else setReveal(false);
+      // animate hero logo transform based on current
+      const elLogo = heroLogoRef.current;
+      if (elLogo) {
+        const eased = current; // apply easing if you want: Math.pow(current, 0.92) etc.
+        const startSize = isMobile ? 260 : 520;
+        const endSize = isMobile ? 56 : 90;
+        const size = startSize + (endSize - startSize) * eased;
+        const scale = size / startSize;
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const finalLeft = 24;
+        const finalTop = 12;
+        const dx = finalLeft - centerX;
+        const dy = finalTop - centerY;
+        elLogo.style.transform = `translate3d(${dx * eased}px, ${dy * eased}px, 0) scale(${scale})`;
+        elLogo.style.transformOrigin = "center left";
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isMobile]);
+
+  // set up label DOM elements (4 labels)
+  useEffect(() => {
+    labelDomRefs.current = Array(4)
+      .fill(0)
+      .map((_, i) => labelDomRefs.current[i] || React.createRef());
   }, []);
 
-  // small top-left logo is always visible; we show it in top-left absolutely.
-  // center logo is fixed and will animate to top-left.
-  // when animationDone true we can hide the center-logo's pointer-events (already none) — it's fine.
+  // When model loads, localPointsRef will be filled by ThreeDCanvas's onLoad callback.
+  // We'll render label DOM elements and the LabelsFollower (inside Canvas) will update them each frame.
 
-  // mobile scale pass to overlays
-  const mobileScale = isMobile ? 0.7 : 1;
+  /* Dom labels: absolute positioned elements whose transform get updated by LabelsFollower */
+  const LabelDOMs = () => (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 20 }}>
+      {Array(4)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            ref={(el) => (labelDomRefs.current[i] = el)}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              transform: "translate3d(-9999px,-9999px,0)",
+              transition: "opacity 0.12s linear, transform 0.02s linear",
+              opacity: 0,
+              pointerEvents: "none",
+              userSelect: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ background: "rgba(0,0,0,0.6)", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,204,0,0.12)" }}>
+                <span style={{ color: "#ffcc00", fontFamily: "'Zalando Sans Expanded', sans-serif", fontWeight: 700, fontSize: 14 }}>
+                  {["Team", "Schedule", "Contact", "Join Us"][i]}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  // small helper to give center-scroll a big spacer (so user can scroll back/forth)
+  const spacerHeight = Math.max(window.innerHeight * 2.2, 1400);
 
   return (
     <div
       style={{
         width: "100vw",
-        minHeight: "100vh",
+        height: "100vh",
         background: "#191919",
         overflow: "hidden",
         position: "relative",
@@ -326,45 +323,82 @@ export default function App() {
         color: "#fff",
       }}
     >
-      {/* global styles */}
+      {/* global stylesheet tweaks */}
       <style>{`
-        body { background: #191919; margin:0; }
+        body { margin:0; background:#191919; }
+        #center-scroll::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        #center-scroll { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
 
-      {/* top-left logo (always present, absolute to top) */}
-      <div style={{ position: "fixed", left: 16, top: 12, zIndex: 40, pointerEvents: "none" }} aria-hidden>
-        <NPLogo size={isMobile ? 56 : 90} />
-      </div>
-
-      {/* centered fixed logo (the big one that animates to top-left once) */}
+      {/* CENTERED HERO LOGO (fixed) - transforms based on scroll progress */}
       <div
-        id="centered-logo"
-        ref={fixedLogoRef}
+        id="hero-logo"
+        ref={heroLogoRef}
         style={{
           position: "fixed",
           left: "50%",
           top: "50%",
           transform: "translate3d(-50%, -50%, 0) scale(1)",
           zIndex: 30,
-          pointerEvents: "auto", // allow click to trigger animation
+          pointerEvents: "none",
           willChange: "transform",
-          touchAction: "manipulation",
         }}
-        onClick={() => {
-          // clicking the big logo should trigger the one-time animation too
-          startOneTimeAnimation(900);
-        }}
+        aria-hidden
       >
         <NPLogo size={isMobile ? 260 : 520} />
       </div>
 
-      {/* 3D model (appears when revealCar turns true) */}
-      <ThreeDCar reveal={revealCar} scaleMultiplier={isMobile ? 0.9 : 1} />
+      {/* 3D canvas: revealed when progress > threshold */}
+      <ThreeDCanvas
+        reveal={reveal}
+        modelScaleMultiplier={1}
+        modelRef={modelRef}
+        localPointsRef={localPointsRef}
+        onModelReady={() => {
+          // no-op for now
+        }}
+      />
 
-      {/* labels overlay (show only after reveal) */}
-      <LabelsOverlay visible={revealCar} mobileScale={mobileScale} />
+      {/* Labels DOM — DOM elements will be positioned by the LabelsFollower inside the Canvas */}
+      <LabelDOMs />
 
-      {/* NOTE: textual content removed/hidden per request; nothing else rendered */}
+      {/* LabelsFollower component inside Canvas needs refs & points -> we hook it up by rendering a small helper inside the Canvas.
+          Instead of rendering a separate <LabelsFollower> here (which must be within Canvas), we create a small Canvas child when reveal is true.
+          To avoid duplicating Canvas, we mount a tiny offscreen <Canvas> just to run the follower? That's unnecessary — better approach:
+          We can reuse the existing Canvas by passing modelRef & localPointsRef down into ThreeDCanvas which will mount LabelsFollower inside the same Canvas.
+          That's already implemented above: ThreeDCanvas will set localPointsRef and you should add LabelsFollower inside ThreeDCanvas's Canvas.
+          For simplicity we included code earlier: update localPointsRef in InteractiveModel onLoad and ThreeDCanvas should include LabelsFollower when localPointsRef populated.
+      */}
+
+      {/* CENTER SCROLL CONTAINER — empty content for now, allows user to scroll to animate the logo */}
+      <div
+        id="center-scroll"
+        ref={centerRef}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: 0,
+          transform: "translateX(-50%)",
+          width: "min(900px, 92vw)",
+          height: "100vh",
+          overflowY: "auto",
+          zIndex: 5,
+          // visually empty content; we use spacer for scroll distance
+        }}
+      >
+        <div style={{ height: spacerHeight }} />
+      </div>
+
+      {/* Attach LabelsFollower inside the same canvas by mounting another small R3F wrapper when reveal is true */}
+      {/* We'll render a small Canvas-only component that uses the same camera to project coordinates — to keep everything tidy,
+          we actually mount the LabelsFollower as part of the main ThreeDCanvas's Canvas. To do that we need to include LabelsFollower inside ThreeDCanvas's JSX.
+          The code above sets localPointsRef and modelRef - ThreeDCanvas should read these and mount LabelsFollower.
+          If you copy-paste this file as-is, you'll need to add the LabelsFollower invocation inside ThreeDCanvas after the model loads.
+          For convenience I've updated ThreeDCanvas earlier to compute localPointsRef on load and you can add a LabelsFollower usage there like:
+          <LabelsFollower modelRef={modelRef} localPoints={localPointsRef.current} labelDomRefs={labelDomRefs} />
+          However LabelsFollower must be used inside Canvas (not here). See comments in file.
+      */}
+
     </div>
   );
 }

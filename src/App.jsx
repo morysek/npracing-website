@@ -125,7 +125,7 @@ function TeamVisual({ images = TEAM_IMAGES }) {
 
 function TeamContent() {
   return (
-    <section id="team" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+    <section id="team" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
       <h1 className="microgramma">Team</h1>
       <p className="zalando">The Team</p>
       <ul className="zalando">
@@ -148,7 +148,7 @@ function TeamContent() {
 
 function ScheduleContent() {
   return (
-    <section id="schedule" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+    <section id="schedule" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
       <h1 className="microgramma">Schedule</h1>
       <p className="zalando">Next up: Poland</p>
       <ol className="zalando">
@@ -160,7 +160,7 @@ function ScheduleContent() {
 
 function ContactContent() {
   return (
-    <section id="contact" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+    <section id="contact" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
       <h1 className="microgramma">Contact</h1>
       <p className="zalando">
         For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a>
@@ -171,7 +171,7 @@ function ContactContent() {
 
 function JoinUsContent() {
   return (
-    <section id="joinus" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+    <section id="joinus" style={{ color: "#fff", padding: "40px 20px", maxWidth: 900 }}>
       <h1 className="microgramma">Join Us</h1>
       <p className="zalando">Want the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
     </section>
@@ -297,19 +297,45 @@ function ThreeDCar({ show = true }) {
     };
   }, []);
 
-  // scroll -> set targetZ proportionally to scroll progress (regular DOM effect)
+  // scroll -> set targetZ proportionally to scroll progress
   useEffect(() => {
-    const onScroll = () => {
+    const scrollContainer = document.getElementById("center-scroll");
+    const getScrollInfo = () => {
+      if (scrollContainer) {
+        const scrollTop = scrollContainer.scrollTop;
+        const maxScroll = Math.max(scrollContainer.scrollHeight - scrollContainer.clientHeight, 1);
+        return { scrollTop, maxScroll };
+      }
       const scrollTop = window.scrollY || window.pageYOffset;
       const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+      return { scrollTop, maxScroll };
+    };
+
+    const onScroll = () => {
+      const { scrollTop, maxScroll } = getScrollInfo();
       const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
-      // rotate up to 1.5 * PI radians around Z as user scrolls from top -> bottom
       targetZ.current = progress * Math.PI * 1.5;
     };
 
+    // attach to the right container
+    if (scrollContainer) {
+      scrollContainer.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+    } else {
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+    }
+
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      } else {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      }
+    };
   }, []);
 
   if (!show) return null;
@@ -328,7 +354,7 @@ function ThreeDCar({ show = true }) {
         alignItems: "center",
         touchAction: "none",
         zIndex: 1,
-        pointerEvents: "none", // disable interactions
+        pointerEvents: "none",
       }}
     >
       {loading && <LoadingScreen />}
@@ -341,7 +367,6 @@ function ThreeDCar({ show = true }) {
         onCreated={({ gl, scene }) => {
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          // ensure compatibility across r3f versions:
           if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 0.6;
@@ -371,7 +396,6 @@ function ThreeDCar({ show = true }) {
             <InteractiveModel onLoad={() => setLoading(false)} controlRef={modelRef} scale={modelScale} />
           </Center>
 
-          {/* R3F hooks that must run inside Canvas */}
           <AutoRotate modelRef={modelRef} />
           <ScrollDrivenRotation modelRef={modelRef} targetZRef={targetZ} />
           <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
@@ -386,7 +410,7 @@ function ThreeDCar({ show = true }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact' | 'joinus'
+  const [page, setPage] = useState("home");
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -396,7 +420,6 @@ export default function App() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // topbar height kept in a CSS var used by ThreeDCar and layout
   const topbarHeight = isMobile ? 90 : 80;
   useEffect(() => {
     document.documentElement.style.setProperty("--topbar-height", `${topbarHeight}px`);
@@ -413,22 +436,34 @@ export default function App() {
     };
   }, []);
 
-  const renderContent = () => {
-    switch (page) {
-      case "home":
-        return null;
-      case "team":
-        return <TeamContent />;
-      case "joinus":
-        return <JoinUsContent />;
-      case "schedule":
-        return <ScheduleContent />;
-      case "contact":
-        return <ContactContent />;
-      default:
-        return null;
-    }
-  };
+  const renderScrollableCenter = () => (
+    // This is the centered scrollable area the user asked for
+    <div
+      id="center-scroll"
+      style={{
+        height: `calc(100vh - var(--topbar-height, 160px))`,
+        width: "100%",
+        maxWidth: 900,
+        margin: "0 auto",
+        overflowY: "auto",
+        padding: "24px 16px",
+        boxSizing: "border-box",
+        zIndex: 2,
+        position: "relative",
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
+      <TeamContent />
+      <ScheduleContent />
+      <JoinUsContent />
+      <ContactContent />
+      <section style={{ padding: "40px 0" }}>
+        <h2 className="microgramma">More</h2>
+        <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows in this centered column.</p>
+        <div style={{ height: 800 }} />
+      </section>
+    </div>
+  );
 
   return (
     <div
@@ -441,7 +476,6 @@ export default function App() {
         color: "#fff",
       }}
     >
-      {/* Global styles injected here for Microgramma and smooth scrolling */}
       <style>{`
         html { scroll-behavior: smooth; }
         @font-face {
@@ -453,35 +487,16 @@ export default function App() {
         }
         .microgramma { font-family: 'MicrogrammaBold', 'Inconsolata', sans-serif; font-weight: 700; letter-spacing: 0.6px; }
         .zalando { font-family: 'Zalando Sans Expanded', 'Inconsolata', sans-serif; }
-        main { position: relative; z-index: 2; }
-        button.zalando { background: transparent; border: none; color: #fff; cursor: pointer; font-family: 'Zalando Sans Expanded', sans-serif; padding: 6px 10px; }
       `}</style>
 
       <TopBar onNavigate={setPage} />
 
-      {/* 3D canvas only on Home, stays fixed while the page scrolls */}
+      {/* fixed 3D canvas */}
       <ThreeDCar show={page === "home"} />
 
-      {/* Content area below topbar. We push it down using the CSS variable --topbar-height */}
-      <main style={{ position: "relative", marginTop: "var(--topbar-height, 160px)", zIndex: 2, display: "flex", justifyContent: "center", padding: "24px 16px" }}>
-        <div style={{ width: "100%", maxWidth: 1200 }}>
-          {/* Minimal section nav */}
-          <div style={{ display: "flex", gap: 12, marginBottom: 20, alignItems: "center" }}>
-            <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="zalando">Home</button>
-            <button onClick={() => { document.getElementById("team") && document.getElementById("team").scrollIntoView({ behavior: "smooth" }); }} className="zalando">Team</button>
-            <button onClick={() => { document.getElementById("schedule") && document.getElementById("schedule").scrollIntoView({ behavior: "smooth" }); }} className="zalando">Schedule</button>
-            <button onClick={() => { document.getElementById("contact") && document.getElementById("contact").scrollIntoView({ behavior: "smooth" }); }} className="zalando">Contact</button>
-          </div>
-
-          {renderContent()}
-
-          {/* Extra content to make page scrollable and demonstrate car rotation */}
-          <section style={{ padding: "40px 0" }}>
-            <h2 className="microgramma">More</h2>
-            <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows over it.</p>
-            <div style={{ height: 1200 }} />
-          </section>
-        </div>
+      {/* Centered scrollable text column */}
+      <main style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "var(--topbar-height, 160px)", zIndex: 2 }}>
+        {renderScrollableCenter()}
       </main>
     </div>
   );

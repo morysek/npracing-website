@@ -9,6 +9,13 @@ import {
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
+// --- Replace these with your actual image URLs (or pass them in as props later)
+const TEAM_IMAGES = [
+  "/images/team1.jpg",
+  "/images/team2.jpg",
+  "/images/team3.jpg",
+];
+
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -20,6 +27,7 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
+      {/* ... same SVG content as before ... */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -38,9 +46,9 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-function TopBar({ currentPage, onNavigate }) {
+function TopBar({ onNavigate }) {
+  // logo top-left only (menu removed per request)
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
@@ -48,144 +56,135 @@ function TopBar({ currentPage, onNavigate }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const logoSize = isMobile ? 100 : 140;
-  const linkFontSize = isMobile ? 14 : 16;
-  const linkSpacing = isMobile ? 8 : 12;
-
-  const linkStyle = {
-    color: "#fff",
-    fontSize: linkFontSize,
-    fontWeight: 600,
-    letterSpacing: 1,
-    margin: `0 ${linkSpacing / 2}px`,
-    fontFamily: "'Inconsolata', monospace",
-    textDecoration: "none",
-    whiteSpace: "nowrap",
-    cursor: "pointer",
-  };
-
-  const dotStyle = {
-    color: "#ffcc00",
-    fontSize: linkFontSize + 2,
-    margin: `0 ${linkSpacing / 2}px`,
-    userSelect: "none",
-    pointerEvents: "none",
-  };
-
-  const NavLink = ({ page, children }) => {
-    const activeStyle = currentPage === page ? { opacity: 1 } : { opacity: 0.85 };
-    return (
-      <span
-        onClick={() => onNavigate(page)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => (e.key === "Enter" ? onNavigate(page) : null)}
-        style={{ ...linkStyle, ...activeStyle }}
-      >
-        {children}
-      </span>
-    );
-  };
-
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        background: "#000",
-        zIndex: 999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: 25,
-        paddingBottom: 8,
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={{ position: "fixed", top: 12, left: 16, zIndex: 1001 }}>
       <a
-        style={{ display: "block", marginBottom: 24, cursor: "pointer" }}
+        style={{ display: "block", cursor: "pointer" }}
         onClick={(e) => {
           e.preventDefault();
-          onNavigate("home");
+          onNavigate && onNavigate("home");
         }}
         href="/"
         aria-label="Home"
       >
-        <NPLogo size={logoSize} />
+        <NPLogo size={isMobile ? 80 : 120} />
       </a>
+    </div>
+  );
+}
 
-      <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <NavLink page="home">Home</NavLink>
-        <span style={dotStyle}>•</span>
-        <NavLink page="team">Team</NavLink>
-        <span style={dotStyle}>•</span>
-        <NavLink page="joinus">Join Us</NavLink>
-        <span style={dotStyle}>•</span>
-        <NavLink page="schedule">Schedule</NavLink>
-        <span style={dotStyle}>•</span>
-        <NavLink page="contact">Contact</NavLink>
-      </nav>
+// Team visual effect: images appear/reveal while scrolling
+function TeamVisual({ images = TEAM_IMAGES }) {
+  const containerRef = useRef();
+  const imgRefs = useRef([]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const progress = Math.min(Math.max((viewportHeight - rect.top) / (viewportHeight + rect.height), 0), 1);
+
+      imgRefs.current.forEach((img, i) => {
+        if (!img) return;
+        // staggered effect based on index
+        const offset = (i - (images.length - 1) / 2) * 40; // horizontal offset
+        // translateY from 40px -> 0 and scale from 1.05 -> 1.0
+        const translateY = (1 - progress) * 60 + offset * (1 - progress);
+        const opacity = progress;
+        const rotate = (1 - progress) * (i % 2 === 0 ? -6 : 6);
+        img.style.transform = `translate3d(${offset * (1 - progress)}px, ${translateY}px, 0) rotate(${rotate}deg) scale(${1 + (1 - progress) * 0.05})`;
+        img.style.opacity = opacity;
+        img.style.filter = `grayscale(${Math.max(0, 1 - progress)})`;
+      });
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [images.length]);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", height: 420, marginTop: 40 }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "center", alignItems: "center", pointerEvents: "none" }}>
+        {images.map((src, i) => (
+          <img
+            key={i}
+            ref={(el) => (imgRefs.current[i] = el)}
+            src={src}
+            alt={`team-${i}`}
+            style={{
+              width: 320,
+              height: 220,
+              objectFit: "cover",
+              position: "absolute",
+              boxShadow: "0 30px 60px rgba(0,0,0,0.6)",
+              borderRadius: 8,
+              transition: "transform 0.25s ease-out, opacity 0.25s ease-out, filter 0.25s ease-out",
+              opacity: 0,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function TeamContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00" }}>Team</h1>
-      <p>
-        The Team
-      </p>
-      <ul>
+    <section id="team" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+      <h1 className="microgramma">Team</h1>
+      <p className="zalando">The Team</p>
+      <ul className="zalando">
         <li>Team Leader: Matěj Prokop</li>
         <li>Engineer: Lukáš Moravec</li>
         <li>Finance manager: Lukáš Martin</li>
         <li>Marketing manager: Veronika Lindová</li>
       </ul>
-      <h1 style={{ color: "#ffcc00" }}>About Us</h1>
-      <p>
-        We are the only Czech team and a top contender in the prestigious international STEM racing competition.
-      <p>
-        We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.
-      <p>
-        Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
-      <p>
-        We collaborate with partners like the Czech Technical University to enhance our expertise.
-      </p> 
-    </div>
+
+      <TeamVisual images={TEAM_IMAGES} />
+
+      <h1 className="microgramma">About Us</h1>
+      <p className="zalando">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+      <p className="zalando">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+      <p className="zalando">Founded at Nový PORG, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
+      <p className="zalando">We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
+    </section>
   );
 }
 
 function ScheduleContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00" }}>Schedule</h1>
-      <p>
-        Next up: Poland
-      </p>
-      <ol>
+    <section id="schedule" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+      <h1 className="microgramma">Schedule</h1>
+      <p className="zalando">Next up: Poland</p>
+      <ol className="zalando">
         <li>Oct 11</li>
       </ol>
-    </div>
+    </section>
   );
 }
 
 function ContactContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00" }}>Contact</h1>
-      <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
-    </div>
+    <section id="contact" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+      <h1 className="microgramma">Contact</h1>
+      <p className="zalando">
+        For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a>
+      </p>
+    </section>
   );
 }
+
 function JoinUsContent() {
   return (
-    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00" }}>Join Us</h1>
-      <p>Want to have the chance to compete for a scholarship in a prestigeous Formula One-backed competition? Contact us!</p>
-    </div>
+    <section id="joinus" style={{ color: "#fff", padding: "40px 20px", maxWidth: 1300 }}>
+      <h1 className="microgramma">Join Us</h1>
+      <p className="zalando">Want the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+    </section>
   );
 }
 
@@ -236,17 +235,13 @@ function InteractiveModel({ onLoad, controlRef, scale }) {
   );
 }
 
-function AutoRotate({ modelRef, dragging, isMobile }) {
-  const speed = isMobile ? 0.1 : 0.03;
-  const speedY = isMobile ? 0.12 : 0.07;
-
+function AutoRotate({ modelRef }) {
+  // keep a subtle breathing rotation on X/Y so scene doesn't feel dead
   useFrame((_, delta) => {
     const obj = modelRef.current;
-    if (!dragging.current && obj) {
-      obj.rotation.x += speed * delta;
-      obj.rotation.y += speedY * delta;
-      obj.rotation.z += speed * delta;
-    }
+    if (!obj) return;
+    obj.rotation.x += 0.005 * delta;
+    obj.rotation.y += 0.003 * delta;
   });
   return null;
 }
@@ -254,17 +249,14 @@ function AutoRotate({ modelRef, dragging, isMobile }) {
 function ThreeDCar({ show = true }) {
   const [loading, setLoading] = useState(true);
   const modelRef = useRef();
-  const dragging = useRef(false);
-  const prev = useRef({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [modelScale, setModelScale] = useState(600000);
 
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
+  // scroll-driven Z rotation state
+  const targetZ = useRef(0);
+  const currentZ = useRef(0);
 
+  useEffect(() => {
     const onResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
@@ -272,35 +264,33 @@ function ThreeDCar({ show = true }) {
     };
     onResize();
     window.addEventListener("resize", onResize);
-    document.body.style.overflow = show ? "hidden" : "";
     return () => {
       window.removeEventListener("resize", onResize);
-      document.body.style.overflow = "";
     };
-  }, [show]);
+  }, []);
 
-  const onPointerDown = (e) => {
-    e.preventDefault();
-    dragging.current = true;
-    prev.current = { x: e.clientX, y: e.clientY };
-  };
-  const onPointerUp = (e) => {
-    e.preventDefault();
-    dragging.current = false;
-  };
-  const onPointerMove = (e) => {
-    if (!dragging.current || !modelRef.current) return;
-    e.preventDefault();
-    const dx = e.clientX - prev.current.x;
-    const dy = e.clientY - prev.current.y;
-    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), dx * 0.005);
-    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), dy * 0.005);
-    prev.current = { x: e.clientX, y: e.clientY };
-  };
+  // scroll -> set targetZ proportionally to scroll progress
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || window.pageYOffset;
+      const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+      const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
+      // rotate up to 1.5 * PI radians around Z as user scrolls from top -> bottom
+      targetZ.current = progress * Math.PI * 1.5;
+    };
 
-  const cameraSettings = isMobile
-    ? { position: [0, 0, modelScale * 0.33], fov: 10, near: 10000, far: 500000 }
-    : { position: [0, 0, 200000], fov: 7, near: 10000, far: 500000 };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // animate towards targetZ
+  useFrame(() => {
+    if (modelRef.current) {
+      currentZ.current += (targetZ.current - currentZ.current) * 0.12; // lerp
+      modelRef.current.rotation.z = currentZ.current;
+    }
+  });
 
   if (!show) return null;
 
@@ -318,6 +308,7 @@ function ThreeDCar({ show = true }) {
         alignItems: "center",
         touchAction: "none",
         zIndex: 1,
+        pointerEvents: "none", // disable user interactions with the canvas
       }}
     >
       {loading && <LoadingScreen />}
@@ -325,11 +316,8 @@ function ThreeDCar({ show = true }) {
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={cameraSettings}
-        style={{ width: "100%", height: "100%", pointerEvents: "all" }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        camera={isMobile ? { position: [0, 0, modelScale * 0.33], fov: 10, near: 10000, far: 500000 } : { position: [0, 0, 200000], fov: 7, near: 10000, far: 500000 }}
+        style={{ width: "100%", height: "100%", pointerEvents: "none" }}
         onCreated={({ gl, scene }) => {
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -361,7 +349,7 @@ function ThreeDCar({ show = true }) {
           <Center>
             <InteractiveModel onLoad={() => setLoading(false)} controlRef={modelRef} scale={modelScale} />
           </Center>
-          <AutoRotate modelRef={modelRef} dragging={dragging} isMobile={isMobile} />
+          <AutoRotate modelRef={modelRef} />
           <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
         </Suspense>
 
@@ -374,7 +362,7 @@ function ThreeDCar({ show = true }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact'
+  const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact' | 'joinus'
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -413,28 +401,59 @@ export default function App() {
       minHeight: "100vh",
       background: "#000",
       overflowX: "hidden",
-      fontFamily: "'Inconsolata', monospace",
+      fontFamily: "'ZalandoSansExpanded', 'Inconsolata', sans-serif",
       color: "#fff",
     }}>
-      <TopBar currentPage={page} onNavigate={setPage} />
+      {/* Global styles injected here for fonts and smooth scrolling */}
+      <style>{`
+        html { scroll-behavior: smooth; }
+        /* Replace the @font-face URLs with your actual font files / CDN links. */
+        @font-face {
+          font-family: 'MicrogrammaBold';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'ZalandoSansExpanded';
+          src: url('/fonts/ZalandoSansExpanded.woff2') format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+        .microgramma { font-family: 'MicrogrammaBold', 'Inconsolata', sans-serif; font-weight: 700; letter-spacing: 0.6px; }
+        .zalando { font-family: 'ZalandoSansExpanded', 'Inconsolata', sans-serif; }
+        /* make sure main content scrolls over the fixed 3D canvas */
+        main { position: relative; z-index: 2; }
+      `}</style>
 
-      {/* 3D canvas only on Home */}
+      <TopBar onNavigate={setPage} />
+
+      {/* 3D canvas only on Home, stays fixed while the page scrolls */}
       <ThreeDCar show={page === "home"} />
 
-      {/* Content area below topbar. We push it down using the CSS variable ---topbar-height */}
-      <div style={{
-        position: "relative",
-        marginTop: "var(--topbar-height, 160px)",
-        zIndex: 2,
-        display: "flex",
-        justifyContent: "center",
-        padding: "24px 16px",
-      }}>
+      {/* Content area below topbar. We push it down using the CSS variable --topbar-height */}
+      <main style={{ position: "relative", marginTop: "var(--topbar-height, 160px)", zIndex: 2, display: "flex", justifyContent: "center", padding: "24px 16px" }}>
         <div style={{ width: "100%", maxWidth: 1200 }}>
+          {/* Mini navigation to jump to sections (kept minimal since the menu was removed) */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
+            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zalando">Home</button>
+            <button onClick={() => { document.getElementById('team') && document.getElementById('team').scrollIntoView({ behavior: 'smooth' }); }} className="zalando">Team</button>
+            <button onClick={() => { document.getElementById('schedule') && document.getElementById('schedule').scrollIntoView({ behavior: 'smooth' }); }} className="zalando">Schedule</button>
+            <button onClick={() => { document.getElementById('contact') && document.getElementById('contact').scrollIntoView({ behavior: 'smooth' }); }} className="zalando">Contact</button>
+          </div>
+
           {renderContent()}
+
+          {/* Add more content to make page scrollable and demonstrate the car rotation */}
+          <section style={{ padding: "40px 0" }}>
+            <h2 className="microgramma">More</h2>
+            <p className="zalando">Scroll to see the car rotate around its Z axis. The car remains fixed while the page content flows over it.</p>
+            <div style={{ height: 1200 }} />
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
-

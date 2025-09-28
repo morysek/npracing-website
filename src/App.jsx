@@ -13,7 +13,7 @@ const easeInOutCubic = (t) =>
 /* ---------- labels (4) ---------- */
 const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
 
-/* ---------- NPLogo (original SVG paths — full, valid paths) ---------- */
+/* ---------- NPLogo (original SVG kept) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -43,14 +43,18 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* ---------- InteractiveModel (GLTF) ---------- */
+/* ---------- InteractiveModel (GLTF) ----------
+   - appear animation driven by progressRef
+   - continuous idle rotation along x/y/z
+   - NOTE: mobile size adjustment was removed per request (no window-dependent scale)
+---------- */
 function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 600000 }) {
-  const gltf = useGLTF("/models/F1.glb");
+  const { scene: gltfScene } = useGLTF("/models/F1.glb", true);
   const group = useRef();
 
   useEffect(() => {
-    if (!gltf || !gltf.scene) return;
-    gltf.scene.traverse((c) => {
+    if (!gltfScene) return;
+    gltfScene.traverse((c) => {
       if (c.isMesh && c.material) {
         if (c.material.map) c.material.map.encoding = THREE.sRGBEncoding;
         if (c.material.emissiveMap) c.material.emissiveMap.encoding = THREE.sRGBEncoding;
@@ -63,8 +67,8 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
         c.receiveShadow = true;
       }
     });
-    onModelLoaded && onModelLoaded(gltf.scene);
-  }, [gltf, onModelLoaded]);
+    onModelLoaded && onModelLoaded(gltfScene);
+  }, [gltfScene, onModelLoaded]);
 
   useFrame((state) => {
     if (!group.current) return;
@@ -75,28 +79,30 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
+    // continuous idle rotation on all axes (time-based)
     const t = state.clock.getElapsedTime();
     group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
     group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
     group.current.rotation.z += 0.0012 + 0.015 * Math.cos(t * 0.6) * 0.01;
 
-    const mobileScale = isMobile ? baseScale * (window.innerWidth / 1200) : baseScale;
-    const finalScale = (0.0001 + eased) * (mobileScale / baseScale);
-    group.current.scale.setScalar(finalScale);
+    // scale in with appear - simple: group scale multiplies the primitive's baseScale
+    const visibleScale = 0.0001 + eased;
+    group.current.scale.setScalar(visibleScale);
 
-    gltf.scene.traverse((c) => {
+    // fade meshes in
+    gltfScene.traverse((c) => {
       if (c.isMesh && c.material && "opacity" in c.material) c.material.opacity = clamp(eased);
     });
   });
 
   return (
     <group ref={group}>
-      <primitive object={gltf.scene} scale={baseScale} position={[0, 0, 0]} />
+      <primitive object={gltfScene} scale={baseScale} position={[0, 0, 0]} />
     </group>
   );
 }
 
-/* ---------- LoaderOverlay (uses Zalando font) ---------- */
+/* ---------- LoaderOverlay (Zalando) ---------- */
 function LoaderOverlay({ progress }) {
   return (
     <div
@@ -113,7 +119,7 @@ function LoaderOverlay({ progress }) {
       }}
     >
       <div style={{ textAlign: "center", maxWidth: 520, padding: 24 }}>
-        <div style={{ fontSize: 16, marginBottom: 12, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>
+        <div style={{ fontSize: 18, marginBottom: 12, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>
           Loading NP Racing
         </div>
 
@@ -148,7 +154,7 @@ function LoaderOverlay({ progress }) {
   );
 }
 
-/* ---------- Content components (unchanged, using Microgramma + Zalando fonts) ---------- */
+/* ---------- Content components ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -165,7 +171,7 @@ function TeamContent() {
           </ul>
         </div>
 
-        <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+        <div className="team-images" style={{ flex: "1 1 480px", display: "flex", gap: 12 }}>
           <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
           <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
           <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
@@ -220,7 +226,7 @@ function JoinUsContent() {
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // fonts: Microgramma + Zalando (must place .woff2 files in /public/fonts)
+  // fonts: Microgramma + Zalando (ensure .woff2 are in /public/fonts)
   useEffect(() => {
     const id = "__npr_fonts";
     if (!document.getElementById(id)) {
@@ -269,47 +275,31 @@ export default function App() {
   const timelineTargetRef = useRef(0);
   const animatingRef = useRef(false);
 
-  // labels visibility (commented out tags per request)
+  // labels visibility (kept false/commented per your earlier request)
   const [labelsVisible] = useState(false);
 
-  // loader state
+  // loader state & preload images
   const [loadedCount, setLoadedCount] = useState(0);
   const totalAssets = 4; // 3 images + 1 glb
   const loadingProgress = (loadedCount / totalAssets) * 100;
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
-  // intro complete (unblocks scrolling)
-  const [introComplete, setIntroComplete] = useState(false);
-
-  useEffect(() => {
-    document.body.style.overflow = introComplete && assetsLoaded ? "auto" : "hidden";
-  }, [introComplete, assetsLoaded]);
-
-  // preload images
   useEffect(() => {
     const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
     let mounted = true;
     imgs.forEach((src) => {
       const im = new Image();
-      im.onload = () => {
-        if (!mounted) return;
-        setLoadedCount((c) => c + 1);
-      };
-      im.onerror = () => {
-        if (!mounted) return;
-        setLoadedCount((c) => c + 1);
-      };
+      im.onload = () => mounted && setLoadedCount((c) => c + 1);
+      im.onerror = () => mounted && setLoadedCount((c) => c + 1);
       im.src = src;
     });
     return () => (mounted = false);
   }, []);
 
-  // model loaded callback
   const handleModelLoaded = (gltfScene) => {
     modelRef.current = gltfScene;
     setLoadedCount((c) => c + 1);
-
-    // compute anchors (unused but kept)
+    // compute anchors (kept)
     const bbox = new THREE.Box3().setFromObject(gltfScene);
     const size = bbox.getSize(new THREE.Vector3());
     const min = bbox.min;
@@ -327,7 +317,7 @@ export default function App() {
     if (loadedCount >= totalAssets) setAssetsLoaded(true);
   }, [loadedCount]);
 
-  // logo transform RAF loop
+  // logo transform RAF loop — adjusted to put the final mobile top at 20px and final mobile scale at 1.5x
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -336,28 +326,35 @@ export default function App() {
       const wrap = logoWrapRef.current;
       if (wrap) {
         const startSize = isMobile ? 260 : 520;
-        const endSize = isMobile ? 56 : 90;
+        // desktop end size (keeps your previous small size)
+        const endSizeDesktop = 90;
+        // compute a final scale multiplier:
+        const finalScaleMobile = 1.5; // per your request
+        const finalScaleDesktop = endSizeDesktop / startSize;
+        const finalScale = isMobile ? finalScaleMobile : finalScaleDesktop;
+
+        // scale easing: start at 1, finish at finalScale
+        const currentScale = 1 + (finalScale - 1) * eased;
+
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
         const finalLeft = window.innerWidth / 2;
-        const finalTop = 100;
+        const finalTop = isMobile ? 20 : 100; // mobile final top is 20px per request
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
-        const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
-        wrap.style.transformOrigin = "center top";
+
+        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${currentScale})`;
+        wrap.style.transformOrigin = isMobile ? "center top" : "center top";
         wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
       }
-      if (p >= 0.9999) setIntroComplete(true);
-      else setIntroComplete(false);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline animator
+  // timeline animator (unchanged)
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
@@ -377,7 +374,7 @@ export default function App() {
     requestAnimationFrame(step);
   }
 
-  // scroll triggers (only allow control when assets loaded)
+  // scroll triggers (no change)
   useEffect(() => {
     const onWheel = (e) => {
       if (!assetsLoaded) return;
@@ -414,20 +411,15 @@ export default function App() {
     };
   }, [assetsLoaded]);
 
+  // layout styles that handle image layout (side-by-side desktop, stacked on mobile), and zig-zag paragraph
   const canvasWrapperStyle = {
-    position: introComplete ? "relative" : "fixed",
-    inset: introComplete ? "auto" : 0,
+    position: "fixed",
+    inset: 0,
     zIndex: 2,
     pointerEvents: "none",
     width: "100%",
-    height: introComplete ? "60vh" : "100vh",
-    top: introComplete ? undefined : 0,
-  };
-
-  const contentContainerStyle = {
-    background: "#191919",
-    color: "#fff",
-    paddingTop: introComplete ? 20 : window.innerHeight,
+    height: "100vh",
+    top: 0,
   };
 
   return (
@@ -439,13 +431,20 @@ export default function App() {
         body { scrollbar-width: none; -ms-overflow-style: none; }
         h1 { margin: 12px 0; }
         .section { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
-        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35 }
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; }
+        .team-images { display: flex; gap: 12px; align-items: stretch; }
+        .team-images img { width: 100%; height: auto; object-fit: cover; display:block; }
+        @media (max-width: 768px) {
+          .team-images { flex-direction: column; }
+          /* logo adjustments on mobile: keep final 20px placement handled in JS */
+        }
         @media (min-width: 900px) {
           .zig:nth-of-type(odd) { transform: translateX(-6%); }
           .zig:nth-of-type(even) { transform: translateX(6%); }
         }
       `}</style>
 
+      {/* Logo wrapper */}
       <div
         ref={logoWrapRef}
         style={{
@@ -462,6 +461,7 @@ export default function App() {
         <NPLogo size={isMobile ? 260 : 520} />
       </div>
 
+      {/* Canvas (fixed while intro runs) */}
       <div style={canvasWrapperStyle}>
         <Canvas
           shadows
@@ -498,9 +498,11 @@ export default function App() {
         </Canvas>
       </div>
 
+      {/* Loader */}
       {!assetsLoaded && <LoaderOverlay progress={loadingProgress} />}
 
-      <div style={contentContainerStyle}>
+      {/* Content sections (page scrollable) */}
+      <div style={{ background: "#191919", color: "#fff", paddingTop: window.innerHeight }}>
         <div className="section">
           <TeamContent />
         </div>

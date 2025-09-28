@@ -1,17 +1,14 @@
-// src/App.jsx
-import React, { useEffect, useRef, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { Environment, Center, ContactShadows } from "@react-three/drei";
+import { Canvas, useLoader, useFrame } from "@react-three/fiber";
+import {
+  Environment,
+  Center,
+  ContactShadows,
+} from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-/* ---------- helpers ---------- */
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const easeInOutCubic = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-/* ---------- NPLogo (unchanged) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -40,376 +37,402 @@ function NPLogo({ size = 300 }) {
     </svg>
   );
 }
-/* ---------- InteractiveModel (appear + continuous rotation) ---------- */
-function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000 }) {
-  const obj = useLoader(OBJLoader, "/models/F1.obj");
-  const group = useRef();
+
+function TopBar({ currentPage, onNavigate }) {
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (!obj) return;
-    obj.traverse((c) => {
-      if (c.isMesh) {
-        c.castShadow = true;
-        c.receiveShadow = true;
-        if (c.material) {
-          try {
-            c.material.flatShading = true;
-            if ("metalness" in c.material) c.material.metalness = 0.05;
-            if ("roughness" in c.material) c.material.roughness = 0.6;
-            c.material.needsUpdate = true;
-          } catch {}
-        }
-      }
-    });
-    onModelLoaded && onModelLoaded(obj);
-  }, [obj, onModelLoaded]);
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-  useFrame((state) => {
-    if (!group.current) return;
-    const p = clamp(progressRef.current);
-    const eased = easeInOutCubic(p);
-    const fromZ = isMobile ? 280000 : 420000;
-    group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
+  const logoSize = isMobile ? 100 : 140;
+  const linkFontSize = isMobile ? 14 : 16;
+  const linkSpacing = isMobile ? 8 : 12;
 
-    // base appear rotation on X while appearing
-    group.current.rotation.x = eased * (Math.PI * 0.12);
+  const linkStyle = {
+    color: "#fff",
+    fontSize: linkFontSize,
+    fontWeight: 600,
+    letterSpacing: 1,
+    margin: `0 ${linkSpacing / 2}px`,
+    fontFamily: "'Inconsolata', monospace",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+  };
 
-    // continuous idle rotation on all axes (time-based)
-    const t = state.clock.getElapsedTime();
-    group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
-    group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
-    group.current.rotation.z += 0.0012 + 0.015 * Math.cos(t * 0.6) * 0.01;
+  const dotStyle = {
+    color: "#ffcc00",
+    fontSize: linkFontSize + 2,
+    margin: `0 ${linkSpacing / 2}px`,
+    userSelect: "none",
+    pointerEvents: "none",
+  };
 
-    // scale in with appear
-    group.current.scale.setScalar(0.0001 + eased);
+  const NavLink = ({ page, children }) => {
+    const activeStyle = currentPage === page ? { opacity: 1 } : { opacity: 0.85 };
+    return (
+      <span
+        onClick={() => onNavigate(page)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => (e.key === "Enter" ? onNavigate(page) : null)}
+        style={{ ...linkStyle, ...activeStyle }}
+      >
+        {children}
+      </span>
+    );
+  };
 
-    if (obj) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        background: "#000",
+        zIndex: 999,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: 25,
+        paddingBottom: 8,
+        boxSizing: "border-box",
+      }}
+    >
+      <a
+        style={{ display: "block", marginBottom: 24, cursor: "pointer" }}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate("home");
+        }}
+        href="/"
+        aria-label="Home"
+      >
+        <NPLogo size={logoSize} />
+      </a>
+
+      <nav style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <NavLink page="home">Home</NavLink>
+        <span style={dotStyle}>•</span>
+        <NavLink page="team">Team</NavLink>
+        <span style={dotStyle}>•</span>
+        <NavLink page="joinus">Join Us</NavLink>
+        <span style={dotStyle}>•</span>
+        <NavLink page="schedule">Schedule</NavLink>
+        <span style={dotStyle}>•</span>
+        <NavLink page="contact">Contact</NavLink>
+      </nav>
+    </div>
+  );
+}
+
+function TeamContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00" }}>Team</h1>
+      <p>
+        The Team
+      </p>
+      <ul>
+        <li>Team Leader: Matěj Prokop</li>
+        <li>Engineer: Lukáš Moravec</li>
+        <li>Finance manager: Lukáš Martin</li>
+        <li>Marketing manager: Veronika Lindová</li>
+      </ul>
+      <h1 style={{ color: "#ffcc00" }}>About Us</h1>
+      <p>
+        We are the only Czech team and a top contender in the prestigious international STEM racing competition.
+      <p>
+        We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.
+      <p>
+        Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.
+      <p>
+        We collaborate with partners like the Czech Technical University to enhance our expertise.
+      </p> 
+    </div>
+  );
+}
+
+function ScheduleContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00" }}>Schedule</h1>
+      <p>
+        Next up: Poland
+      </p>
+      <ol>
+        <li>Oct 11</li>
+      </ol>
+    </div>
+  );
+}
+
+function ContactContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00" }}>Contact</h1>
+      <p>For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a></p>
+    </div>
+  );
+}
+function JoinUsContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00" }}>Join Us</h1>
+      <p>Want to have the chance to compete for a scholarship in a prestigeous Formula One-backed competition? Contact us!</p>
+    </div>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div style={{
+      position: "absolute", top: 0, left: 0,
+      width: "100%", height: "100%",
+      background: "#000", display: "flex",
+      alignItems: "center", justifyContent: "center",
+      color: "#ffcc00", fontFamily: "'Inconsolata', monospace",
+      fontSize: 13, letterSpacing: 2, zIndex: 1000
+    }}>
+      <NPLogo size={200} />
+      <div style={{ position: "absolute", alignItems: "center", paddingTop: 150 }}>Loading…</div>
+    </div>
+  );
+}
+
+function InteractiveModel({ onLoad, controlRef, scale }) {
+  const obj = useLoader(OBJLoader, "/models/F1.obj");
+  const group = useRef();
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (obj && !initialized) {
       obj.traverse((c) => {
-        if (c.isMesh && c.material) c.material.opacity = clamp(eased);
+        if (c.isMesh) {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          c.material.polygonOffset = true;
+          c.material.depthWrite = true;
+          c.material.polygonOffsetFactor = 5;
+          c.material.polygonOffsetUnits = 5;
+          c.material.needsUpdate = true;
+        }
       });
+      onLoad && onLoad();
+      setInitialized(true);
+      if (controlRef) controlRef.current = group.current;
     }
-  });
+  }, [obj, initialized, onLoad, controlRef]);
 
   return (
     <group ref={group}>
-      <primitive object={obj} scale={scale} position={[0, 0, 0]} />
+      <primitive object={obj} scale={scale} position={[0, 0, 0.5]} />
     </group>
   );
 }
 
-/* ---------- LabelsFollower (kept but tag creation commented out) ---------- */
-function LabelsFollower(props) {
-  // Labels/dom creation was commented out per your request.
-  // This function is left present in case you later re-enable labels.
+function AutoRotate({ modelRef, dragging, isMobile }) {
+  const speed = isMobile ? 0.1 : 0.03;
+  const speedY = isMobile ? 0.12 : 0.07;
+
+  useFrame((_, delta) => {
+    const obj = modelRef.current;
+    if (!dragging.current && obj) {
+      obj.rotation.x += speed * delta;
+      obj.rotation.y += speedY * delta;
+      obj.rotation.z += speed * delta;
+    }
+  });
   return null;
 }
 
-/* ---------- App (main) ---------- */
-export default function App() {
-  // google font (Inconsolata) left in — Microgramma self-host below
-  useEffect(() => {
-    const id = "__npr_google_fonts_inconsolata";
-    if (!document.getElementById(id)) {
-      const link = document.createElement("link");
-      link.id = id;
-      link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap";
-      document.head.appendChild(link);
-    }
-  }, []);
-
-  // refs
-  const logoWrapRef = useRef(null);
-  const scrollRef = useRef(null); // internal scrollable container
-
-  const modelRef = useRef(null);
-  const anchorsRef = useRef([]);
-  const timelineProgressRef = useRef(0);
-  const timelineTargetRef = useRef(0);
-  const animatingRef = useRef(false);
+function ThreeDCar({ show = true }) {
+  const [loading, setLoading] = useState(true);
+  const modelRef = useRef();
+  const dragging = useRef(false);
+  const prev = useRef({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
-  const [labelsVisible, setLabelsVisible] = useState(false);
+  const [modelScale, setModelScale] = useState(600000);
 
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+
+    const onResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      setModelScale(mobile ? 250000 : 600000);
+    };
     onResize();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // handle model loaded to compute anchors (kept)
-  const handleModelLoaded = (loadedObj) => {
-    modelRef.current = loadedObj;
-    const bbox = new THREE.Box3().setFromObject(loadedObj);
-    const size = bbox.getSize(new THREE.Vector3());
-    const min = bbox.min;
-    const max = bbox.max;
-    const center = bbox.getCenter(new THREE.Vector3());
-    const anchorsWorld = [];
-    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06)); // helmet
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z)); // front
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z)); // back
-    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08)); // wheel
-    anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
-  };
-
-  // combine translate + scale on wrapper for smooth transform
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const p = clamp(timelineProgressRef.current);
-      const eased = easeInOutCubic(p);
-      const wrap = logoWrapRef.current;
-      if (wrap) {
-        const startSize = isMobile ? 260 : 520;
-        const endSize = isMobile ? 56 : 90;
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const finalLeft = window.innerWidth / 2; // keep centered horizontally
-        const finalTop = 100;
-        const dx = finalLeft - centerX;
-        const dy = finalTop - centerY;
-        const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
-        wrap.style.transformOrigin = "center top";
-        wrap.style.transition = "transform 0ms linear";
-        wrap.style.opacity = "1";
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [isMobile]);
-
-  // timeline tween
-  function animateTimelineTo(target = 0, duration = 700) {
-    timelineTargetRef.current = clamp(target);
-    if (animatingRef.current) return;
-    animatingRef.current = true;
-    const startTS = performance.now();
-    const from = timelineProgressRef.current;
-    const delta = timelineTargetRef.current - from;
-    function step(now) {
-      const t = Math.min(1, (now - startTS) / duration);
-      timelineProgressRef.current = clamp(from + delta * easeInOutCubic(t));
-      if (t < 1) requestAnimationFrame(step);
-      else {
-        animatingRef.current = false;
-        timelineProgressRef.current = timelineTargetRef.current;
-        if (Math.abs(timelineProgressRef.current - 1) < 1e-6) setLabelsVisible(true);
-        else setLabelsVisible(false);
-      }
-    }
-    requestAnimationFrame(step);
-  }
-
-  // scroll handlers: use the internal scroll container (scrollRef.current)
-  useEffect(() => {
-    const sc = scrollRef.current;
-    if (!sc) return;
-
-    const onWheel = (e) => {
-      if (sc.scrollTop <= 100) {
-        if (e.deltaY > 0) animateTimelineTo(1, 700);
-        else if (e.deltaY < 0) animateTimelineTo(0, 700);
-      }
-    };
-
-    let touchStartY = null;
-    const onTouchStart = (ev) => {
-      if (sc.scrollTop <= 100) touchStartY = ev.touches ? ev.touches[0].clientY : null;
-      else touchStartY = null;
-    };
-    const onTouchMove = (ev) => {
-      if (touchStartY == null) return;
-      const y = ev.touches ? ev.touches[0].clientY : null;
-      if (y == null) return;
-      const dy = touchStartY - y;
-      if (Math.abs(dy) > 8) {
-        if (dy > 0) animateTimelineTo(1, 700);
-        else animateTimelineTo(0, 700);
-        touchStartY = null;
-      }
-    };
-
-    sc.addEventListener("wheel", onWheel, { passive: true });
-    sc.addEventListener("touchstart", onTouchStart, { passive: true });
-    sc.addEventListener("touchmove", onTouchMove, { passive: true });
-
+    document.body.style.overflow = show ? "hidden" : "";
     return () => {
-      sc.removeEventListener("wheel", onWheel);
-      sc.removeEventListener("touchstart", onTouchStart);
-      sc.removeEventListener("touchmove", onTouchMove);
-    };
-  }, []);
-
-  // ensure body background & disable native page scroll (we use internal scroll area)
-  useEffect(() => {
-    document.body.style.background = "#191919";
-    // hide page scrollbars — we will use the internal scroll container
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = "";
+      window.removeEventListener("resize", onResize);
       document.body.style.overflow = "";
     };
-  }, []);
+  }, [show]);
+
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    dragging.current = true;
+    prev.current = { x: e.clientX, y: e.clientY };
+  };
+  const onPointerUp = (e) => {
+    e.preventDefault();
+    dragging.current = false;
+  };
+  const onPointerMove = (e) => {
+    if (!dragging.current || !modelRef.current) return;
+    e.preventDefault();
+    const dx = e.clientX - prev.current.x;
+    const dy = e.clientY - prev.current.y;
+    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), dx * 0.005);
+    modelRef.current.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), dy * 0.005);
+    prev.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const cameraSettings = isMobile
+    ? { position: [0, 0, modelScale * 0.33], fov: 10, near: 10000, far: 500000 }
+    : { position: [0, 0, 200000], fov: 7, near: 10000, far: 500000 };
+
+  if (!show) return null;
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative", color: "#fff" }}>
-      <style>{`
-        /* Microgramma (self-host) & Inconsolata fallback */
-        @font-face {
-          font-family: 'Microgramma';
-          src: url('/fonts/microgramma.woff2') format('woff2');
-          font-weight: 700;
-          font-style: normal;
-          font-display: swap;
-        }
-        .title-microgramma { font-family: 'Microgramma', Inconsolata, monospace; color: #ffcc00; }
-        .body-zalando { font-family: 'Zalando', system-ui, -apple-system, 'Segoe UI', Roboto, Arial; color: #e6e6e6; }
+    <div
+      style={{
+        position: "fixed",
+        top: "var(--topbar-height, 140px)",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "#000",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        touchAction: "none",
+        zIndex: 1,
+      }}
+    >
+      {loading && <LoadingScreen />}
 
-        /* hide any scrollbars within the scroll container */
-        .scroll-container {
-          height: 100vh;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          background: #191919;
-        }
-        .scroll-container::-webkit-scrollbar { display: none; width: 0; height: 0; }
-        .scroll-container { scrollbar-width: none; -ms-overflow-style: none; }
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        camera={cameraSettings}
+        style={{ width: "100%", height: "100%", pointerEvents: "all" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onCreated={({ gl, scene }) => {
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 0.6;
+          scene.background = new THREE.Color(0x000000);
+        }}
+      >
+        <ambientLight intensity={0.1} />
+        <directionalLight
+          castShadow
+          intensity={2}
+          position={[5, 10, 5]}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.0005}
+          shadow-camera-near={1}
+          shadow-camera-far={50}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+          shadow-radius={4}
+        />
 
-        /* sections: closer spacing and zig-zag text */
-        .site-section { padding: 48px 8vw; min-height: 48vh; display:flex; align-items:center; }
-        .site-section .content { max-width: 800px; }
-        .site-section:nth-child(odd) .content { margin-left: 0; text-align: left; transform: translateX(0); }
-        .site-section:nth-child(even) .content { margin-left: auto; text-align: right; transform: translateX(0); }
-        .site-section h1 { margin: 0 0 8px 0; font-size: 36px; }
-        .site-section p { margin: 6px 0 0 0; line-height: 1.5; }
+        <Suspense fallback={null}>
+          <Environment preset="city" background={false} />
+          <Center>
+            <InteractiveModel onLoad={() => setLoading(false)} controlRef={modelRef} scale={modelScale} />
+          </Center>
+          <AutoRotate modelRef={modelRef} dragging={dragging} isMobile={isMobile} />
+          <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.5} far={10} />
+        </Suspense>
 
-        /* team images row */
-        .team-images { display:flex; gap: 12px; margin-top: 12px; flex-wrap:wrap; }
-        .team-images img { width: 220px; height: 140px; object-fit: cover; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+        <EffectComposer multisampling={4}>
+          <SSAO samples={31} radius={60000000} intensity={50} luminanceInfluence={0.6} color="black" />
+        </EffectComposer>
+      </Canvas>
+    </div>
+  );
+}
 
-        @media (max-width: 768px) {
-          .site-section { padding: 28px 6vw; min-height: 40vh; flex-direction:column; align-items:flex-start; }
-          .site-section:nth-child(even) .content { text-align: left; margin-left:0; }
-          .team-images img { width: calc(50% - 8px); height: 120px; }
-        }
-      `}</style>
+export default function App() {
+  const [page, setPage] = useState("home"); // 'home' | 'team' | 'schedule' | 'contact'
+  const [isMobile, setIsMobile] = useState(false);
 
-      {/* internal scroll container — this is the only scrollable element (no browser scrollbar) */}
-      <div ref={scrollRef} className="scroll-container">
-        {/* HERO area (sticky canvas & centered logo) */}
-        <section style={{ height: "100vh", position: "relative" }}>
-          <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-            {/* LOGO wrapper: fixed so it stays visible, but transform is controlled via timeline */}
-            <div
-              ref={logoWrapRef}
-              style={{
-                position: "fixed",
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%,-50%) scale(1)",
-                zIndex: 60, // on top of canvas
-                pointerEvents: "none",
-                willChange: "transform, opacity",
-              }}
-              aria-hidden
-            >
-              <NPLogo size={isMobile ? 260 : 520} />
-            </div>
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
-            {/* fixed Canvas on top of content so content scrolls under it */}
-            <div style={{ position: "fixed", inset: 0, zIndex: 50, pointerEvents: "none" }}>
-              <Canvas
-                shadows
-                dpr={[1, 2]}
-                camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
-                style={{ width: "100%", height: "100%" }}
-                onCreated={({ gl, scene }) => {
-                  gl.shadowMap.enabled = true;
-                  gl.shadowMap.type = THREE.PCFSoftShadowMap;
-                  if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
-                  gl.toneMapping = THREE.ACESFilmicToneMapping;
-                  gl.toneMappingExposure = 0.6;
-                  scene.background = new THREE.Color(0x191919);
-                }}
-              >
-                <ambientLight intensity={0.12} />
-                <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
-                <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
+  // topbar height kept in a CSS var used by ThreeDCar and layout
+  const topbarHeight = isMobile ? 90 : 80; // tweak to match your TopBar sizing
+  useEffect(() => {
+    document.documentElement.style.setProperty("--topbar-height", `${topbarHeight}px`);
+  }, [topbarHeight]);
 
-                <Suspense fallback={null}>
-                  <Environment preset="city" background={false} />
-                  <Center>
-                    <InteractiveModel
-                      onModelLoaded={handleModelLoaded}
-                      progressRef={timelineProgressRef}
-                      isMobile={isMobile}
-                      scale={isMobile ? 300000 : 600000}
-                    />
-                  </Center>
-                  <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
-                </Suspense>
+  const renderContent = () => {
+    switch (page) {
+      case "home":
+        return null; // Home shows the full-screen ThreeDCar canvas — no extra content here
+      case "team":
+        return <TeamContent />;
+      case "joinus":
+        return <JoinUsContent />;
+      case "schedule":
+        return <ScheduleContent />;
+      case "contact":
+        return <ContactContent />;
+      default:
+        return null;
+    }
+  };
 
-                <LabelsFollower visible={labelsVisible} />
-                <EffectComposer multisampling={4}>
-                  <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
-                </EffectComposer>
-              </Canvas>
-            </div>
-          </div>
-        </section>
+  return (
+    <div style={{
+      width: "100vw",
+      minHeight: "100vh",
+      background: "#000",
+      overflowX: "hidden",
+      fontFamily: "'Inconsolata', monospace",
+      color: "#fff",
+    }}>
+      <TopBar currentPage={page} onNavigate={setPage} />
 
-        {/* Sections after hero (page scrollable here) */}
-        <main style={{ position: "relative", zIndex: 10 }}>
-          <section id="team" className="site-section" aria-labelledby="team-title">
-            <div className="content">
-              <h1 id="team-title" className="title-microgramma">Team</h1>
-              <p className="body-zalando">
-                We are a tight-knit racing crew with experience across design, engineering and race strategy. Our team focuses on speed, precision, and collaboration.
-              </p>
+      {/* 3D canvas only on Home */}
+      <ThreeDCar show={page === "home"} />
 
-              {/* IMAGES - replace src with your images (placeholders below) */}
-              <div className="team-images" aria-hidden>
-                <img src="https://images.unsplash.com/photo-1542293787938-c9e299b88080?w=1600&q=80&auto=format&fit=crop" alt="team 1" />
-                <img src="https://images.unsplash.com/photo-1517260918467-3f6f0a7f5a86?w=1600&q=80&auto=format&fit=crop" alt="team 2" />
-                <img src="https://images.unsplash.com/photo-1545239351-1141bd82e8a6?w=1600&q=80&auto=format&fit=crop" alt="team 3" />
-              </div>
-            </div>
-          </section>
-
-          <section id="join" className="site-section" aria-labelledby="join-title">
-            <div className="content">
-              <h1 id="join-title" className="title-microgramma">Join Us</h1>
-              <p className="body-zalando">
-                Interested in joining? We look for enthusiastic teammates passionate about racing and engineering. Check our openings and reach out.
-              </p>
-            </div>
-          </section>
-
-          <section id="schedule" className="site-section" aria-labelledby="schedule-title">
-            <div className="content">
-              <h1 id="schedule-title" className="title-microgramma">Schedule</h1>
-              <p className="body-zalando">
-                Race dates, testing sessions and events are listed here. Follow us for updates as the season progresses.
-              </p>
-            </div>
-          </section>
-
-          <section id="contact" className="site-section" aria-labelledby="contact-title">
-            <div className="content">
-              <h1 id="contact-title" className="title-microgramma">Contact</h1>
-              <p className="body-zalando">
-                For press, partnerships or general enquiries, reach out at hello@example.com.
-              </p>
-            </div>
-          </section>
-        </main>
-
-        {/* final tail */}
-        <div style={{ height: 24 }} />
+      {/* Content area below topbar. We push it down using the CSS variable ---topbar-height */}
+      <div style={{
+        position: "relative",
+        marginTop: "var(--topbar-height, 160px)",
+        zIndex: 2,
+        display: "flex",
+        justifyContent: "center",
+        padding: "24px 16px",
+      }}>
+        <div style={{ width: "100%", maxWidth: 1200 }}>
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

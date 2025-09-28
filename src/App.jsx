@@ -11,10 +11,10 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-/* ---------- labels ---------- */
+/* ---------- labels (4) ---------- */
 const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
 
-/* ---------- NPLogo (SVG) ---------- */
+/* ---------- NPLogo (kept original SVG paths) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -26,9 +26,8 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* full SVG content kept from your original — paste your complete paths here */}
+      {/* ... original SVG content kept exactly as you provided ... */}
       <g transform="translate(-54.124261,-130.25079)">
-        {/* ... original logo paths (omitted here for brevity) ... */}
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
             <path d="m 53.020878,195.78621 h -2.060221 l -2.610554,-2.65289 h -1.509887 v 2.65289 H 45.23155 v -7.02733 h 6.02544 q 1.580443,0 1.580443,1.22767 v 1.91911 q 0,0.889 -0.818444,1.22766 h -1.693332 z m -1.763888,-4.41678 v -0.84666 q 0,-0.55033 -0.465666,-0.55033 h -3.951108 v 1.96144 h 3.951108 q 0.465666,0 0.465666,-0.56445 z" />
@@ -46,9 +45,9 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* ---------- InteractiveModel:
-   - triggered appear animation via progressRef
-   - continuous idle rotation on x/y/z
+/* ---------- InteractiveModel (inside Canvas)
+   - appear animation driven by progressRef
+   - continuous idle rotation along x/y/z
 ---------- */
 function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000 }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
@@ -68,7 +67,6 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 
   useFrame((state, delta) => {
     if (!group.current) return;
-
     // appear progress
     const p = clamp(progressRef.current);
     const eased = easeInOutCubic(p);
@@ -76,19 +74,19 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
     const fromZ = isMobile ? 280000 : 420000;
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
 
-    // base rotation for appear: rotates around X
+    // base appear rotation on X (when appearing)
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
-    // idle continuous rotation: add time-based sin/cos and constant increments for x/y/z
+    // continuous subtle idle rotation added to all axes (time-based)
     const t = state.clock.getElapsedTime();
-    group.current.rotation.x += 0.0025 * Math.sin(t * 0.8) + 0.002 * delta; // subtle
-    group.current.rotation.y += 0.002 * Math.cos(t * 0.6) + 0.0018 * delta;
-    group.current.rotation.z += 0.0018 * Math.sin(t * 0.5) + 0.001 * delta;
+    // add small sinusoidal variation for life
+    group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
+    group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
+    group.current.rotation.z += 0.0012 + 0.015 * Math.cos(t * 0.6) * 0.01;
 
-    // scale in
+    // scale in with appear
     group.current.scale.setScalar(0.0001 + eased);
 
-    // fade meshes in
     if (obj) {
       obj.traverse((c) => {
         if (c.isMesh && c.material) c.material.opacity = clamp(eased);
@@ -103,39 +101,36 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
   );
 }
 
-/* ---------- CameraAnimator:
-   - when zoomTrigger true, animate camera to wheel and orient model to Z0 X90 Y0
-   - smooth lerp for camera and rotation
+/* ---------- CameraAnimator
+   - when zoomTrigger true, smoothly moves camera to target (wheel) position
+   - rotates model to Z=0, X=90deg, Y=0 (smoothed) while zooming
 ---------- */
 function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3());
-  const lookAtPos = useRef(new THREE.Vector3());
-  const animT = useRef(0);
-  const running = useRef(false);
+  const dst = useRef(new THREE.Vector3());
+  const temp = useRef(new THREE.Vector3());
+  const quatTarget = useRef(new THREE.Quaternion());
+  const anim = useRef({ running: false, t: 0 });
 
   useEffect(() => {
     if (zoomTrigger) {
-      running.current = true;
-      animT.current = 0;
+      anim.current.running = true;
+      anim.current.t = 0;
+      // target quaternion: X=90deg, Y=0, Z=0
+      quatTarget.current.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0, "XYZ"));
     } else {
-      running.current = false;
-      animT.current = 0;
+      anim.current.running = false;
+      anim.current.t = 0;
     }
   }, [zoomTrigger]);
 
   useFrame((_, delta) => {
-    // if not running, slowly restore camera to default
-    if (!running.current) {
-      const defaultPos = new THREE.Vector3(0, 0, isMobile ? 120000 : 220000);
+    const defaultPos = new THREE.Vector3(0, 0, isMobile ? 120000 : 220000);
+
+    if (!anim.current.running) {
+      // restore camera to default
       camera.position.lerp(defaultPos, 0.06);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
-      // restore model orientation slowly if modelRef provided
-      if (modelRef.current) {
-        modelRef.current.rotation.x += (0 - modelRef.current.rotation.x) * 0.06;
-        modelRef.current.rotation.y += (0 - modelRef.current.rotation.y) * 0.06;
-        modelRef.current.rotation.z += (0 - modelRef.current.rotation.z) * 0.06;
-      }
       return;
     }
 
@@ -143,43 +138,37 @@ function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
     const model = modelRef.current;
     if (!anchors || !anchors.length || !model) return;
 
-    // wheel anchor assumed at index 3
-    const wheelLocal = anchors[3];
-    const wheelWorld = wheelLocal.clone();
-    model.localToWorld(wheelWorld);
+    // compute wheel world position (anchor 3)
+    temp.current.copy(anchors[3]);
+    model.localToWorld(temp.current);
 
-    // desired camera target for wheel: offset backwards so wheel is framed
-    // adjust offsets for mobile vs desktop (values chosen by eye)
-    const offsetX = 0;
-    const offsetY = isMobile ? 0.01 * 10000 : 0.02 * 10000;
-    const offsetZ = isMobile ? 0.28 * 10000 : 0.35 * 10000;
+    // destination slightly offset so wheel is framed (tuned by scene scale)
+    dst.current.set(
+      temp.current.x + (isMobile ? 0.12 * 10000 : 0.18 * 10000),
+      temp.current.y + 0.07 * 10000,
+      temp.current.z + 0.28 * 10000
+    );
 
-    targetPos.current.set(wheelWorld.x + offsetX, wheelWorld.y + offsetY, wheelWorld.z + offsetZ);
-    lookAtPos.current.copy(wheelWorld);
+    // advance animation time
+    anim.current.t = Math.min(1, anim.current.t + delta * 0.8);
+    const tt = easeInOutCubic(anim.current.t);
 
-    // animate t
-    animT.current = Math.min(1, animT.current + delta * 0.8); // speed
-    const tt = easeInOutCubic(animT.current);
+    // lerp camera and make it look at wheel
+    camera.position.lerp(dst.current, 0.06 * tt + 0.02);
+    camera.lookAt(temp.current);
 
-    // lerp camera
-    camera.position.lerp(targetPos.current, 0.03 * (0.5 + tt * 0.5));
-    camera.lookAt(lookAtPos.current);
-
-    // simultaneously rotate model to Z=0, X=PI/2, Y=0 smoothly (so front faces up)
-    const targetRot = new THREE.Euler(Math.PI / 2, 0, 0); // X=90deg
-    // we want Z=0 and Y=0; convert to quaternion and slerp
-    const qTarget = new THREE.Quaternion().setFromEuler(targetRot);
-    const qCurr = model.quaternion.clone();
-    qCurr.slerp(qTarget, 0.03 * (0.5 + tt * 0.5));
-    model.quaternion.copy(qCurr);
+    // slerp model rotation toward target quaternion
+    if (model && model.quaternion) {
+      model.quaternion.slerp(quatTarget.current, 0.03 * (0.5 + tt));
+    }
   });
 
   return null;
 }
 
-/* ---------- LabelsFollower:
-   - inside Canvas; projects anchors to screen and updates DOM labels & SVG lines
-   - mobile: arrange above/below
+/* ---------- LabelsFollower (inside Canvas)
+   Projects anchors (local model-space points) to screen and updates DOM label positions & SVG polyline points.
+   Mobile: above/below; Desktop: edge labels with connectors.
 ---------- */
 function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible, isMobile }) {
   const { camera, size } = useThree();
@@ -189,54 +178,42 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
     const anchors = anchorsRef.current;
     const model = modelRef.current;
     if (!visible || !model || !anchors || !anchors.length) {
-      // hide labels & lines
       labelDomRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-        }
+        if (el) el.style.opacity = "0";
       });
       lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
       return;
     }
 
     if (isMobile) {
-      // top two above, bottom two below (centered horizontally)
-      const aboveY = Math.max(48, size.height * 0.18);
-      const belowY = Math.max(48, size.height * 0.82);
-      const spacing = 12;
-      // compute centered x offsets
-      const widths = labelDomRefs.current.map((el) => (el ? el.offsetWidth : 120));
-      const totalWidthTop = widths[0] + widths[1] + spacing;
-      const startXTop = size.width / 2 - totalWidthTop / 2;
-      for (let i = 0; i < LABELS.length; i++) {
+      // mobile: 2 above, 2 below, centered horizontally
+      const aboveY = Math.max(40, size.height * 0.18);
+      const belowY = Math.max(40, size.height * 0.82);
+      const spacing = 16;
+      const widths = labelDomRefs.current.map((el) => (el ? el.offsetWidth : 80));
+      const totalWidth = widths.slice(0, 2).reduce((a, b) => a + b, 0) + spacing;
+      for (let i = 0; i < labelDomRefs.current.length; i++) {
         const el = labelDomRefs.current[i];
         if (!el) continue;
-        if (i < 2) {
-          const x = startXTop + (i === 0 ? 0 : widths[0] + spacing);
-          el.style.display = "block";
-          el.style.transition = "opacity 360ms ease, transform 360ms ease";
-          el.style.opacity = "1";
-          el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(aboveY)}px, 0)`;
-        } else {
-          // bottom row
-          const idx = i - 2;
-          const startXBot = size.width / 2 - (widths[2] + widths[3] + spacing) / 2;
-          const x = startXBot + (idx === 0 ? 0 : widths[2] + spacing);
-          el.style.display = "block";
-          el.style.transition = "opacity 360ms ease, transform 360ms ease";
-          el.style.opacity = "1";
-          el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(belowY)}px, 0)`;
-        }
+        const isTop = i < 2;
+        const idx = isTop ? i : i - 2;
+        const baseX = size.width / 2 - totalWidth / 2;
+        const x = baseX + idx * (widths[idx] + spacing);
+        const y = isTop ? aboveY : belowY;
+        el.style.display = "block";
+        el.style.transition = "opacity 420ms ease, transform 420ms ease";
+        el.style.opacity = "1";
+        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
       }
-      // hide lines on mobile for clarity
+      // hide lines on mobile
       lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
       return;
     }
 
-    // desktop: edge labels with connectors
+    // Desktop: edge labels with connectors
     const edgePadding = 18;
     for (let i = 0; i < anchors.length; i++) {
-      const isRight = i < 2; // first two right, last two left
+      const isRight = i < 2; // first two -> right, last two -> left
       const labelEl = labelDomRefs.current[i];
       const poly = lineRefs.current[i];
       if (!labelEl || !poly) continue;
@@ -253,13 +230,13 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
       const top = Math.max(12, Math.min(size.height - rect.height - 12, ay - rect.height / 2));
 
       labelEl.style.display = "block";
-      labelEl.style.transition = "opacity 360ms ease, transform 360ms ease";
+      labelEl.style.transition = "opacity 420ms ease, transform 420ms ease";
       labelEl.style.opacity = "1";
       labelEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
 
-      // connector: anchor -> elbow -> end
+      // small connector: anchor -> elbow -> to label
       const dx = isRight ? 70 : -70;
-      const dy = isRight ? -24 : 24;
+      const dy = isRight ? -20 : 20;
       const elbowX = ax + dx;
       const elbowY = ay + dy;
       const endX = isRight ? left - 8 : left + rect.width + 8;
@@ -275,11 +252,10 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // logo refs
+  // refs
   const logoWrapRef = useRef(null);
   const logoScaleRef = useRef(null);
 
-  // model + anchors + labels
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
   const labelDomRefs = useRef([]);
@@ -294,24 +270,24 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // timeline progress (0..1)
-  const timelineProgressRef = useRef(0);
+  // timeline
+  const timelineProgressRef = useRef(0); // 0..1 current
   const timelineTargetRef = useRef(0);
   const animatingRef = useRef(false);
 
-  // labels visible
+  // labels visibility (only after animation completes)
   const [labelsVisible, setLabelsVisible] = useState(false);
 
   // zoom-to-wheel trigger
   const [zoomToWheel, setZoomToWheel] = useState(false);
 
-  // create label DOM + SVG overlay
+  // ----- create DOM labels & SVG overlay -----
   useEffect(() => {
     labelDomRefs.current = [];
     lineRefs.current = [];
 
-    const old = document.getElementById("__npr_svg_overlay_lines");
-    if (old) old.remove();
+    const oldSvg = document.getElementById("__npr_svg_overlay_lines");
+    if (oldSvg) oldSvg.remove();
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("id", "__npr_svg_overlay_lines");
@@ -334,7 +310,7 @@ export default function App() {
         transform: "translate3d(-9999px,-9999px,0)",
         pointerEvents: "none",
         opacity: "0",
-        display: "none",
+        display: "none", // hidden until animation finishes
         color: "#ffffff",
         fontFamily: "'Microgramma', Inter, sans-serif",
         fontSize: "16px",
@@ -344,7 +320,7 @@ export default function App() {
         zIndex: 10000,
       });
       el.textContent = txt;
-      el.style.transition = "opacity 360ms ease, transform 360ms ease";
+      el.style.transition = "opacity 420ms ease, transform 420ms ease";
       document.body.appendChild(el);
       labelDomRefs.current.push(el);
 
@@ -366,9 +342,10 @@ export default function App() {
     };
   }, [isMobile]);
 
-  // compute anchors (semantic points) once model loads
+  // ----- compute anchors when model loads (pin to semantic parts) -----
   const handleModelLoaded = (loadedObj) => {
     modelRef.current = loadedObj;
+
     const bbox = new THREE.Box3().setFromObject(loadedObj);
     const size = bbox.getSize(new THREE.Vector3());
     const min = bbox.min;
@@ -376,19 +353,19 @@ export default function App() {
     const center = bbox.getCenter(new THREE.Vector3());
 
     const anchorsWorld = [];
-    // helmet
+    // helmet: slightly forward & top-center
     anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06));
-    // front
+    // front: front-most center
     anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z));
-    // back
+    // back: rear-most center
     anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z));
-    // wheel-ish
+    // wheel: front-right-bottom-ish
     anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08));
 
     anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
   };
 
-  // logo transform RAF (center -> top-center at end; keeps same top distance)
+  // ----- timeline RAF to update logo transform from timelineProgressRef -----
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -402,22 +379,21 @@ export default function App() {
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-
-        // final top center with same distance from top (e.g. 14px)
-        const finalX = window.innerWidth / 2;
-        const finalY = 14; // distance from top to keep
-
-        const dx = finalX - centerX;
-        const dy = finalY - centerY;
+        // ONLY change finalLeft: center horizontally
+        const finalLeft = window.innerWidth / 2; // <- modified as requested
+        const finalTop = 100; // keep same distance from top
+        const dx = finalLeft - centerX;
+        const dy = finalTop - centerY;
 
         wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px)`;
         const scale = (startSize + (endSize - startSize) * eased) / startSize;
         scaleEl.style.transform = `scale(${scale})`;
         scaleEl.style.transformOrigin = "center top";
 
-        // fade in near end
+        // fade the logo near the end so small condensed logo stands out
         wrap.style.transition = "opacity 420ms ease";
-        wrap.style.opacity = String(Math.min(1, Math.max(0, (p - 0.85) / 0.15)));
+        // as it condenses keep it visible (opacity used for subtle fade)
+        wrap.style.opacity = String(1 - Math.max(0, (p - 0.95) / 0.05));
       }
 
       raf = requestAnimationFrame(loop);
@@ -426,7 +402,7 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline animator
+  // ----- timeline animator (tween to target) -----
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
@@ -443,12 +419,13 @@ export default function App() {
       else {
         animatingRef.current = false;
         timelineProgressRef.current = timelineTargetRef.current;
-        // labels only at the end (progress === 1)
+        // set labels only when fully shown
         if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
           setLabelsVisible(true);
           labelDomRefs.current.forEach((el) => {
             if (el) {
               el.style.display = "block";
+              // fade-in
               requestAnimationFrame(() => (el.style.opacity = "1"));
             }
           });
@@ -458,7 +435,9 @@ export default function App() {
           labelDomRefs.current.forEach((el) => {
             if (el) {
               el.style.opacity = "0";
-              setTimeout(() => el && (el.style.display = "none"), 360);
+              setTimeout(() => {
+                if (el) el.style.display = "none";
+              }, 420);
             }
           });
           lineRefs.current.forEach((line) => line && line.setAttribute("opacity", "0"));
@@ -468,15 +447,16 @@ export default function App() {
     requestAnimationFrame(step);
   }
 
-  // scroll triggers: respond only when within top band (100px tolerance)
+  // ----- scroll triggering: only process when user is within top ~100px of page (you can tune) -----
   useEffect(() => {
     const onWheel = (e) => {
       if (window.scrollY <= 100) {
-        if (e.deltaY > 0) animateTimelineTo(1, 700);
-        else if (e.deltaY < 0) animateTimelineTo(0, 700);
+        if (e.deltaY > 0) animateTimelineTo(1, 700); // play forward
+        else if (e.deltaY < 0) animateTimelineTo(0, 700); // reverse
       }
     };
 
+    // touch support
     let touchStartY = null;
     const onTouchStart = (ev) => {
       if (window.scrollY <= 100) touchStartY = ev.touches ? ev.touches[0].clientY : null;
@@ -494,6 +474,7 @@ export default function App() {
       }
     };
 
+    // detect scroll past hero to trigger camera zoom to wheel
     const onScroll = () => {
       const heroHeight = window.innerHeight * 0.98;
       if (window.scrollY > heroHeight) setZoomToWheel(true);
@@ -514,6 +495,7 @@ export default function App() {
     };
   }, []);
 
+  // ensure body background + font family
   useEffect(() => {
     document.body.style.background = "#191919";
   }, []);
@@ -542,10 +524,10 @@ export default function App() {
         body { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
 
-      {/* HERO */}
+      {/* HERO area (sticky canvas & centered logo) */}
       <section style={{ height: "160vh", position: "relative" }}>
         <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-          {/* big centered logo that moves to top-center at the end */}
+          {/* CENTERED LOGO — will tuck to top-center */}
           <div
             ref={logoWrapRef}
             style={{
@@ -555,6 +537,7 @@ export default function App() {
               transform: "translate(-50%,-50%)",
               zIndex: 40,
               pointerEvents: "none",
+              willChange: "transform",
             }}
             aria-hidden
           >
@@ -563,7 +546,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Canvas */}
+          {/* fixed Canvas */}
           <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
             <Canvas
               shadows
@@ -594,8 +577,17 @@ export default function App() {
                 <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
               </Suspense>
 
-              <LabelsFollower modelRef={modelRef} anchorsRef={anchorsRef} labelDomRefs={labelDomRefs} lineRefs={lineRefs} visible={labelsVisible} isMobile={isMobile} />
+              {/* Labels follower (updates DOM labels & polylines) */}
+              <LabelsFollower
+                modelRef={modelRef}
+                anchorsRef={anchorsRef}
+                labelDomRefs={labelDomRefs}
+                lineRefs={lineRefs}
+                visible={labelsVisible}
+                isMobile={isMobile}
+              />
 
+              {/* Camera animator: zoom to wheel when zoomToWheel is true; also rotates model to X90 */}
               <CameraAnimator anchorsRef={anchorsRef} modelRef={modelRef} zoomTrigger={zoomToWheel} isMobile={isMobile} />
 
               <EffectComposer multisampling={4}>
@@ -606,7 +598,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* tail so page scrolls */}
+      {/* tiny tail so page scrolls */}
       <div style={{ height: "40vh" }} />
     </div>
   );

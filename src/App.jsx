@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState, Suspense } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Center, ContactShadows } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
@@ -11,10 +11,10 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-/* ---------- labels (commented out / no-op) ---------- */
+/* ---------- labels (commented out as requested) ---------- */
 // const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
 
-/* ---------- NPLogo ---------- */
+/* ---------- NPLogo (kept original SVG paths) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -45,77 +45,64 @@ function NPLogo({ size = 300 }) {
   );
 }
 
-/* ---------- InteractiveModel (renders previously-loaded gltf) ---------- */
+/* ---------- InteractiveModel (inside Canvas)
+   - uses GLTF passed in as prop (App loads gltf with a manager)
+   - appear animation driven by progressRef
+   - continuous idle rotation along x/y/z
+---------- */
 function InteractiveModel({ gltf, onModelLoaded, progressRef, isMobile, scale = 600000 }) {
   const group = useRef();
 
-  // when gltf arrives, tweak materials & notify parent
   useEffect(() => {
-    if (!gltf || !gltf.scene) return;
-    const scene = gltf.scene;
-
-    scene.traverse((c) => {
+    if (!gltf) return;
+    // tweak materials for flatter, darker look and ensure sRGB encoding for textures
+    gltf.scene.traverse((c) => {
       if (c.isMesh) {
         c.castShadow = true;
         c.receiveShadow = true;
-        const mat = c.material;
-        if (mat) {
-          // color textures should be sRGB
-          if (mat.map) {
-            try {
-              mat.map.encoding = THREE.sRGBEncoding;
-              mat.map.needsUpdate = true;
-            } catch (err) {}
+        if (c.material) {
+          try {
+            c.material.flatShading = true;
+            if ("metalness" in c.material) c.material.metalness = 0.05;
+            if ("roughness" in c.material) c.material.roughness = 0.6;
+            // fix common encoding issues
+            if (c.material.map) {
+              c.material.map.encoding = THREE.sRGBEncoding;
+            }
+            if (c.material.emissiveMap) c.material.emissiveMap.encoding = THREE.sRGBEncoding;
+            c.material.needsUpdate = true;
+          } catch (err) {
+            // ignore
           }
-          if (mat.emissiveMap) {
-            try {
-              mat.emissiveMap.encoding = THREE.sRGBEncoding;
-              mat.emissiveMap.needsUpdate = true;
-            } catch (err) {}
-          }
-          if (!("metalness" in mat)) mat.metalness = 0.05;
-          if (!("roughness" in mat)) mat.roughness = 0.6;
-          mat.side = THREE.FrontSide;
-          mat.needsUpdate = true;
         }
       }
     });
-
-    onModelLoaded && onModelLoaded(scene);
+    onModelLoaded && onModelLoaded(gltf.scene);
   }, [gltf, onModelLoaded]);
 
   useFrame((state) => {
     if (!group.current) return;
-    const p = clamp(progressRef.current || 0);
+    // appear progress
+    const p = clamp(progressRef.current);
     const eased = easeInOutCubic(p);
-    const fromZ = isMobile ? 280000 : 420000;
 
-    // slide in
+    const fromZ = isMobile ? 280000 : 420000;
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
-    // base appear rotation on X
+
+    // base appear rotation on X (when appearing)
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
-    // continuous idle rotation (time-based)
+    // continuous idle rotation on all axes (time-based)
     const t = state.clock.getElapsedTime();
     group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
     group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
     group.current.rotation.z += 0.0012 + 0.015 * Math.cos(t * 0.6) * 0.01;
 
-    // scale in
+    // scale in with appear
     group.current.scale.setScalar(0.0001 + eased);
-
-    // fade in materials if they support opacity
-    if (gltf && gltf.scene) {
-      gltf.scene.traverse((c) => {
-        if (c.isMesh && c.material && "opacity" in c.material) {
-          c.material.opacity = clamp(eased);
-          c.material.transparent = c.material.opacity < 1;
-        }
-      });
-    }
   });
 
-  if (!gltf || !gltf.scene) return null;
+  if (!gltf) return null;
   return (
     <group ref={group}>
       <primitive object={gltf.scene} scale={scale} position={[0, 0, 0]} />
@@ -123,49 +110,35 @@ function InteractiveModel({ gltf, onModelLoaded, progressRef, isMobile, scale = 
   );
 }
 
-/* ---------- LabelsFollower (commented out per request) ---------- */
-// function LabelsFollower(...) { /* tags commented out */ }
+/* ---------- LabelsFollower and CameraAnimator commented out ----------
+   You asked to comment out tags and remove zoom/second animation.
+   If you want tags / camera zoom later, we can re-enable them.
+--------------------------------------------------------------------- */
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // fonts: Microgramma and Inconsolata pre-registered earlier — keep Microgramma as local.
+  // inject Inconsolata (keeps previous look) and microgramma/zalandos via @font-face below
   useEffect(() => {
-    // Inconsolata still in head for code if you want
-    const id1 = "__npr_google_inconsolata";
-    if (!document.getElementById(id1)) {
-      const l = document.createElement("link");
-      l.id = id1;
-      l.rel = "stylesheet";
-      l.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"; // fallback
-      document.head.appendChild(l);
+    const id = "__npr_google_fonts_inconsolata";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap";
+      document.head.appendChild(link);
     }
-    // also load Roboto for earlier requests (not necessary if you removed)
-    // keep Microgramma local via @font-face below (user had it locally)
   }, []);
 
-  // refs & state
+  // refs
   const logoWrapRef = useRef(null);
-  const scrollRef = useRef(null);
-
-  const [isMobile, setIsMobile] = useState(false);
-
-  // loading states
-  const totalAssets = 4; // 3 images + 1 glb
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [loadingPercent, setLoadingPercent] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  const [gltf, setGltf] = useState(null);
-
-  // timeline (animation) state -- scroll triggers in header area will animate this
-  const timelineProgressRef = useRef(0);
-  const timelineTargetRef = useRef(0);
-  const animatingRef = useRef(false);
-  const [labelsVisible, setLabelsVisible] = useState(false);
 
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
+  const labelDomRefs = useRef([]);
+  const lineRefs = useRef([]);
 
+  // responsive
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
     onResize();
@@ -173,116 +146,139 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // -------------------------
-  // Preload images + GLB and track progress (simple counter)
-  // -------------------------
+  // timeline
+  const timelineProgressRef = useRef(0); // 0..1 current
+  const timelineTargetRef = useRef(0);
+  const animatingRef = useRef(false);
+
+  // labels visible (commented out functionality)
+  const [labelsVisible, setLabelsVisible] = useState(false);
+
+  // loading manager & assets
+  const [percent, setPercent] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [gltf, setGltf] = useState(null);
+
   useEffect(() => {
-    let cancelled = false;
+    // Create a manager to monitor progress for model + images
+    const manager = new THREE.LoadingManager();
+    manager.onStart = () => setPercent(0);
+    manager.onProgress = (url, itemsLoaded, itemsTotal) => {
+      const p = Math.round((itemsLoaded / itemsTotal) * 100);
+      setPercent(p);
+    };
+    manager.onLoad = () => {
+      setPercent(100);
+      setLoaded(true);
+      // allow small timeout for UX
+      setTimeout(() => {
+        // still keep page locked until animation is explicitly ended by user (see below)
+      }, 250);
+    };
+    manager.onError = () => {
+      // still mark loaded to avoid blocking forever
+      setLoaded(true);
+    };
 
-    const inc = () => setLoadedCount((n) => {
-      const next = n + 1;
-      setLoadingPercent(Math.round((next / totalAssets) * 100));
-      if (next >= totalAssets && !cancelled) {
-        // small delay so user sees 100%
-        setTimeout(() => setIsLoaded(true), 250);
-      }
-      return next;
-    });
-
-    // load images
-    const imagePaths = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
-    imagePaths.forEach((src) => {
-      const img = new Image();
-      img.onload = () => inc();
-      img.onerror = () => inc();
-      img.src = src;
-    });
-
-    // load GLB
-    const loader = new GLTFLoader();
-    loader.load(
+    // Load GLTF
+    const gltfLoader = new GLTFLoader(manager);
+    gltfLoader.load(
       "/models/F1.glb",
-      (g) => {
-        // ensure textures encoding
-        try {
-          g.scene.traverse((c) => {
-            if (c.isMesh && c.material) {
-              const m = c.material;
-              if (m.map) {
-                m.map.encoding = THREE.sRGBEncoding;
-                m.map.needsUpdate = true;
-              }
-              if (m.emissiveMap) {
-                m.emissiveMap.encoding = THREE.sRGBEncoding;
-                m.emissiveMap.needsUpdate = true;
-              }
-              if (!("metalness" in m)) m.metalness = 0.05;
-              if (!("roughness" in m)) m.roughness = 0.6;
-              m.needsUpdate = true;
-            }
-          });
-        } catch (err) {
-          // ignore
-        }
-        setGltf(g);
-        inc();
+      (res) => {
+        // Ensure textures encoding is correct
+        res.scene.traverse((c) => {
+          if (c.isMesh && c.material) {
+            if (c.material.map) c.material.map.encoding = THREE.sRGBEncoding;
+            if (c.material.emissiveMap) c.material.emissiveMap.encoding = THREE.sRGBEncoding;
+            c.material.needsUpdate = true;
+          }
+        });
+        setGltf(res);
       },
-      // progress callback
       undefined,
-      () => {
-        // on error, still increment so page doesn't hang
-        inc();
+      (err) => {
+        console.error("GLTF load error:", err);
       }
     );
 
+    // preload team images using TextureLoader (so manager counts them)
+    const texLoader = new THREE.TextureLoader(manager);
+    ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"].forEach((u) => {
+      texLoader.load(u, () => {}, undefined, () => {});
+    });
+
     return () => {
-      cancelled = true;
+      // nothing to cleanup on manager
     };
   }, []);
 
-  // lock page body scrolling and use our scroll container; hide native scrollbar
+  // prevent body scrolling / interaction until all assets loaded AND timeline complete
   useEffect(() => {
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = prevHtmlOverflow || "";
-      document.body.style.overflow = prevBodyOverflow || "";
+    const applyBodyLock = () => {
+      // lock unless loaded && timelineProgressRef.current === 1
+      if (!loaded || timelineProgressRef.current < 1 - 1e-8) {
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+      } else {
+        document.documentElement.style.overflow = "";
+        document.body.style.overflow = "";
+      }
     };
-  }, []);
 
-  // when model loads, compute anchors (same semantic points as before)
-  const handleModelLoaded = (loadedScene) => {
-    modelRef.current = loadedScene;
-    try {
-      const bbox = new THREE.Box3().setFromObject(loadedScene);
-      const size = bbox.getSize(new THREE.Vector3());
-      const min = bbox.min;
-      const max = bbox.max;
-      const center = bbox.getCenter(new THREE.Vector3());
+    // heartbeat RAF to track timeline changes (because timelineProgressRef is a ref)
+    let raf = 0;
+    const tick = () => {
+      applyBodyLock();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [loaded]);
 
-      const anchorsWorld = [];
-      anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06)); // helmet
-      anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z)); // front
-      anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z)); // back
-      anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08)); // wheel
+  // ----- update logo transform (timeline)
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      const p = clamp(timelineProgressRef.current);
+      const eased = easeInOutCubic(p);
 
-      anchorsRef.current = anchorsWorld.map((w) => loadedScene.worldToLocal(w.clone()));
-    } catch (err) {
-      // ignore if something odd
-      anchorsRef.current = [];
-    }
-  };
+      const wrap = logoWrapRef.current;
+      if (wrap) {
+        const startSize = isMobile ? 260 : 520;
+        const endSize = isMobile ? startSize * 2 : 90; // keep your "bigger on mobile" request: 2x
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const finalLeft = window.innerWidth / 2; // top center as requested
+        const finalTop = 60; // keep same distance from top
+        const dx = finalLeft - centerX;
+        const dy = finalTop - centerY;
 
-  // timeline animation tween (for initial appear triggered by wheel in top area)
+        const scale = (startSize + (endSize - startSize) * eased) / startSize;
+        // combine translate & scale so there are no transform jumps
+        // on mobile ensure there is no padding (we set transform origin center top)
+        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
+        wrap.style.transformOrigin = "center top";
+        wrap.style.transition = "transform 0ms linear";
+        wrap.style.opacity = "1";
+        // mobile padding 0 handled by styling, the logo element itself has no extra padding
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [isMobile]);
+
+  // ----- timeline animator (tween to target) -----
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
     animatingRef.current = true;
+
     const startTS = performance.now();
     const from = timelineProgressRef.current;
     const delta = timelineTargetRef.current - from;
+
     function step(now) {
       const t = Math.min(1, (now - startTS) / duration);
       timelineProgressRef.current = clamp(from + delta * easeInOutCubic(t));
@@ -290,212 +286,120 @@ export default function App() {
       else {
         animatingRef.current = false;
         timelineProgressRef.current = timelineTargetRef.current;
-        setLabelsVisible(Math.abs(timelineProgressRef.current - 1) < 1e-6);
+
+        // labels were commented out per your request; if you re-enable labels, set visibility here
+        if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
+          setLabelsVisible(true);
+        } else {
+          setLabelsVisible(false);
+        }
       }
     }
     requestAnimationFrame(step);
   }
 
-  // timeline -> logo transform RAF (combines translate+scale so no jumps)
+  // ----- scroll triggers (only treat wheel in top area to trigger animation) -----
   useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const p = clamp(timelineProgressRef.current);
-      const eased = easeInOutCubic(p);
-      const wrap = logoWrapRef.current;
-      if (wrap) {
-        const startSize = isMobile ? 260 : 520;
-        const endSize = isMobile ? 56 * 2 : 90;
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const finalLeft = window.innerWidth / 2;
-        const finalTop = 100;
-        const dx = finalLeft - centerX;
-        const dy = finalTop - centerY;
-        const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
-        wrap.style.transformOrigin = "center top";
-        wrap.style.opacity = "1";
-        if (isMobile && eased > 0.999) wrap.style.padding = "0";
-        else wrap.style.padding = "";
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [isMobile]);
-
-  // scroll handling & smooth inertia for our scroll container
-  useEffect(() => {
-    const sc = scrollRef.current;
-    if (!sc) return;
-
-    // stateful variables for inertia
-    let raf = null;
-    let velocity = 0;
-    let target = sc.scrollTop;
-    let isPointerDown = false;
-    let lastTouchY = null;
-
-    // sensitivity & damping tuned for gentler start + inertia
-    const sensitivity = 0.6; // how much wheel changes velocity
-    const damping = 0.92; // per-frame damping (0..1) - closer to 1 = longer glide
-    const minVelocity = 0.02;
-
-    const animate = () => {
-      // update position
-      target += velocity;
-      // clamp
-      if (target < 0) {
-        target = 0;
-        velocity = 0;
-      }
-      const maxScroll = sc.scrollHeight - sc.clientHeight;
-      if (target > maxScroll) {
-        target = maxScroll;
-        velocity = 0;
-      }
-      // lerp to target position for smoothness
-      const cur = sc.scrollTop;
-      const next = cur + (target - cur) * 0.14;
-      sc.scrollTop = next;
-
-      // apply damping
-      velocity *= damping;
-
-      // stop when velocity tiny
-      if (Math.abs(velocity) < minVelocity) velocity = 0;
-
-      raf = requestAnimationFrame(animate);
-    };
-
-    // wheel handler: when container is locked we still allow timeline triggers if at top
     const onWheel = (e) => {
-      // if animation not finished (locked), allow wheel to trigger animation when at top
-      const locked = timelineProgressRef.current < 0.999;
-      if (locked && sc.scrollTop <= 100) {
-        if (e.deltaY > 0) animateTimelineTo(1, 700);
-        else if (e.deltaY < 0) animateTimelineTo(0, 700);
-        return;
-      }
-
-      // if unlocked, consume wheel and apply inertial velocity
-      if (sc.style.overflowY === "auto") {
-        e.preventDefault();
-        // push velocity (note sign)
-        velocity += e.deltaY * sensitivity;
-        if (!raf) raf = requestAnimationFrame(animate);
+      // allow wheel to trigger timeline while at top (window.scrollY is 0 while locked)
+      if (window.scrollY <= 100) {
+        if (e.deltaY > 0) animateTimelineTo(1, 900);
+        else if (e.deltaY < 0) animateTimelineTo(0, 900);
       }
     };
 
-    // touch start/move for mobile inertial
-    const onTouchStart = (ev) => {
-      const locked = timelineProgressRef.current < 0.999;
-      if (locked && sc.scrollTop <= 100) {
-        lastTouchY = ev.touches ? ev.touches[0].clientY : null;
-        return;
-      }
-      isPointerDown = true;
-      lastTouchY = ev.touches ? ev.touches[0].clientY : null;
-      velocity = 0;
-      if (raf === null) raf = requestAnimationFrame(animate);
-    };
-    const onTouchMove = (ev) => {
-      if (lastTouchY == null) return;
-      const y = ev.touches ? ev.touches[0].clientY : null;
-      if (y == null) return;
-      const dy = lastTouchY - y;
-      lastTouchY = y;
-      // treat as wheel
-      velocity += dy * 1.0;
-    };
-    const onTouchEnd = () => {
-      isPointerDown = false;
-      lastTouchY = null;
-    };
-
-    sc.addEventListener("wheel", onWheel, { passive: false });
-    sc.addEventListener("touchstart", onTouchStart, { passive: true });
-    sc.addEventListener("touchmove", onTouchMove, { passive: true });
-    sc.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      sc.removeEventListener("wheel", onWheel);
-      sc.removeEventListener("touchstart", onTouchStart);
-      sc.removeEventListener("touchmove", onTouchMove);
-      sc.removeEventListener("touchend", onTouchEnd);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // enable internal scroll only when animation finished (same logic as earlier)
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const sc = scrollRef.current;
-      if (sc) {
-        const p = timelineProgressRef.current;
-        if (p >= 0.999 && isLoaded) {
-          sc.style.overflowY = "auto";
-        } else {
-          sc.style.overflowY = "hidden";
-          if (sc.scrollTop !== 0) sc.scrollTop = 0;
-        }
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [isLoaded]);
-
-  // scroll triggers in top area to control timeline (also allow touch)
-  useEffect(() => {
-    const sc = scrollRef.current;
-    if (!sc) return;
-    const onWheelTop = (e) => {
-      // only when container is at top and animation not finished
-      if (sc.scrollTop <= 100 && timelineProgressRef.current < 0.999) {
-        if (e.deltaY > 0) animateTimelineTo(1, 700);
-        else if (e.deltaY < 0) animateTimelineTo(0, 700);
-      }
-    };
-    sc.addEventListener("wheel", onWheelTop, { passive: true });
     let touchStartY = null;
     const onTouchStart = (ev) => {
-      if (sc.scrollTop <= 100 && timelineProgressRef.current < 0.999) touchStartY = ev.touches ? ev.touches[0].clientY : null;
+      if (window.scrollY <= 100) touchStartY = ev.touches ? ev.touches[0].clientY : null;
       else touchStartY = null;
     };
-    const onTouchMoveTop = (ev) => {
+    const onTouchMove = (ev) => {
       if (touchStartY == null) return;
       const y = ev.touches ? ev.touches[0].clientY : null;
-      if (!y) return;
+      if (y == null) return;
       const dy = touchStartY - y;
       if (Math.abs(dy) > 8) {
-        if (dy > 0) animateTimelineTo(1, 700);
-        else animateTimelineTo(0, 700);
+        if (dy > 0) animateTimelineTo(1, 900);
+        else animateTimelineTo(0, 900);
         touchStartY = null;
       }
     };
-    sc.addEventListener("touchstart", onTouchStart, { passive: true });
-    sc.addEventListener("touchmove", onTouchMoveTop, { passive: true });
+
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
 
     return () => {
-      sc.removeEventListener("wheel", onWheelTop);
-      sc.removeEventListener("touchstart", onTouchStart);
-      sc.removeEventListener("touchmove", onTouchMoveTop);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
     };
   }, []);
 
-  // hide page scrollbar via CSS and ensure background color consistent
+  // ensure body background + font family
   useEffect(() => {
     document.body.style.background = "#191919";
   }, []);
 
-  /* ---------- UI & JSX ---------- */
+  /* ---------- Content sections placed AFTER hero ---------- */
+  const Content = () => (
+    <main style={{ background: "#191919", color: "#fff", padding: 0 }}>
+      <section style={{ padding: "48px 16px", maxWidth: 1100, margin: "0 auto" }}>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", fontSize: 36, margin: "8px 0" }}>Team</h2>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
+          <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover", borderRadius: 8 }} />
+          <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover", borderRadius: 8 }} />
+          <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover", borderRadius: 8 }} />
+        </div>
+        <p style={{ fontFamily: "Zalando, sans-serif", marginTop: 12 }}>
+          {/* Zig-zag sample paragraph pieces */}
+          <span style={{ display: "inline-block", transform: "translateX(0px)" }}>We build race cars.</span>{" "}
+          <span style={{ display: "inline-block", transform: "translateX(6px)" }}>We tune them for speed.</span>{" "}
+          <span style={{ display: "inline-block", transform: "translateX(0px)" }}>We race as one team.</span>
+        </p>
+      </section>
+
+      <section style={{ padding: "48px 16px", maxWidth: 900, margin: "0 auto" }}>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", fontSize: 34, margin: "8px 0" }}>Join Us</h2>
+        <p style={{ fontFamily: "Zalando, sans-serif" }}>
+          <span style={{ display: "inline-block", transform: "translateX(0px)" }}>Want to be part of the crew?</span>{" "}
+          <span style={{ display: "inline-block", transform: "translateX(-6px)" }}>Apply and show up.</span>
+        </p>
+      </section>
+
+      <section style={{ padding: "48px 16px", maxWidth: 900, margin: "0 auto" }}>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", fontSize: 34, margin: "8px 0" }}>Schedule</h2>
+        <p style={{ fontFamily: "Zalando, sans-serif" }}>
+          <span style={{ display: "inline-block", transform: "translateX(0px)" }}>Races, tests and events.</span>{" "}
+          <span style={{ display: "inline-block", transform: "translateX(6px)" }}>We keep it tight.</span>
+        </p>
+      </section>
+
+      <section style={{ padding: "48px 16px", maxWidth: 900, margin: "0 auto 6rem auto" }}>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", fontSize: 34, margin: "8px 0" }}>Contact</h2>
+        <p style={{ fontFamily: "Zalando, sans-serif" }}>
+          <span style={{ display: "inline-block", transform: "translateX(0px)" }}>Say hello.</span>{" "}
+          <span style={{ display: "inline-block", transform: "translateX(-6px)" }}>We respond quickly.</span>
+        </p>
+      </section>
+    </main>
+  );
+
+  /* ---------- Render ---------- */
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative", color: "#fff" }}>
-      {/* fonts */}
+    <div
+      style={{
+        width: "100vw",
+        minHeight: "100vh",
+        background: "#191919",
+        position: "relative",
+        fontFamily: "'Inconsolata', 'Microgramma', 'Zalando', monospace",
+        color: "#fff",
+        overflowX: "hidden",
+      }}
+    >
       <style>{`
+        /* self-hosted fonts - replace /fonts/... with your files */
         @font-face {
           font-family: 'Microgramma';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -503,212 +407,115 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
-        /* hide native scrollbars as much as possible */
-        ::-webkit-scrollbar { width: 0; height: 0; }
+        @font-face {
+          font-family: 'Zalando';
+          src: url('/fonts/zalando-sans.woff2') format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
         html, body, #root { height: 100%; background: #191919; }
+        body { margin: 0; }
+        /* hide scrollbars visually but keep scrolling */
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
+        html { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
 
-      {/* Loading overlay (blocks everything until isLoaded true) */}
-      {!isLoaded && (
+      {/* Loading overlay */}
+      {!loaded && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9999,
-            background: "#0f0f0f",
+            zIndex: 99999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flexDirection: "column",
+            background: "#0f1113",
             color: "#fff",
-            fontFamily: "Inconsolata, sans-serif",
+            flexDirection: "column",
           }}
         >
-          <div style={{ fontSize: 20, marginBottom: 12 }}>Loading — {loadingPercent}%</div>
-          <div style={{ width: "60%", height: 6, background: "#222", borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ width: `${loadingPercent}%`, height: "100%", background: "#ffcc00", transition: "width 200ms linear" }} />
+          <div style={{ fontSize: 18, marginBottom: 12 }}>Loading... {percent}%</div>
+          <div style={{ width: 300, height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 4 }}>
+            <div style={{ width: `${percent}%`, height: "100%", background: "#ffcc00", borderRadius: 4, transition: "width 200ms linear" }} />
           </div>
         </div>
       )}
 
-      {/* The scroll container (internal) - locked until animation done */}
-      <div
-        ref={scrollRef}
-        className="scroll-container"
-        style={{
-          height: "100vh",
-          overflowY: "hidden", // starts locked; JS will flip to auto when ready
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {/* HERO: sticky area with canvas and centered logo */}
-        <section style={{ height: "100vh", position: "relative" }}>
-          <div style={{ position: "relative", height: "100%", width: "100%" }}>
-            {/* CENTERED LOGO — stays visible and tucks to top-center (combined transform/scale applied) */}
-            <div
-              ref={logoWrapRef}
-              style={{
-                position: "fixed",
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%,-50%) scale(1)",
-                zIndex: 120,
-                pointerEvents: "none",
-                willChange: "transform, opacity, padding",
-              }}
-              aria-hidden
-            >
-              <NPLogo size={isMobile ? 260 : 520} />
-            </div>
-
-            {/* Canvas in normal flow so it will scroll with content when unlocked */}
-            <div style={{ position: "relative", width: "100%", height: "100vh", zIndex: 40, pointerEvents: "none" }}>
-              <Canvas
-                shadows
-                dpr={[1, 2]}
-                camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
-                style={{ width: "100%", height: "100%" }}
-                onCreated={({ gl, scene }) => {
-                  gl.shadowMap.enabled = true;
-                  gl.shadowMap.type = THREE.PCFSoftShadowMap;
-                  if (gl.outputColorSpace !== undefined && THREE.SRGBColorSpace) {
-                    try {
-                      gl.outputColorSpace = THREE.SRGBColorSpace;
-                    } catch (err) {}
-                  } else if (gl.outputEncoding !== undefined) {
-                    gl.outputEncoding = THREE.sRGBEncoding;
-                  }
-                  gl.physicallyCorrectLights = true;
-                  gl.toneMapping = THREE.ACESFilmicToneMapping;
-                  gl.toneMappingExposure = 0.6;
-                  scene.background = new THREE.Color(0x191919);
-                }}
-              >
-                <ambientLight intensity={0.12} />
-                <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
-                <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
-
-                <Suspense fallback={null}>
-                  <Environment preset="city" background={false} />
-
-                  <Center>
-                    <InteractiveModel
-                      gltf={gltf}
-                      onModelLoaded={handleModelLoaded}
-                      progressRef={timelineProgressRef}
-                      isMobile={isMobile}
-                      scale={isMobile ? 300000 : 600000}
-                    />
-                  </Center>
-
-                  <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
-                </Suspense>
-
-                {/* Labels / Tags are commented out as requested */}
-                {/* <LabelsFollower ... /> */}
-
-                <EffectComposer multisampling={4}>
-                  <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
-                </EffectComposer>
-              </Canvas>
-            </div>
-          </div>
-        </section>
-
-        {/* AFTER the rotating model canvas: the real page content (Team, Join Us, Schedule, Contact) */}
-        <main style={{ position: "relative", zIndex: 70, pointerEvents: "auto", background: "#191919", paddingBottom: 64 }}>
-          <section
+      {/* HERO: sticky container with canvas that becomes scrollable when page unlocked */}
+      <section style={{ height: "100vh", position: "relative" }}>
+        <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%", overflow: "hidden" }}>
+          {/* Centered Logo (transforms with timeline) */}
+          <div
+            ref={logoWrapRef}
             style={{
-              padding: isMobile ? "20px 12px" : "40px 80px",
-              borderBottom: "1px solid rgba(255,255,255,0.04)",
+              position: "fixed",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%,-50%) scale(1)",
+              zIndex: 40,
+              pointerEvents: "none",
+              willChange: "transform, opacity",
+              padding: isMobile ? 0 : undefined,
             }}
+            aria-hidden
           >
-            <h1 style={{ fontFamily: "Microgramma, Inconsolata, monospace", color: "#ffcc00", margin: 0 }}>Team</h1>
+            <NPLogo size={isMobile ? 520 : 520} /> {/* mobile double size per earlier request */}
+          </div>
 
-            {/* zig-zag paragraphs */}
-            <div style={{ marginTop: 12 }}>
-              <p style={{ fontFamily: "Zalando, system-ui, sans-serif", color: "#e6e6e6", maxWidth: 820 }}>
-                <span style={{ display: "inline-block", transform: "translateX(0)" }}>
-                  We are a small but fierce team building racing experiences for the web.
-                </span>
-              </p>
-              <p style={{ fontFamily: "Zalando, system-ui, sans-serif", color: "#e6e6e6", maxWidth: 820, marginLeft: isMobile ? 0 : 40 }}>
-                <span style={{ display: "inline-block", transform: "translateX(20px)" }}>
-                  Our backgrounds cross engineering, design, and motorsport. We ship daily.
-                </span>
-              </p>
-            </div>
-
-            {/* images: horizontally on desktop, stacked on mobile, always fit */}
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                marginTop: 16,
-                flexDirection: isMobile ? "column" : "row",
-                alignItems: "stretch",
+          {/* Canvas wrapper - sticky so it scrolls away once body is unlocked and user scrolls past the hero */}
+          <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%", zIndex: 2, pointerEvents: "none" }}>
+            <Canvas
+              shadows
+              dpr={[1, 2]}
+              camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
+              style={{ width: "100%", height: "100%", maxWidth: "100vw" }}
+              onCreated={({ gl, scene }) => {
+                gl.shadowMap.enabled = true;
+                gl.shadowMap.type = THREE.PCFSoftShadowMap;
+                // ensure correct output encoding if three version supports it
+                if (gl.outputColorSpace !== undefined) {
+                  // newer three
+                  try {
+                    gl.outputColorSpace = THREE.SRGBColorSpace;
+                  } catch (e) {}
+                } else {
+                  try {
+                    gl.outputEncoding = THREE.sRGBEncoding;
+                  } catch (e) {}
+                }
+                gl.toneMapping = THREE.ACESFilmicToneMapping;
+                gl.toneMappingExposure = 0.6;
+                scene.background = new THREE.Color(0x191919);
               }}
             >
-              <img
-                src="/images/team1.jpg"
-                alt="team1"
-                style={{
-                  width: isMobile ? "100%" : 320,
-                  height: isMobile ? "48vh" : 180,
-                  objectFit: "cover",
-                  borderRadius: 6,
-                }}
-              />
-              <img
-                src="/images/team2.jpg"
-                alt="team2"
-                style={{
-                  width: isMobile ? "100%" : 320,
-                  height: isMobile ? "48vh" : 180,
-                  objectFit: "cover",
-                  borderRadius: 6,
-                }}
-              />
-              <img
-                src="/images/team3.jpg"
-                alt="team3"
-                style={{
-                  width: isMobile ? "100%" : 320,
-                  height: isMobile ? "48vh" : 180,
-                  objectFit: "cover",
-                  borderRadius: 6,
-                }}
-              />
-            </div>
-          </section>
+              <ambientLight intensity={0.12} />
+              <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
+              <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
 
-          <section style={{ padding: isMobile ? "20px 12px" : "40px 80px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-            <h1 style={{ fontFamily: "Microgramma, Inconsolata, monospace", color: "#ffcc00", margin: 0 }}>Join Us</h1>
-            <p style={{ fontFamily: "Zalando, system-ui, sans-serif", color: "#e6e6e6" }}>
-              <span style={{ display: "inline-block", transform: isMobile ? "translateX(0)" : "translateX(-6px)" }}>
-                We're hiring drivers, devs and dreamers. Become part of the crew.
-              </span>
-            </p>
-          </section>
+              <Suspense fallback={null}>
+                <Environment preset="city" background={false} />
+                <Center>
+                  <InteractiveModel gltf={gltf} onModelLoaded={(m) => (modelRef.current = m)} progressRef={timelineProgressRef} isMobile={isMobile} scale={isMobile ? 300000 : 600000} />
+                </Center>
 
-          <section style={{ padding: isMobile ? "20px 12px" : "40px 80px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-            <h1 style={{ fontFamily: "Microgramma, Inconsolata, monospace", color: "#ffcc00", margin: 0 }}>Schedule</h1>
-            <p style={{ fontFamily: "Zalando, system-ui, sans-serif", color: "#e6e6e6" }}>
-              <span style={{ display: "inline-block", transform: isMobile ? "translateX(0)" : "translateX(6px)" }}>
-                See upcoming track days, livestreams and community events right here.
-              </span>
-            </p>
-          </section>
+                <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
+              </Suspense>
 
-          <section style={{ padding: isMobile ? "20px 12px" : "40px 80px" }}>
-            <h1 style={{ fontFamily: "Microgramma, Inconsolata, monospace", color: "#ffcc00", margin: 0 }}>Contact</h1>
-            <p style={{ fontFamily: "Zalando, system-ui, sans-serif", color: "#e6e6e6" }}>
-              <span style={{ display: "inline-block", transform: isMobile ? "translateX(0)" : "translateX(-6px)" }}>
-                Get in touch about partnerships, media, and racing.
-              </span>
-            </p>
-          </section>
-        </main>
+              {/* labels and camera animator were removed / commented out per request */}
+
+              <EffectComposer multisampling={4}>
+                <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
+              </EffectComposer>
+            </Canvas>
+          </div>
+        </div>
+      </section>
+
+      {/* After hero -> now page content becomes scrollable */}
+      <div style={{ background: "#191919" }}>
+        <Content />
       </div>
     </div>
   );

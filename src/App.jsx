@@ -11,10 +11,7 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-/* ---------- labels (4) ---------- */
-const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
-
-/* ---------- NPLogo (kept original SVG paths) ---------- */
+/* ---------- NPLogo (unchanged) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -26,7 +23,6 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* original SVG content (unchanged) */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -44,18 +40,13 @@ function NPLogo({ size = 300 }) {
     </svg>
   );
 }
-
-/* ---------- InteractiveModel (inside Canvas)
-   - appear animation driven by progressRef
-   - continuous idle rotation along x/y/z
----------- */
+/* ---------- InteractiveModel (appear + continuous rotation) ---------- */
 function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000 }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
   const group = useRef();
 
   useEffect(() => {
     if (!obj) return;
-    // tweak materials for flatter, darker look with a warm rim
     obj.traverse((c) => {
       if (c.isMesh) {
         c.castShadow = true;
@@ -66,7 +57,7 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
             if ("metalness" in c.material) c.material.metalness = 0.05;
             if ("roughness" in c.material) c.material.roughness = 0.6;
             c.material.needsUpdate = true;
-          } catch (err) {}
+          } catch {}
         }
       }
     });
@@ -75,14 +66,12 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 
   useFrame((state) => {
     if (!group.current) return;
-    // appear progress
     const p = clamp(progressRef.current);
     const eased = easeInOutCubic(p);
-
     const fromZ = isMobile ? 280000 : 420000;
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
 
-    // base appear rotation on X (when appearing)
+    // base appear rotation on X while appearing
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
     // continuous idle rotation on all axes (time-based)
@@ -108,53 +97,16 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
   );
 }
 
-/* ---------- CameraAnimator
-   - DISABLED per request: camera zoom animation removed
-   - If you want to re-enable later, uncomment the function and its use in the Canvas
----------- */
-/*
-function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
-  // ... (function body intentionally removed / commented)
-  return null;
-}
-*/
-
-/* ---------- LabelsFollower (inside Canvas)
-   - label text positions are fixed on-screen; only polyline tip/elbow near model moves
-   - mobile: labels placed above/below center
-   - NOTE: tags creation in App is commented out, so this will have no DOM elements to operate on.
----------- */
-function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible, isMobile }) {
-  const { camera, size } = useThree();
-  const tmp = useRef(new THREE.Vector3());
-
-  useFrame(() => {
-    const anchors = anchorsRef.current;
-    const model = modelRef.current;
-    if (!model || !anchors || !anchors.length) {
-      // hide if nothing
-      if (labelDomRefs.current) labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
-      if (lineRefs.current) lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
-      return;
-    }
-
-    if (!visible) {
-      // fade-out
-      labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
-      lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
-      return;
-    }
-
-    // If tag DOM is ever re-enabled, this code positions them.
-    // (left as-is in case you later want labels back)
-  });
-
+/* ---------- LabelsFollower (kept but tag creation commented out) ---------- */
+function LabelsFollower(props) {
+  // Labels/dom creation was commented out per your request.
+  // This function is left present in case you later re-enable labels.
   return null;
 }
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // inject Google Fonts (Inconsolata) once
+  // google font (Inconsolata) left in — Microgramma self-host below
   useEffect(() => {
     const id = "__npr_google_fonts_inconsolata";
     if (!document.getElementById(id)) {
@@ -168,14 +120,16 @@ export default function App() {
 
   // refs
   const logoWrapRef = useRef(null);
+  const scrollRef = useRef(null); // internal scrollable container
 
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
-  const labelDomRefs = useRef([]); // tags are commented out below
-  const lineRefs = useRef([]);
-
-  // responsive
+  const timelineProgressRef = useRef(0);
+  const timelineTargetRef = useRef(0);
+  const animatingRef = useRef(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [labelsVisible, setLabelsVisible] = useState(false);
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
     onResize();
@@ -183,150 +137,58 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // timeline
-  const timelineProgressRef = useRef(0); // 0..1 current
-  const timelineTargetRef = useRef(0);
-  const animatingRef = useRef(false);
-
-  // labels visibility (only after animation completes) - tags creation commented
-  const [labelsVisible, setLabelsVisible] = useState(false);
-
-  // zoom-to-wheel trigger (camera animator removed, but keep state)
-  const [zoomToWheel, setZoomToWheel] = useState(false);
-
-  // ----- create DOM labels & SVG overlay (fixed text positions) -----
-  // *** COMMENTED OUT: tag creation removed per request ***
-  /*
-  useEffect(() => {
-    labelDomRefs.current = [];
-    lineRefs.current = [];
-
-    const oldSvg = document.getElementById("__npr_svg_overlay_lines");
-    if (oldSvg) oldSvg.remove();
-
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("id", "__npr_svg_overlay_lines");
-    svg.style.position = "fixed";
-    svg.style.left = "0";
-    svg.style.top = "0";
-    svg.style.width = "100%";
-    svg.style.height = "100%";
-    svg.style.pointerEvents = "none";
-    svg.style.zIndex = "9999";
-    svg.style.overflow = "visible";
-    document.body.appendChild(svg);
-
-    LABELS.forEach((txt, i) => {
-      const el = document.createElement("div");
-      Object.assign(el.style, {
-        position: "fixed",
-        left: "0px",
-        top: "0px",
-        transform: "translate3d(-9999px,-9999px,0)",
-        pointerEvents: "none",
-        opacity: "0",
-        display: "none", // shown only when animation ends
-        color: "#ffffff",
-        fontFamily: "Inconsolata, monospace",
-        fontSize: "16px",
-        fontWeight: "700",
-        padding: "0",
-        background: "transparent",
-        zIndex: 10000,
-        letterSpacing: "0.02em",
-        textTransform: "lowercase",
-      });
-      el.textContent = txt;
-      el.style.transition = "opacity 420ms ease, transform 420ms ease";
-      document.body.appendChild(el);
-      labelDomRefs.current.push(el);
-
-      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-      poly.setAttribute("fill", "none");
-      poly.setAttribute("stroke", "#ffffff");
-      poly.setAttribute("stroke-width", String(isMobile ? 1.5 : 1.5));
-      poly.setAttribute("stroke-linecap", "round");
-      poly.setAttribute("stroke-linejoin", "round");
-      poly.setAttribute("opacity", "0");
-      poly.setAttribute("vector-effect", "non-scaling-stroke");
-      svg.appendChild(poly);
-      lineRefs.current.push(poly);
-    });
-
-    return () => {
-      labelDomRefs.current.forEach((el) => el && el.remove());
-      svg.remove();
-    };
-  }, [isMobile]);
-  */
-
-  // ----- compute anchors when model loads (pin to semantic parts) -----
+  // handle model loaded to compute anchors (kept)
   const handleModelLoaded = (loadedObj) => {
     modelRef.current = loadedObj;
-
     const bbox = new THREE.Box3().setFromObject(loadedObj);
     const size = bbox.getSize(new THREE.Vector3());
     const min = bbox.min;
     const max = bbox.max;
     const center = bbox.getCenter(new THREE.Vector3());
-
     const anchorsWorld = [];
-    // helmet: slightly forward & top-center
-    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06));
-    // front: front-most center
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z));
-    // back: rear-most center
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z));
-    // wheel: front-right-bottom-ish
-    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08));
-
+    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06)); // helmet
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z)); // front
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z)); // back
+    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08)); // wheel
     anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
   };
 
-  // ----- update logo transform (timeline)
-  // Combined translate + scale applied to the *same* wrapper element to avoid jumps
+  // combine translate + scale on wrapper for smooth transform
   useEffect(() => {
     let raf = 0;
     const loop = () => {
       const p = clamp(timelineProgressRef.current);
       const eased = easeInOutCubic(p);
-
       const wrap = logoWrapRef.current;
       if (wrap) {
         const startSize = isMobile ? 260 : 520;
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        // finalLeft centered horizontally, keep specified vertical distance from top
-        const finalLeft = window.innerWidth / 2;
+        const finalLeft = window.innerWidth / 2; // keep centered horizontally
         const finalTop = 100;
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
-
         const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        // combine translate & scale so there are no transform jumps
         wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
         wrap.style.transformOrigin = "center top";
         wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
       }
-
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // ----- timeline animator (tween to target) -----
+  // timeline tween
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
     animatingRef.current = true;
-
     const startTS = performance.now();
     const from = timelineProgressRef.current;
     const delta = timelineTargetRef.current - from;
-
     function step(now) {
       const t = Math.min(1, (now - startTS) / duration);
       timelineProgressRef.current = clamp(from + delta * easeInOutCubic(t));
@@ -334,22 +196,20 @@ export default function App() {
       else {
         animatingRef.current = false;
         timelineProgressRef.current = timelineTargetRef.current;
-
-        if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
-          setLabelsVisible(true);
-          // label DOM creation is commented out, so nothing to reveal here
-        } else {
-          setLabelsVisible(false);
-        }
+        if (Math.abs(timelineProgressRef.current - 1) < 1e-6) setLabelsVisible(true);
+        else setLabelsVisible(false);
       }
     }
     requestAnimationFrame(step);
   }
 
-  // ----- scroll triggers and zoom trigger detection -----
+  // scroll handlers: use the internal scroll container (scrollRef.current)
   useEffect(() => {
+    const sc = scrollRef.current;
+    if (!sc) return;
+
     const onWheel = (e) => {
-      if (window.scrollY <= 100) {
+      if (sc.scrollTop <= 100) {
         if (e.deltaY > 0) animateTimelineTo(1, 700);
         else if (e.deltaY < 0) animateTimelineTo(0, 700);
       }
@@ -357,7 +217,7 @@ export default function App() {
 
     let touchStartY = null;
     const onTouchStart = (ev) => {
-      if (window.scrollY <= 100) touchStartY = ev.touches ? ev.touches[0].clientY : null;
+      if (sc.scrollTop <= 100) touchStartY = ev.touches ? ev.touches[0].clientY : null;
       else touchStartY = null;
     };
     const onTouchMove = (ev) => {
@@ -372,44 +232,33 @@ export default function App() {
       }
     };
 
-    const onScroll = () => {
-      const heroHeight = window.innerHeight * 0.98;
-      if (window.scrollY > heroHeight) setZoomToWheel(true);
-      else setZoomToWheel(false);
-    };
-
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
+    sc.addEventListener("wheel", onWheel, { passive: true });
+    sc.addEventListener("touchstart", onTouchStart, { passive: true });
+    sc.addEventListener("touchmove", onTouchMove, { passive: true });
 
     return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("scroll", onScroll);
+      sc.removeEventListener("wheel", onWheel);
+      sc.removeEventListener("touchstart", onTouchStart);
+      sc.removeEventListener("touchmove", onTouchMove);
     };
   }, []);
 
-  // ensure body background + font family
+  // ensure body background & disable native page scroll (we use internal scroll area)
   useEffect(() => {
     document.body.style.background = "#191919";
+    // hide page scrollbars — we will use the internal scroll container
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
   }, []);
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        minHeight: "100vh",
-        background: "#191919",
-        position: "relative",
-        fontFamily: "'Inconsolata', 'Microgramma', monospace",
-        color: "#fff",
-      }}
-    >
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative", color: "#fff" }}>
       <style>{`
-        /* Fonts - adjust file paths if needed */
+        /* Microgramma (self-host) & Inconsolata fallback */
         @font-face {
           font-family: 'Microgramma';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -417,148 +266,151 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
-        @font-face {
-          font-family: 'Zalando';
-          src: url('/fonts/ZalandoSansExpanded.woff2') format('woff2');
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
+        .title-microgramma { font-family: 'Microgramma', Inconsolata, monospace; color: #ffcc00; }
+        .body-zalando { font-family: 'Zalando', system-ui, -apple-system, 'Segoe UI', Roboto, Arial; color: #e6e6e6; }
+
+        /* hide any scrollbars within the scroll container */
+        .scroll-container {
+          height: 100vh;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          background: #191919;
         }
+        .scroll-container::-webkit-scrollbar { display: none; width: 0; height: 0; }
+        .scroll-container { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* helper classes */
-        .title-microgramma { font-family: 'Microgramma', monospace; font-weight:700; letter-spacing:0.02em; color:#fff; }
-        .body-zalando { font-family: 'Zalando', system-ui, -apple-system, 'Segoe UI', Roboto, Arial; color: #ddd; line-height:1.6; }
+        /* sections: closer spacing and zig-zag text */
+        .site-section { padding: 48px 8vw; min-height: 48vh; display:flex; align-items:center; }
+        .site-section .content { max-width: 800px; }
+        .site-section:nth-child(odd) .content { margin-left: 0; text-align: left; transform: translateX(0); }
+        .site-section:nth-child(even) .content { margin-left: auto; text-align: right; transform: translateX(0); }
+        .site-section h1 { margin: 0 0 8px 0; font-size: 36px; }
+        .site-section p { margin: 6px 0 0 0; line-height: 1.5; }
 
-        html, body, #root { height: 100%; background: #191919; }
-        body { margin: 0; overflow-y: scroll; }
-        /* hide scrollbar while keeping scrolling */
-        body::-webkit-scrollbar { width: 0; height: 0; }
-        body { scrollbar-width: none; -ms-overflow-style: none; }
-        /* sections */
-        main.section-wrapper { background: #0f0f0f; }
-        section.site-section { padding: 96px 18vw; min-height: 66vh; display:flex; flex-direction:column; justify-content:center; }
+        /* team images row */
+        .team-images { display:flex; gap: 12px; margin-top: 12px; flex-wrap:wrap; }
+        .team-images img { width: 220px; height: 140px; object-fit: cover; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+
         @media (max-width: 768px) {
-          section.site-section { padding: 48px 6vw; }
+          .site-section { padding: 28px 6vw; min-height: 40vh; flex-direction:column; align-items:flex-start; }
+          .site-section:nth-child(even) .content { text-align: left; margin-left:0; }
+          .team-images img { width: calc(50% - 8px); height: 120px; }
         }
       `}</style>
 
-      {/* HERO area (sticky canvas & centered logo) */}
-      <section style={{ height: "160vh", position: "relative" }}>
-        <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-          {/* CENTERED LOGO — stays visible and tucks to top-center */}
-          <div
-            ref={logoWrapRef}
-            style={{
-              position: "fixed",
-              left: "50%",
-              top: "50%",
-              transform: "translate(-50%,-50%) scale(1)",
-              zIndex: 40,
-              pointerEvents: "none",
-              willChange: "transform, opacity",
-            }}
-            aria-hidden
-          >
-            <NPLogo size={isMobile ? 260 : 520} />
-          </div>
-
-          {/* fixed Canvas */}
-          <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
-            <Canvas
-              shadows
-              dpr={[1, 2]}
-              camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
-              style={{ width: "100%", height: "100%" }}
-              onCreated={({ gl, scene }) => {
-                gl.shadowMap.enabled = true;
-                gl.shadowMap.type = THREE.PCFSoftShadowMap;
-                if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
-                gl.toneMapping = THREE.ACESFilmicToneMapping;
-                gl.toneMappingExposure = 0.6;
-                scene.background = new THREE.Color(0x191919);
+      {/* internal scroll container — this is the only scrollable element (no browser scrollbar) */}
+      <div ref={scrollRef} className="scroll-container">
+        {/* HERO area (sticky canvas & centered logo) */}
+        <section style={{ height: "100vh", position: "relative" }}>
+          <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
+            {/* LOGO wrapper: fixed so it stays visible, but transform is controlled via timeline */}
+            <div
+              ref={logoWrapRef}
+              style={{
+                position: "fixed",
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%,-50%) scale(1)",
+                zIndex: 60, // on top of canvas
+                pointerEvents: "none",
+                willChange: "transform, opacity",
               }}
+              aria-hidden
             >
-              <ambientLight intensity={0.12} />
-              <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
-              <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
+              <NPLogo size={isMobile ? 260 : 520} />
+            </div>
 
-              <Suspense fallback={null}>
-                <Environment preset="city" background={false} />
-                <Center>
-                  <InteractiveModel
-                    onModelLoaded={handleModelLoaded}
-                    progressRef={timelineProgressRef}
-                    isMobile={isMobile}
-                    scale={isMobile ? 300000 : 600000}
-                  />
-                </Center>
-                <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
-              </Suspense>
+            {/* fixed Canvas on top of content so content scrolls under it */}
+            <div style={{ position: "fixed", inset: 0, zIndex: 50, pointerEvents: "none" }}>
+              <Canvas
+                shadows
+                dpr={[1, 2]}
+                camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
+                style={{ width: "100%", height: "100%" }}
+                onCreated={({ gl, scene }) => {
+                  gl.shadowMap.enabled = true;
+                  gl.shadowMap.type = THREE.PCFSoftShadowMap;
+                  if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
+                  gl.toneMapping = THREE.ACESFilmicToneMapping;
+                  gl.toneMappingExposure = 0.6;
+                  scene.background = new THREE.Color(0x191919);
+                }}
+              >
+                <ambientLight intensity={0.12} />
+                <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
+                <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
 
-              {/* LabelsFollower kept but tags creation commented out, so nothing visible */}
-              <LabelsFollower
-                modelRef={modelRef}
-                anchorsRef={anchorsRef}
-                labelDomRefs={labelDomRefs}
-                lineRefs={lineRefs}
-                visible={labelsVisible}
-                isMobile={isMobile}
-              />
+                <Suspense fallback={null}>
+                  <Environment preset="city" background={false} />
+                  <Center>
+                    <InteractiveModel
+                      onModelLoaded={handleModelLoaded}
+                      progressRef={timelineProgressRef}
+                      isMobile={isMobile}
+                      scale={isMobile ? 300000 : 600000}
+                    />
+                  </Center>
+                  <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
+                </Suspense>
 
-              {/* CameraAnimator removed per request - if you want to re-enable later, uncomment usage and function */}
-              {/* <CameraAnimator anchorsRef={anchorsRef} modelRef={modelRef} zoomTrigger={zoomToWheel} isMobile={isMobile} /> */}
-
-              <EffectComposer multisampling={4}>
-                <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
-              </EffectComposer>
-            </Canvas>
+                <LabelsFollower visible={labelsVisible} />
+                <EffectComposer multisampling={4}>
+                  <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
+                </EffectComposer>
+              </Canvas>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* Now add the actual page sections so the page is scrollable after the hero */}
-      <main className="section-wrapper" style={{ zIndex: 1, position: "relative" }}>
-        <section id="team" className="site-section" aria-labelledby="team-title">
-          <h1 id="team-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
-            Team
-          </h1>
-          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
-            We are a tight-knit racing crew with experience across design, engineering and race strategy. Our team is focused on speed,
-            precision, and bringing together top-tier talent to build high-performance cars and experiences.
-          </p>
         </section>
 
-        <section id="join" className="site-section" aria-labelledby="join-title">
-          <h1 id="join-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
-            Join Us
-          </h1>
-          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
-            Interested in joining? We look for enthusiastic teammates who are passionate about racing and pushing the technical envelope.
-            Check our openings and drop your CV — we’d love to hear from driven people.
-          </p>
-        </section>
+        {/* Sections after hero (page scrollable here) */}
+        <main style={{ position: "relative", zIndex: 10 }}>
+          <section id="team" className="site-section" aria-labelledby="team-title">
+            <div className="content">
+              <h1 id="team-title" className="title-microgramma">Team</h1>
+              <p className="body-zalando">
+                We are a tight-knit racing crew with experience across design, engineering and race strategy. Our team focuses on speed, precision, and collaboration.
+              </p>
 
-        <section id="schedule" className="site-section" aria-labelledby="schedule-title">
-          <h1 id="schedule-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
-            Schedule
-          </h1>
-          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
-            Race calendar, testing dates, and events are listed here. We update the schedule regularly — follow the team for the latest info.
-          </p>
-        </section>
+              {/* IMAGES - replace src with your images (placeholders below) */}
+              <div className="team-images" aria-hidden>
+                <img src="https://images.unsplash.com/photo-1542293787938-c9e299b88080?w=1600&q=80&auto=format&fit=crop" alt="team 1" />
+                <img src="https://images.unsplash.com/photo-1517260918467-3f6f0a7f5a86?w=1600&q=80&auto=format&fit=crop" alt="team 2" />
+                <img src="https://images.unsplash.com/photo-1545239351-1141bd82e8a6?w=1600&q=80&auto=format&fit=crop" alt="team 3" />
+              </div>
+            </div>
+          </section>
 
-        <section id="contact" className="site-section" aria-labelledby="contact-title">
-          <h1 id="contact-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
-            Contact
-          </h1>
-          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
-            For press, partnerships or general enquiries reach out via email at hello@example.com or use the contact form on our site.
-          </p>
-        </section>
-      </main>
+          <section id="join" className="site-section" aria-labelledby="join-title">
+            <div className="content">
+              <h1 id="join-title" className="title-microgramma">Join Us</h1>
+              <p className="body-zalando">
+                Interested in joining? We look for enthusiastic teammates passionate about racing and engineering. Check our openings and reach out.
+              </p>
+            </div>
+          </section>
 
-      {/* small extra tail so final scroll feels natural */}
-      <div style={{ height: "8vh" }} />
+          <section id="schedule" className="site-section" aria-labelledby="schedule-title">
+            <div className="content">
+              <h1 id="schedule-title" className="title-microgramma">Schedule</h1>
+              <p className="body-zalando">
+                Race dates, testing sessions and events are listed here. Follow us for updates as the season progresses.
+              </p>
+            </div>
+          </section>
+
+          <section id="contact" className="site-section" aria-labelledby="contact-title">
+            <div className="content">
+              <h1 id="contact-title" className="title-microgramma">Contact</h1>
+              <p className="body-zalando">
+                For press, partnerships or general enquiries, reach out at hello@example.com.
+              </p>
+            </div>
+          </section>
+        </main>
+
+        {/* final tail */}
+        <div style={{ height: 24 }} />
+      </div>
     </div>
   );
 }

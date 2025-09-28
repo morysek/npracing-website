@@ -109,69 +109,20 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 }
 
 /* ---------- CameraAnimator
-   - when zoomTrigger true, smoothly moves camera to wheel and rotates model to exact orientation (X=90deg,Y=0,Z=0)
-   - zooms only ~2x closer (target distance = default / 2)
+   - DISABLED per request: camera zoom animation removed
+   - If you want to re-enable later, uncomment the function and its use in the Canvas
 ---------- */
+/*
 function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
-  const { camera } = useThree();
-  const tmp = useRef(new THREE.Vector3());
-  const targetQuat = useRef(new THREE.Quaternion());
-  const anim = useRef({ running: false, t: 0 });
-
-  useEffect(() => {
-    if (zoomTrigger) {
-      anim.current.running = true;
-      anim.current.t = 0;
-      // target quaternion: X = 90deg, Y = 0, Z = 0
-      targetQuat.current.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0, "XYZ"));
-    } else {
-      anim.current.running = false;
-      anim.current.t = 0;
-    }
-  }, [zoomTrigger]);
-
-  useFrame((_, delta) => {
-    const defaultDist = isMobile ? 120000 : 220000;
-    const defaultPos = new THREE.Vector3(0, 0, defaultDist);
-
-    if (!anim.current.running) {
-      camera.position.lerp(defaultPos, 0.06);
-      camera.lookAt(new THREE.Vector3(0, 0, 0));
-      return;
-    }
-
-    const anchors = anchorsRef.current;
-    const model = modelRef.current;
-    if (!anchors || !anchors.length || !model) return;
-
-    // world position of the wheel anchor (index 3)
-    tmp.current.copy(anchors[3]);
-    model.localToWorld(tmp.current);
-
-    // compute camera target: wheel + normalized direction * (defaultDist/2)
-    const cwDir = camera.position.clone().sub(tmp.current).normalize();
-    const dst = tmp.current.clone().add(cwDir.multiplyScalar(defaultDist / 2));
-
-    // animate interpolation
-    anim.current.t = Math.min(1, anim.current.t + delta * 0.8);
-    const tt = easeInOutCubic(anim.current.t);
-
-    // smoother progressive lerp
-    camera.position.lerp(dst, 0.06 * (0.5 + tt));
-    camera.lookAt(tmp.current);
-
-    // slerp model toward target quaternion (absolute orientation requested)
-    if (model && model.quaternion) {
-      model.quaternion.slerp(targetQuat.current, 0.04 * (0.5 + tt));
-    }
-  });
-
+  // ... (function body intentionally removed / commented)
   return null;
 }
+*/
 
 /* ---------- LabelsFollower (inside Canvas)
    - label text positions are fixed on-screen; only polyline tip/elbow near model moves
    - mobile: labels placed above/below center
+   - NOTE: tags creation in App is commented out, so this will have no DOM elements to operate on.
 ---------- */
 function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible, isMobile }) {
   const { camera, size } = useThree();
@@ -181,9 +132,9 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
     const anchors = anchorsRef.current;
     const model = modelRef.current;
     if (!model || !anchors || !anchors.length) {
-      // hide
-      labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
-      lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
+      // hide if nothing
+      if (labelDomRefs.current) labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
+      if (lineRefs.current) lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
       return;
     }
 
@@ -194,85 +145,8 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
       return;
     }
 
-    // compute fixed end positions for labels
-    const fixedEnds = [];
-    if (isMobile) {
-      // two above, two below (centered horizontally)
-      const aboveY = Math.max(40, size.height * 0.18);
-      const belowY = Math.max(40, size.height * 0.82);
-      const spacing = 16;
-      const widths = labelDomRefs.current.map((el) => (el ? el.offsetWidth || 90 : 90));
-      const topTotal = widths[0] + widths[1] + spacing;
-      const topLeft = Math.round((size.width - topTotal) / 2);
-      const bottomTotal = widths[2] + widths[3] + spacing;
-      const bottomLeft = Math.round((size.width - bottomTotal) / 2);
-
-      for (let i = 0; i < 2; i++) fixedEnds.push({ x: topLeft + i * (widths[i] + spacing), y: Math.round(aboveY) });
-      for (let i = 0; i < 2; i++) fixedEnds.push({ x: bottomLeft + i * (widths[2 + i] + spacing), y: Math.round(belowY) });
-
-      // place labels
-      for (let i = 0; i < labelDomRefs.current.length; i++) {
-        const el = labelDomRefs.current[i];
-        if (!el) continue;
-        el.style.display = "block";
-        el.style.opacity = "1";
-        el.style.transform = `translate3d(${fixedEnds[i].x}px, ${fixedEnds[i].y}px, 0)`;
-      }
-
-      // polylines: anchor -> elbow -> fixed end
-      for (let i = 0; i < anchors.length; i++) {
-        tmp.current.copy(anchors[i]);
-        model.localToWorld(tmp.current);
-        tmp.current.project(camera);
-        const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
-        const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
-        const end = fixedEnds[i];
-        const elbowX = ax + (end.x - ax) * 0.35;
-        const elbowY = ay + (end.y - ay) * 0.35;
-        const poly = lineRefs.current[i];
-        if (!poly) continue;
-        poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${end.x},${end.y}`);
-        poly.setAttribute("opacity", "1");
-        poly.setAttribute("stroke-width", String(isMobile ? 2 : 2));
-        poly.setAttribute("stroke", "#ffffff");
-      }
-
-      return;
-    }
-
-    // Desktop: fixed edges (left / right) with vertical distribution
-    const edgePadding = 18;
-    const heights = [0.20, 0.36, 0.60, 0.76]; // vertical fractions
-    for (let i = 0; i < anchors.length; i++) {
-      const isRight = i < 2; // first two on right, last two left
-      const rect = labelDomRefs.current[i] ? labelDomRefs.current[i].getBoundingClientRect() : { width: 120, height: 20 };
-      const left = isRight ? size.width - edgePadding - rect.width : edgePadding;
-      const top = Math.round(Math.max(12, Math.min(size.height - rect.height - 12, size.height * heights[i])));
-      const el = labelDomRefs.current[i];
-      if (el) {
-        el.style.display = "block";
-        el.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-        el.style.opacity = "1";
-      }
-
-      tmp.current.copy(anchors[i]);
-      model.localToWorld(tmp.current);
-      tmp.current.project(camera);
-      const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
-      const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
-
-      const endX = isRight ? left - 8 : left + rect.width + 8;
-      const endY = top + rect.height / 2;
-      const elbowX = ax + (endX - ax) * 0.28;
-      const elbowY = ay + (endY - ay) * 0.28;
-
-      const poly = lineRefs.current[i];
-      if (!poly) continue;
-      poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${endX},${endY}`);
-      poly.setAttribute("opacity", "1");
-      poly.setAttribute("stroke-width", "1.5");
-      poly.setAttribute("stroke", "#ffffff");
-    }
+    // If tag DOM is ever re-enabled, this code positions them.
+    // (left as-is in case you later want labels back)
   });
 
   return null;
@@ -297,7 +171,7 @@ export default function App() {
 
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
-  const labelDomRefs = useRef([]);
+  const labelDomRefs = useRef([]); // tags are commented out below
   const lineRefs = useRef([]);
 
   // responsive
@@ -314,13 +188,15 @@ export default function App() {
   const timelineTargetRef = useRef(0);
   const animatingRef = useRef(false);
 
-  // labels visibility (only after animation completes)
+  // labels visibility (only after animation completes) - tags creation commented
   const [labelsVisible, setLabelsVisible] = useState(false);
 
-  // zoom-to-wheel trigger
+  // zoom-to-wheel trigger (camera animator removed, but keep state)
   const [zoomToWheel, setZoomToWheel] = useState(false);
 
   // ----- create DOM labels & SVG overlay (fixed text positions) -----
+  // *** COMMENTED OUT: tag creation removed per request ***
+  /*
   useEffect(() => {
     labelDomRefs.current = [];
     lineRefs.current = [];
@@ -382,6 +258,7 @@ export default function App() {
       svg.remove();
     };
   }, [isMobile]);
+  */
 
   // ----- compute anchors when model loads (pin to semantic parts) -----
   const handleModelLoaded = (loadedObj) => {
@@ -460,24 +337,9 @@ export default function App() {
 
         if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
           setLabelsVisible(true);
-          labelDomRefs.current.forEach((el) => {
-            if (el) {
-              el.style.display = "block";
-              requestAnimationFrame(() => (el.style.opacity = "1"));
-            }
-          });
-          lineRefs.current.forEach((line) => line && line.setAttribute("opacity", "1"));
+          // label DOM creation is commented out, so nothing to reveal here
         } else {
           setLabelsVisible(false);
-          labelDomRefs.current.forEach((el) => {
-            if (el) {
-              el.style.opacity = "0";
-              setTimeout(() => {
-                if (el) el.style.display = "none";
-              }, 420);
-            }
-          });
-          lineRefs.current.forEach((line) => line && line.setAttribute("opacity", "0"));
         }
       }
     }
@@ -543,9 +405,11 @@ export default function App() {
         background: "#191919",
         position: "relative",
         fontFamily: "'Inconsolata', 'Microgramma', monospace",
+        color: "#fff",
       }}
     >
       <style>{`
+        /* Fonts - adjust file paths if needed */
         @font-face {
           font-family: 'Microgramma';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -553,10 +417,29 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
+        @font-face {
+          font-family: 'Zalando';
+          src: url('/fonts/ZalandoSansExpanded.woff2') format('woff2');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
+
+        /* helper classes */
+        .title-microgramma { font-family: 'Microgramma', monospace; font-weight:700; letter-spacing:0.02em; color:#fff; }
+        .body-zalando { font-family: 'Zalando', system-ui, -apple-system, 'Segoe UI', Roboto, Arial; color: #ddd; line-height:1.6; }
+
         html, body, #root { height: 100%; background: #191919; }
         body { margin: 0; overflow-y: scroll; }
+        /* hide scrollbar while keeping scrolling */
         body::-webkit-scrollbar { width: 0; height: 0; }
         body { scrollbar-width: none; -ms-overflow-style: none; }
+        /* sections */
+        main.section-wrapper { background: #0f0f0f; }
+        section.site-section { padding: 96px 18vw; min-height: 66vh; display:flex; flex-direction:column; justify-content:center; }
+        @media (max-width: 768px) {
+          section.site-section { padding: 48px 6vw; }
+        }
       `}</style>
 
       {/* HERO area (sticky canvas & centered logo) */}
@@ -612,6 +495,7 @@ export default function App() {
                 <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
               </Suspense>
 
+              {/* LabelsFollower kept but tags creation commented out, so nothing visible */}
               <LabelsFollower
                 modelRef={modelRef}
                 anchorsRef={anchorsRef}
@@ -621,7 +505,8 @@ export default function App() {
                 isMobile={isMobile}
               />
 
-              <CameraAnimator anchorsRef={anchorsRef} modelRef={modelRef} zoomTrigger={zoomToWheel} isMobile={isMobile} />
+              {/* CameraAnimator removed per request - if you want to re-enable later, uncomment usage and function */}
+              {/* <CameraAnimator anchorsRef={anchorsRef} modelRef={modelRef} zoomTrigger={zoomToWheel} isMobile={isMobile} /> */}
 
               <EffectComposer multisampling={4}>
                 <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
@@ -631,8 +516,49 @@ export default function App() {
         </div>
       </section>
 
-      {/* tiny tail so page scrolls */}
-      <div style={{ height: "40vh" }} />
+      {/* Now add the actual page sections so the page is scrollable after the hero */}
+      <main className="section-wrapper" style={{ zIndex: 1, position: "relative" }}>
+        <section id="team" className="site-section" aria-labelledby="team-title">
+          <h1 id="team-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
+            Team
+          </h1>
+          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
+            We are a tight-knit racing crew with experience across design, engineering and race strategy. Our team is focused on speed,
+            precision, and bringing together top-tier talent to build high-performance cars and experiences.
+          </p>
+        </section>
+
+        <section id="join" className="site-section" aria-labelledby="join-title">
+          <h1 id="join-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
+            Join Us
+          </h1>
+          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
+            Interested in joining? We look for enthusiastic teammates who are passionate about racing and pushing the technical envelope.
+            Check our openings and drop your CV — we’d love to hear from driven people.
+          </p>
+        </section>
+
+        <section id="schedule" className="site-section" aria-labelledby="schedule-title">
+          <h1 id="schedule-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
+            Schedule
+          </h1>
+          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
+            Race calendar, testing dates, and events are listed here. We update the schedule regularly — follow the team for the latest info.
+          </p>
+        </section>
+
+        <section id="contact" className="site-section" aria-labelledby="contact-title">
+          <h1 id="contact-title" className="title-microgramma" style={{ fontSize: 40, margin: 0 }}>
+            Contact
+          </h1>
+          <p className="body-zalando" style={{ marginTop: 18, maxWidth: 860 }}>
+            For press, partnerships or general enquiries reach out via email at hello@example.com or use the contact form on our site.
+          </p>
+        </section>
+      </main>
+
+      {/* small extra tail so final scroll feels natural */}
+      <div style={{ height: "8vh" }} />
     </div>
   );
 }

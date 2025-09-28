@@ -243,8 +243,8 @@ export default function App() {
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        const finalLeft = 50;
-        const finalTop = 20;
+        const finalLeft = 1;
+        const finalTop = 2;
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
 
@@ -302,7 +302,7 @@ export default function App() {
   // ----- scroll triggering: only process when user is within top 10px of page -----
   useEffect(() => {
     const onWheel = (e) => {
-      if (window.scrollY <= 50) {
+      if (window.scrollY <= 100) {
         if (e.deltaY > 0) animateTimelineTo(1, 700); // scroll down while in top 10px -> play forward
         else if (e.deltaY < 0) animateTimelineTo(0, 700); // scroll up while top 10px -> reverse
       }

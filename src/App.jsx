@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState, Suspense } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Center, ContactShadows, useGLTF } from "@react-three/drei";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
@@ -10,7 +10,10 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-/* ---------- NPLogo (kept original SVG paths) ---------- */
+/* ---------- labels (4) ---------- */
+const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
+
+/* ---------- NPLogo (original SVG paths — full, valid paths) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -22,7 +25,6 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* original SVG content (unchanged) */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -82,17 +84,137 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
     const finalScale = (0.0001 + eased) * (mobileScale / baseScale);
     group.current.scale.setScalar(finalScale);
 
-    if (gltf && gltf.scene) {
-      gltf.scene.traverse((c) => {
-        if (c.isMesh && c.material && "opacity" in c.material) c.material.opacity = clamp(eased);
-      });
-    }
+    gltf.scene.traverse((c) => {
+      if (c.isMesh && c.material && "opacity" in c.material) c.material.opacity = clamp(eased);
+    });
   });
 
   return (
     <group ref={group}>
       <primitive object={gltf.scene} scale={baseScale} position={[0, 0, 0]} />
     </group>
+  );
+}
+
+/* ---------- LoaderOverlay (uses Zalando font) ---------- */
+function LoaderOverlay({ progress }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 99999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg, rgba(10,12,16,0.95), rgba(20,22,28,0.95))",
+        color: "#fff",
+        pointerEvents: "auto",
+      }}
+    >
+      <div style={{ textAlign: "center", maxWidth: 520, padding: 24 }}>
+        <div style={{ fontSize: 16, marginBottom: 12, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>
+          Loading NP Racing
+        </div>
+
+        <div style={{ height: 6, width: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden", marginBottom: 12 }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.round(progress)}%`,
+              background: "linear-gradient(90deg,#ffcc00,#ffd47a)",
+              transition: "width 220ms ease",
+            }}
+          />
+        </div>
+
+        <div style={{ fontSize: 14, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>{Math.round(progress)}%</div>
+
+        <div style={{ marginTop: 18 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#222,#141414)", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(0,0,0,0.6)" }}>
+            <div style={{ width: 18, height: 18, borderRadius: 6, background: "#ffcc00", animation: "loaderPulse 900ms infinite ease-in-out" }} />
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes loaderPulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.7); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Content components (unchanged, using Microgramma + Zalando fonts) ---------- */
+function TeamContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px" }}>
+          <p className="zig">The Team</p>
+          <ul>
+            <li>Team Leader: Matěj Prokop</li>
+            <li>Engineer: Lukáš Moravec</li>
+            <li>Finance manager: Lukáš Martin</li>
+            <li>Marketing manager: Veronika Lindová</li>
+          </ul>
+        </div>
+
+        <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+        </div>
+      </div>
+
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h1>
+      <div>
+        <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+        <p className="zig">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+        <p className="zig">Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
+        <p className="zig">We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h1>
+      <p className="zig">Next up: Poland</p>
+      <ol>
+        <li>Oct 11</li>
+      </ol>
+    </div>
+  );
+}
+
+function ContactContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Contact</h1>
+      <p className="zig">
+        For general inquiry:{" "}
+        <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
+          prokopmatej@novyporg.cz
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function JoinUsContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Join Us</h1>
+      <p className="zig">Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+    </div>
   );
 }
 
@@ -142,50 +264,70 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // final canvas height (px) — computed once and updated on resize
-  const [finalHeight, setFinalHeight] = useState(Math.round(window.innerHeight * 0.6));
-  useEffect(() => {
-    const onResize = () => setFinalHeight(Math.round(window.innerHeight * 0.6));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
   // timeline
   const timelineProgressRef = useRef(0);
   const timelineTargetRef = useRef(0);
   const animatingRef = useRef(false);
 
-  // loader / assets states (kept from your previous setup)
+  // labels visibility (commented out tags per request)
+  const [labelsVisible] = useState(false);
+
+  // loader state
   const [loadedCount, setLoadedCount] = useState(0);
-  const totalAssets = 4;
+  const totalAssets = 4; // 3 images + 1 glb
+  const loadingProgress = (loadedCount / totalAssets) * 100;
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  // intro complete (unblocks scrolling)
+  const [introComplete, setIntroComplete] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = introComplete && assetsLoaded ? "auto" : "hidden";
+  }, [introComplete, assetsLoaded]);
+
+  // preload images
+  useEffect(() => {
+    const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
+    let mounted = true;
+    imgs.forEach((src) => {
+      const im = new Image();
+      im.onload = () => {
+        if (!mounted) return;
+        setLoadedCount((c) => c + 1);
+      };
+      im.onerror = () => {
+        if (!mounted) return;
+        setLoadedCount((c) => c + 1);
+      };
+      im.src = src;
+    });
+    return () => (mounted = false);
+  }, []);
+
+  // model loaded callback
+  const handleModelLoaded = (gltfScene) => {
+    modelRef.current = gltfScene;
+    setLoadedCount((c) => c + 1);
+
+    // compute anchors (unused but kept)
+    const bbox = new THREE.Box3().setFromObject(gltfScene);
+    const size = bbox.getSize(new THREE.Vector3());
+    const min = bbox.min;
+    const max = bbox.max;
+    const center = bbox.getCenter(new THREE.Vector3());
+    const anchorsWorld = [];
+    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06));
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z));
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z));
+    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08));
+    anchorsRef.current = anchorsWorld.map((w) => gltfScene.worldToLocal(w.clone()));
+  };
 
   useEffect(() => {
     if (loadedCount >= totalAssets) setAssetsLoaded(true);
   }, [loadedCount]);
 
-  // introComplete when timeline fully played
-  const [introComplete, setIntroComplete] = useState(false);
-  useEffect(() => {
-    const check = () => {
-      if (timelineProgressRef.current >= 0.9999) setIntroComplete(true);
-      else setIntroComplete(false);
-    };
-    let raf = 0;
-    const loop = () => {
-      check();
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  // keep body scrolling locked until intro + assets done (same as before)
-  useEffect(() => {
-    document.body.style.overflow = introComplete && assetsLoaded ? "auto" : "hidden";
-  }, [introComplete, assetsLoaded]);
-
-  // logo RAF (keeps same behaviour as before)
+  // logo transform RAF loop
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -202,18 +344,20 @@ export default function App() {
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
         const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        // apply transform w/o jumps
         wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
         wrap.style.transformOrigin = "center top";
+        wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
       }
+      if (p >= 0.9999) setIntroComplete(true);
+      else setIntroComplete(false);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline animator (unchanged)
+  // timeline animator
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
@@ -270,72 +414,22 @@ export default function App() {
     };
   }, [assetsLoaded]);
 
-  // preload images + count loaded
-  useEffect(() => {
-    const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
-    let mounted = true;
-    imgs.forEach((src) => {
-      const im = new Image();
-      im.onload = () => mounted && setLoadedCount((c) => c + 1);
-      im.onerror = () => mounted && setLoadedCount((c) => c + 1);
-      im.src = src;
-    });
-    return () => (mounted = false);
-  }, []);
-
-  // simulate model loaded callback (if you already call setLoadedCount in handleModelLoaded, remove this)
-  const handleModelLoaded = (gltfScene) => {
-    modelRef.current = gltfScene;
-    setLoadedCount((c) => c + 1);
-    // anchors calculation kept (unchanged)
-    const bbox = new THREE.Box3().setFromObject(gltfScene);
-    const size = bbox.getSize(new THREE.Vector3());
-    const min = bbox.min;
-    const max = bbox.max;
-    const center = bbox.getCenter(new THREE.Vector3());
-    const anchorsWorld = [];
-    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06));
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z));
-    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z));
-    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08));
-    anchorsRef.current = anchorsWorld.map((w) => gltfScene.worldToLocal(w.clone()));
-  };
-
-  // Styling helpers derived from finalHeight and introComplete
-  const scale = introComplete ? 1 : Math.max(1, window.innerHeight / Math.max(1, finalHeight));
-  // Canvas wrapper: keep height == finalHeight ALWAYS to reserve layout space
   const canvasWrapperStyle = {
     position: introComplete ? "relative" : "fixed",
     inset: introComplete ? "auto" : 0,
     zIndex: 2,
     pointerEvents: "none",
     width: "100%",
-    height: `${finalHeight}px`, // important: final height reserved
+    height: introComplete ? "60vh" : "100vh",
     top: introComplete ? undefined : 0,
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    overflow: "hidden",
   };
 
-  // Visual inner canvas container that is scaled while intro is running
-  const canvasInnerStyle = {
-    width: "100%",
-    height: `${finalHeight}px`,
-    transformOrigin: "top center",
-    transform: `scale(${scale})`,
-    transition: introComplete ? "transform 420ms cubic-bezier(.2,.9,.2,1)" : "transform 120ms linear",
-    maxWidth: "100vw",
-  };
-
-  // Keep content below canvas in same place (use finalHeight to avoid jump)
   const contentContainerStyle = {
     background: "#191919",
     color: "#fff",
-    paddingTop: `${finalHeight}px`, // reserve final canvas height so no jump
+    paddingTop: introComplete ? 20 : window.innerHeight,
   };
 
-  // render (LoaderOverlay omitted for brevity — keep your loader if needed)
   return (
     <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative" }}>
       <style>{`
@@ -368,68 +462,59 @@ export default function App() {
         <NPLogo size={isMobile ? 260 : 520} />
       </div>
 
-      {/* Canvas wrapper reserves finalHeight for layout always. inner gets scaled to fill viewport during intro. */}
       <div style={canvasWrapperStyle}>
-        <div style={canvasInnerStyle}>
-          <Canvas
-            shadows
-            dpr={[1, 2]}
-            camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
-            style={{ width: "100%", height: "100%", maxWidth: "100vw" }}
-            onCreated={({ gl, scene }) => {
-              gl.shadowMap.enabled = true;
-              gl.shadowMap.type = THREE.PCFSoftShadowMap;
-              try {
-                if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
-                else gl.outputEncoding = THREE.sRGBEncoding;
-              } catch (e) {}
-              gl.toneMapping = THREE.ACESFilmicToneMapping;
-              gl.toneMappingExposure = 0.6;
-              scene.background = new THREE.Color(0x191919);
-            }}
-          >
-            <ambientLight intensity={0.12} />
-            <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
-            <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
+        <Canvas
+          shadows
+          dpr={[1, 2]}
+          camera={{ position: [0, 0, isMobile ? 120000 : 220000], fov: 7, near: 10000, far: 800000 }}
+          style={{ width: "100%", height: "100%", maxWidth: "100vw" }}
+          onCreated={({ gl, scene }) => {
+            gl.shadowMap.enabled = true;
+            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            try {
+              if (gl.outputColorSpace !== undefined) gl.outputColorSpace = THREE.SRGBColorSpace;
+              else gl.outputEncoding = THREE.sRGBEncoding;
+            } catch (e) {}
+            gl.toneMapping = THREE.ACESFilmicToneMapping;
+            gl.toneMappingExposure = 0.6;
+            scene.background = new THREE.Color(0x191919);
+          }}
+        >
+          <ambientLight intensity={0.12} />
+          <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
+          <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
 
-            <Suspense fallback={null}>
-              <Environment preset="city" background={false} />
-              <Center>
-                <InteractiveModel onModelLoaded={handleModelLoaded} progressRef={timelineProgressRef} isMobile={isMobile} baseScale={isMobile ? 300000 : 600000} />
-              </Center>
-              <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
-            </Suspense>
+          <Suspense fallback={null}>
+            <Environment preset="city" background={false} />
+            <Center>
+              <InteractiveModel onModelLoaded={handleModelLoaded} progressRef={timelineProgressRef} isMobile={isMobile} baseScale={isMobile ? 300000 : 600000} />
+            </Center>
+            <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
+          </Suspense>
 
-            <EffectComposer multisampling={4}>
-              <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
-            </EffectComposer>
-          </Canvas>
-        </div>
+          <EffectComposer multisampling={4}>
+            <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
+          </EffectComposer>
+        </Canvas>
       </div>
+
+      {!assetsLoaded && <LoaderOverlay progress={loadingProgress} />}
 
       <div style={contentContainerStyle}>
         <div className="section">
-          {/* TeamContent etc. - paste your components here */}
-          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
-          <p className="zig">The Team</p>
-          {/* ... keep your TeamContent markup ... */}
+          <TeamContent />
         </div>
 
         <div className="section">
-          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h1>
-          <p className="zig">Next up: Poland</p>
+          <ScheduleContent />
         </div>
 
         <div className="section">
-          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Join Us</h1>
-          <p className="zig">Want to have the chance to compete? Contact us!</p>
+          <JoinUsContent />
         </div>
 
         <div className="section">
-          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Contact</h1>
-          <p className="zig">
-            For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a>
-          </p>
+          <ContactContent />
         </div>
 
         <div style={{ height: 200 }} />

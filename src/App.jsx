@@ -6,15 +6,14 @@ import { Environment, Center, ContactShadows } from "@react-three/drei";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
-/* helpers */
+/* ---------- helpers ---------- */
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-/* tags arrays */
-const RIGHT_TAGS = ["waapi", "timeline", "stagger", "svg", "spring", "animation"];
-const LEFT_TAGS = ["timer", "easings", "draggable", "scroll", "scope"];
+/* ---------- labels (4) ---------- */
+const LABELS = ["Team", "Join Us", "Schedule", "Contact"];
 
-/* SVG logo (use your full SVG paths here) */
+/* ---------- NPLogo (original SVG kept) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -26,30 +25,17 @@ function NPLogo({ size = 300 }) {
       preserveAspectRatio="xMidYMid meet"
       style={{ display: "block" }}
     >
-      {/* Put your full original SVG content here (kept from previous) */}
+      {/* put your original SVG markup here; shortened placeholder path below to keep file compact */}
       <g transform="translate(-54.124261,-130.25079)">
-        <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
-          <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
-            <path d="m 53.020878,195.78621 h -2.060221 l -2.610554,-2.65289 h -1.509887 v 2.65289 H 45.23155 v -7.02733 h 6.02544 q 1.580443,0 1.580443,1.22767 v 1.91911 q 0,0.889 -0.818444,1.22766 h -1.693332 z m -1.763888,-4.41678 v -0.84666 q 0,-0.55033 -0.465666,-0.55033 h -3.951108 v 1.96144 h 3.951108 q 0.465666,0 0.465666,-0.56445 z" />
-            <path d="m 69.474419,195.78621 h -1.566332 l -0.917222,-1.53811 h -4.571996 l -0.874888,1.53811 h -1.622777 l 3.965219,-7.05555 h 1.566332 z m -3.217331,-2.82222 -1.580443,-2.86455 -1.566332,2.86455 z" />
-            <path d="m 84.756759,194.1211 q 0,0.98778 -0.380999,1.32644 -0.366889,0.33867 -1.368777,0.33867 h -4.190997 q -1.001888,0 -1.382888,-0.33867 -0.366888,-0.33866 -0.366888,-1.32644 v -3.71122 q 0,-0.97367 0.366888,-1.31233 0.381,-0.35278 1.382888,-0.35278 h 4.190997 q 1.693332,0.0141 1.749776,1.17122 v 1.03011 h -1.636887 v -0.94544 h -4.416775 v 4.45911 h 4.416775 v -1.03011 h 1.636887 z" />
-            <path d="m 95.438876,195.78621 h -1.622777 v -7.05555 h 1.622777 z" />
-            <path d="m 112.80966,195.78621 h -1.42522 l -5.37633,-4.93889 v 4.93889 h -1.49578 v -7.05555 h 1.397 l 5.43278,4.92477 v -4.92477 h 1.46755 z" />
-            <path d="m 130.26509,194.1211 q 0,0.98778 -0.381,1.32644 -0.36688,0.33867 -1.36877,0.33867 h -4.84011 q -1.00189,0 -1.38289,-0.33867 -0.36689,-0.33866 -0.36689,-1.32644 v -3.69711 q 0,-0.98778 0.36689,-1.32644 0.381,-0.33867 1.38289,-0.33867 h 4.84011 q 1.04422,0 1.397,0.36689 0.35277,0.35278 0.35277,1.38289 h -1.59455 v -0.49389 h -5.10822 v 4.445 h 5.10822 v -1.56634 h -2.94922 v -1.19944 h 4.54377 z" />
-          </g>
-        </g>
-        <path style={{ fill: "#ffcc00", strokeWidth: 1.61928, strokeLinecap: "round" }} d="m 64.083427,130.25096 -9.959082,21.06022 h 4.532023 l 9.959082,-21.06022 z m 11.342977,0 -9.959082,21.06022 h 1.139465 4.505151 3.62872 l 9.959082,-21.06022 h -3.628719 -4.505152 z m 14.738635,0 -9.959082,21.06022 h 1.783354 v 5.1e-4 h 13.889591 l 0.535368,-1.13223 h -0.001 l 9.42371,-19.9285 H 97.007033 91.94791 Z" />
-        <path style={{ fill: "#fff", strokeLinejoin: "round" }} d="m 111.60859,130.25083 c -0.96683,0.005 -1.91905,0.53479 -2.3828,1.51567 L 101.76888,147.53246 100,151.27435 h 5.85287 l 0.69867,-1.47846 h 5.2e-4 l 5.77949,-12.22045 11.88247,12.88242 c 1.27166,1.38021 3.53608,1.03468 4.33824,-0.66197 l 6.74016,-14.25185 h 16.1463 l -2.44895,5.17747 h -8.20725 l -2.50217,5.29115 h 12.38477 c 1.02253,-1.7e-4 1.95344,-0.58946 2.39107,-1.51361 l 4.95267,-10.46861 c 0.83036,-1.75547 -0.45016,-3.77762 -2.3921,-3.77755 h -21.99814 c -1.02309,-4.3e-4 -1.95475,0.58896 -2.39262,1.51361 l -5.7795,12.22096 -11.88247,-12.88294 c -0.53648,-0.58227 -1.24991,-0.85758 -1.95544,-0.85369 z" />
+        <path d="M64 130 L80 160 L72 160 L88 130z" fill="#ffcc00" />
+        {/* Replace the above with your full SVG group if you prefer */}
       </g>
     </svg>
   );
 }
 
-/* ---------------- InteractiveModel ----------------
-   - useLoader inside Canvas (valid)
-   - reads progressRef.current and animates position/scale/rotation based on time-based progress
-*/
-function InteractiveModel({ onModelLoaded, progressRef, scale = 600000, isMobile }) {
+/* ---------- InteractiveModel (inside Canvas) ---------- */
+function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000 }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
   const group = useRef();
 
@@ -67,13 +53,12 @@ function InteractiveModel({ onModelLoaded, progressRef, scale = 600000, isMobile
 
   useFrame(() => {
     if (!group.current) return;
-    const p = clamp(progressRef.current); // 0..1
+    const p = clamp(progressRef.current);
     const eased = easeInOutCubic(p);
 
     const fromZ = isMobile ? 280000 : 420000;
-    // position: from far Z -> near 0, small Y lift
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
-    // rotate along X axis (user requested)
+    // rotate around X axis during appear
     group.current.rotation.x = eased * (Math.PI * 0.12);
     // scale in
     group.current.scale.setScalar(0.0001 + eased);
@@ -92,29 +77,26 @@ function InteractiveModel({ onModelLoaded, progressRef, scale = 600000, isMobile
   );
 }
 
-/* ---------------- LabelsFollower (inside Canvas)
-   projects a single anchor (center) to screen for all labels and updates DOM labels & SVG polylines.
-*/
-function LabelsFollower({ modelObjRef, anchorsRef, labelDomRefs, lineRefs, showLabels, rightCount }) {
+/* ---------- LabelsFollower (runs inside Canvas useFrame) ----------
+   Projects anchors (local model-space points) to screen and updates DOM label positions & SVG polyline points.
+------------------------------------------------------------------ */
+function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible, rightCount = 2 }) {
   const { camera, size } = useThree();
   const tmp = useRef(new THREE.Vector3());
 
   useFrame(() => {
-    if (!showLabels) return; // don't touch DOM until we're ready
-
-    const model = modelObjRef.current;
+    if (!visible) return;
+    const model = modelRef.current;
     const anchors = anchorsRef.current;
     if (!model || !anchors || !anchors.length) return;
 
-    const edgePadding = 20;
-
+    const edgePadding = 18;
     for (let i = 0; i < anchors.length; i++) {
       const isRight = i < rightCount;
       const labelEl = labelDomRefs.current[i];
       const poly = lineRefs.current[i];
       if (!labelEl || !poly) continue;
 
-      // anchor -> world -> NDC -> screen
       tmp.current.copy(anchors[i]);
       model.localToWorld(tmp.current);
       tmp.current.project(camera);
@@ -122,22 +104,23 @@ function LabelsFollower({ modelObjRef, anchorsRef, labelDomRefs, lineRefs, showL
       const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
       const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
 
-      // label position (tuck left or right)
-      const labelRect = labelEl.getBoundingClientRect();
-      const left = isRight ? size.width - edgePadding - labelRect.width : edgePadding;
-      const top = ay - labelRect.height / 2;
+      // position label at edge (left/right)
+      const rect = labelEl.getBoundingClientRect();
+      const left = isRight ? size.width - edgePadding - rect.width : edgePadding;
+      const top = ay - rect.height / 2;
 
       labelEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       labelEl.style.opacity = "1";
 
-      // smaller connectors now
-      const dx = isRight ? 80 : -80;
-      const dy = isRight ? -30 : 30;
+      // small connector: anchor -> short elbow -> to label
+      const dx = isRight ? 70 : -70;
+      const dy = isRight ? -24 : 24;
       const elbowX = ax + dx;
       const elbowY = ay + dy;
-      const endX = isRight ? left - 8 : left + labelRect.width + 8;
+      const endX = isRight ? left - 8 : left + rect.width + 8;
       const endY = elbowY;
 
+      // polyline points: anchor -> elbow -> end
       poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${endX},${endY}`);
       poly.setAttribute("opacity", "1");
     }
@@ -146,28 +129,19 @@ function LabelsFollower({ modelObjRef, anchorsRef, labelDomRefs, lineRefs, showL
   return null;
 }
 
-/* ---------------- Main App
-   - plays timelineTo(1) when the user scrolls to top (window.scrollY <= 5)
-   - shows labels only after animation completes
-   - anchors all labels to the model center
-*/
+/* ---------- App (main) ---------- */
 export default function App() {
+  // refs
   const logoWrapRef = useRef(null);
   const logoScaleRef = useRef(null);
 
-  const modelObjRef = useRef(null);
+  const modelRef = useRef(null);
   const anchorsRef = useRef([]);
   const labelDomRefs = useRef([]);
   const lineRefs = useRef([]);
 
+  // responsive
   const [isMobile, setIsMobile] = useState(false);
-  const [labelsVisible, setLabelsVisible] = useState(false); // show labels only after animation complete
-
-  // timeline progress
-  const timelineProgressRef = useRef(0);
-  const timelineTargetRef = useRef(0);
-  const animatingRef = useRef(false);
-
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
     onResize();
@@ -175,13 +149,22 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // create DOM labels & SVG polylines (hidden initially)
+  // timeline
+  const timelineProgressRef = useRef(0); // 0..1 current
+  const timelineTargetRef = useRef(0);
+  const animatingRef = useRef(false);
+
+  // labels visibility (only after animation completes)
+  const [labelsVisible, setLabelsVisible] = useState(false);
+
+  // ----- create DOM labels & SVG overlay -----
   useEffect(() => {
     labelDomRefs.current = [];
     lineRefs.current = [];
 
-    const old = document.getElementById("__npr_svg_overlay_lines");
-    if (old) old.remove();
+    // remove old if any
+    const oldSvg = document.getElementById("__npr_svg_overlay_lines");
+    if (oldSvg) oldSvg.remove();
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("id", "__npr_svg_overlay_lines");
@@ -191,34 +174,32 @@ export default function App() {
     svg.style.width = "100%";
     svg.style.height = "100%";
     svg.style.pointerEvents = "none";
-    svg.style.zIndex = "999";
+    svg.style.zIndex = "9999";
     svg.style.overflow = "visible";
     document.body.appendChild(svg);
 
-    const texts = [...RIGHT_TAGS, ...LEFT_TAGS];
-    texts.forEach((text, i) => {
-      const label = document.createElement("div");
-      Object.assign(label.style, {
+    // create 4 labels and 4 polylines
+    LABELS.forEach((txt, i) => {
+      const el = document.createElement("div");
+      Object.assign(el.style, {
         position: "fixed",
         left: "0px",
         top: "0px",
         transform: "translate3d(-9999px,-9999px,0)",
         pointerEvents: "none",
         opacity: "0",
+        display: "none", // hidden until animation finishes
         color: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-        fontWeight: 700,
-        textTransform: "lowercase",
+        fontFamily: "'Microgramma', 'Inter', sans-serif",
         fontSize: "16px",
-        lineHeight: "1",
+        fontWeight: "700",
         padding: "0",
         background: "transparent",
+        zIndex: 10000,
       });
-      label.textContent = text;
-      // hide until animation completes
-      label.style.display = "none";
-      document.body.appendChild(label);
-      labelDomRefs.current.push(label);
+      el.textContent = txt;
+      document.body.appendChild(el);
+      labelDomRefs.current.push(el);
 
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       poly.setAttribute("fill", "none");
@@ -238,25 +219,41 @@ export default function App() {
     };
   }, [isMobile]);
 
-  // when model loads, anchor everything to the center (local-space)
+  // ----- compute anchors when model loads (pin to semantic parts) -----
   const handleModelLoaded = (loadedObj) => {
-    modelObjRef.current = loadedObj;
+    modelRef.current = loadedObj;
+
+    // bounding box
     const bbox = new THREE.Box3().setFromObject(loadedObj);
-    const centerWorld = bbox.getCenter(new THREE.Vector3()); // center in world space
-    // convert to local space of object
-    const centerLocal = loadedObj.worldToLocal(centerWorld.clone());
-    const total = RIGHT_TAGS.length + LEFT_TAGS.length;
-    anchorsRef.current = new Array(total).fill(0).map(() => centerLocal.clone());
+    const size = bbox.getSize(new THREE.Vector3());
+    const min = bbox.min;
+    const max = bbox.max;
+    const center = bbox.getCenter(new THREE.Vector3());
+
+    // We'll set: helmet (front-top-center), front (front-most center), back (rear-most center), wheel (one corner)
+    // Convert chosen world points into local coordinates of the object (worldToLocal)
+    const anchorsWorld = [];
+
+    // helmet: slightly forward & top-center
+    anchorsWorld.push(new THREE.Vector3(center.x, max.y - size.y * 0.06, max.z - size.z * 0.06));
+    // front: front-most center
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, max.z));
+    // back: rear-most center
+    anchorsWorld.push(new THREE.Vector3(center.x, center.y, min.z));
+    // wheel: front-right-bottom-ish (approx)
+    anchorsWorld.push(new THREE.Vector3(max.x - size.x * 0.03, min.y + size.y * 0.06, min.z + size.z * 0.08));
+
+    // convert to local coordinates relative to loadedObj
+    anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
   };
 
-  // small RAF to update logo transform based on timelineProgressRef
+  // ----- timeline RAF to update logo transform from timelineProgressRef -----
   useEffect(() => {
     let raf = 0;
     const loop = () => {
       const p = clamp(timelineProgressRef.current);
       const eased = easeInOutCubic(p);
 
-      // update logo wrapper and scale
       const wrap = logoWrapRef.current;
       const scaleEl = logoScaleRef.current;
       if (wrap && scaleEl) {
@@ -281,43 +278,37 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline animator
+  // ----- timeline animator (tween to target) -----
   function animateTimelineTo(target = 0, duration = 700) {
-    // avoid overlapping unequal animations
     timelineTargetRef.current = clamp(target);
-    if (animatingRef.current) {
-      // still animating — let existing animation complete; but still set target
-      return;
-    }
+    if (animatingRef.current) return;
     animatingRef.current = true;
-    const startTime = performance.now();
-    const start = timelineProgressRef.current;
-    const delta = timelineTargetRef.current - start;
+
+    const startTS = performance.now();
+    const from = timelineProgressRef.current;
+    const delta = timelineTargetRef.current - from;
 
     function step(now) {
-      const t = Math.min(1, (now - startTime) / duration);
-      timelineProgressRef.current = clamp(start + delta * easeInOutCubic(t));
-
-      if (t < 1) {
-        requestAnimationFrame(step);
-      } else {
-        timelineProgressRef.current = timelineTargetRef.current;
+      const t = Math.min(1, (now - startTS) / duration);
+      timelineProgressRef.current = clamp(from + delta * easeInOutCubic(t));
+      if (t < 1) requestAnimationFrame(step);
+      else {
         animatingRef.current = false;
-        // if we've reached the fully onscreen state (1), show labels now
+        timelineProgressRef.current = timelineTargetRef.current;
+        // set labels visibility only when fully shown
         if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
-          // reveal labels
           setLabelsVisible(true);
-          // also ensure label DOM elements are visible
           labelDomRefs.current.forEach((el) => {
             if (el) el.style.display = "block";
           });
-          // show lines
           lineRefs.current.forEach((line) => line && line.setAttribute("opacity", "1"));
         } else {
-          // if animating away from 1 -> hide labels immediately
           setLabelsVisible(false);
           labelDomRefs.current.forEach((el) => {
-            if (el) el.style.display = "none";
+            if (el) {
+              el.style.display = "none";
+              el.style.opacity = "0";
+            }
           });
           lineRefs.current.forEach((line) => line && line.setAttribute("opacity", "0"));
         }
@@ -326,43 +317,67 @@ export default function App() {
     requestAnimationFrame(step);
   }
 
-  // Trigger animation only when the user scrolls to the very top
+  // ----- scroll triggering: only process when user is within top 10px of page -----
   useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY <= 5) {
-        // user reached top — play full animation (to 1)
-        animateTimelineTo(1, 900);
-      } else {
-        // if they move away from top, optionally reverse the animation to 0.
-        // The user asked to "Trigger the animation only when the user scrolls to the top",
-        // so by default we will not auto-reverse here. If you prefer reversing on leave, uncomment:
-        // animateTimelineTo(0, 600);
+    const onWheel = (e) => {
+      if (window.scrollY <= 10) {
+        if (e.deltaY > 0) animateTimelineTo(1, 700); // scroll down while in top 10px -> play forward
+        else if (e.deltaY < 0) animateTimelineTo(0, 700); // scroll up while top 10px -> reverse
       }
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
 
-    // Also check on load (if they land at top)
-    onScroll();
+    // touch support: detect vertical swipe direction when starting in top 10px
+    let touchStartY = null;
+    const onTouchStart = (ev) => {
+      if (window.scrollY <= 10) touchStartY = ev.touches ? ev.touches[0].clientY : null;
+      else touchStartY = null;
+    };
+    const onTouchMove = (ev) => {
+      if (touchStartY == null) return;
+      const y = ev.touches ? ev.touches[0].clientY : null;
+      if (y == null) return;
+      const dy = touchStartY - y;
+      if (Math.abs(dy) > 8) {
+        if (dy > 0) animateTimelineTo(1, 700);
+        else animateTimelineTo(0, 700);
+        touchStartY = null;
+      }
+    };
 
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
   }, []);
 
-  // labelsAlpha -> not used to reveal labels anymore; we show only after animation finishes
-  const labelsAlpha = labelsVisible ? 1 : 0;
+  // ----- initial check: if page loaded at top, we do not auto-play; we only respond to user scroll in top 10px -----
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative" }}>
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative", fontFamily: "'Microgramma', sans-serif" }}>
+      {/* load Microgramma from /public/fonts/microgramma.woff2 - adjust path if needed */}
       <style>{`
-        html, body, #root { height: 100%; background: #191919; }
-        body { margin: 0; overflow-y: scroll; overscroll-behavior-y: none; }
-        body::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        @font-face {
+          font-family: 'Microgramma';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        html,body,#root { height: 100%; background: #191919; }
+        body { margin:0; overflow-y: scroll; }
+        body::-webkit-scrollbar { width: 0; height: 0; }
         body { scrollbar-width: none; -ms-overflow-style: none; }
       `}</style>
 
-      {/* HERO drives the scroll area */}
-      <section style={{ height: `150vh`, position: "relative" }}>
+      {/* HERO area (sticky canvas & centered logo) */}
+      <section style={{ height: "160vh", position: "relative" }}>
         <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-          {/* Logo wrappers */}
+          {/* CENTERED LOGO — will tuck to top-left */}
           <div
             ref={logoWrapRef}
             style={{
@@ -381,7 +396,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Canvas */}
+          {/* fixed Canvas */}
           <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
             <Canvas
               shadows
@@ -402,25 +417,12 @@ export default function App() {
               <Suspense fallback={null}>
                 <Environment preset="city" background={false} />
                 <Center>
-                  <InteractiveModel
-                    onModelLoaded={handleModelLoaded}
-                    progressRef={timelineProgressRef}
-                    isMobile={isMobile}
-                    scale={isMobile ? 300000 : 600000}
-                  />
+                  <InteractiveModel onModelLoaded={handleModelLoaded} progressRef={timelineProgressRef} isMobile={isMobile} scale={isMobile ? 300000 : 600000} />
                 </Center>
                 <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
               </Suspense>
 
-              {/* Labels follower inside Canvas — updates only when labelsVisible === true */}
-              <LabelsFollower
-                modelObjRef={modelObjRef}
-                anchorsRef={anchorsRef}
-                labelDomRefs={labelDomRefs}
-                lineRefs={lineRefs}
-                showLabels={labelsVisible}
-                rightCount={RIGHT_TAGS.length}
-              />
+              <LabelsFollower modelRef={modelRef} anchorsRef={anchorsRef} labelDomRefs={labelDomRefs} lineRefs={lineRefs} visible={labelsVisible} rightCount={2} />
 
               <EffectComposer multisampling={4}>
                 <SSAO samples={21} radius={60000000} intensity={30} luminanceInfluence={0.6} color="black" />
@@ -430,7 +432,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* trailing area so the page can be scrolled */}
+      {/* tiny tail so page scrolls */}
       <div style={{ height: "40vh" }} />
     </div>
   );

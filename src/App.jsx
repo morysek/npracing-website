@@ -97,21 +97,19 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 
   return (
     <group ref={group}>
-      {/* gltf.scene is used as the primitive */}
       <primitive object={gltf.scene} scale={scale} position={[0, 0, 0]} />
     </group>
   );
 }
 
-/* ---------- LabelsFollower (kept stub) ---------- */
+/* ---------- LabelsFollower (disabled/commented tags per request) ---------- */
 function LabelsFollower() {
-  // labels were previously created dynamically and are currently disabled/commented out per your request
   return null;
 }
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // inject Inconsolata (used as fallback) once
+  // inject Inconsolata once (kept)
   useEffect(() => {
     const id = "__npr_google_fonts_inconsolata";
     if (!document.getElementById(id)) {
@@ -158,7 +156,9 @@ export default function App() {
     anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
   };
 
-  // logo transform: combine translate + scale on wrapper to avoid jumps
+  // -----------------------------------------
+  // KEY CHANGE A: Logo transform (combined translate+scale) — mobile final size doubled
+  // -----------------------------------------
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -167,7 +167,8 @@ export default function App() {
       const wrap = logoWrapRef.current;
       if (wrap) {
         const startSize = isMobile ? 260 : 520;
-        const endSize = isMobile ? 56 : 90;
+        // final size doubled on mobile (per your request)
+        const endSize = isMobile ? 56 * 2 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
         const finalLeft = window.innerWidth / 2;
@@ -175,10 +176,17 @@ export default function App() {
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
         const scale = (startSize + (endSize - startSize) * eased) / startSize;
+        // combine translate & scale to avoid jumps
         wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
         wrap.style.transformOrigin = "center top";
         wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
+        // when animation is at the end on mobile, ensure padding is 0
+        if (isMobile && eased > 0.999) {
+          wrap.style.padding = "0";
+        } else {
+          wrap.style.padding = "";
+        }
       }
       raf = requestAnimationFrame(loop);
     };
@@ -186,7 +194,7 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline tween
+  // timeline tween (unchanged)
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
@@ -299,10 +307,10 @@ export default function App() {
 
       {/* internal scroll container */}
       <div ref={scrollRef} className="scroll-container">
-        {/* HERO area (sticky canvas & centered logo) */}
+        {/* HERO area (non-sticky — canvas now in normal flow so it scrolls with the page) */}
         <section style={{ height: "100vh", position: "relative" }}>
-          <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-            {/* LOGO wrapper — stays visible */}
+          <div style={{ position: "relative", height: "100%", width: "100%" }}>
+            {/* LOGO wrapper — stays fixed on top (logo remains visible while canvas scrolls) */}
             <div
               ref={logoWrapRef}
               style={{
@@ -310,17 +318,18 @@ export default function App() {
                 left: "50%",
                 top: "50%",
                 transform: "translate(-50%,-50%) scale(1)",
-                zIndex: 80,
+                zIndex: 120,
                 pointerEvents: "none",
-                willChange: "transform, opacity",
+                willChange: "transform, opacity, padding",
               }}
               aria-hidden
             >
               <NPLogo size={isMobile ? 260 : 520} />
             </div>
 
-            {/* fixed Canvas (put behind page sections so text is visible) */}
-            <div style={{ position: "fixed", inset: 0, zIndex: 40, pointerEvents: "none" }}>
+            {/* KEY CHANGE B: Canvas is no longer fixed — it's part of the page flow and will scroll with content.
+                Put it inside hero section with full viewport height. */}
+            <div style={{ position: "relative", width: "100%", height: "100vh", zIndex: 40, pointerEvents: "none" }}>
               <Canvas
                 shadows
                 dpr={[1, 2]}
@@ -361,7 +370,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* Page content now above the canvas (so text is visible on desktop & mobile) */}
+        {/* Page content (now scrolls normally, canvas moves with it) */}
         <main style={{ position: "relative", zIndex: 70, pointerEvents: "auto" }}>
           <section id="team" className="site-section" aria-labelledby="team-title">
             <div className="content">

@@ -51,7 +51,7 @@ function NPLogo({ size = 300 }) {
 }
 
 /* -----------------------------
-   3D model appears from center (scroll-based over full range)
+   3D model appears from center (scroll-based across full range)
    ----------------------------- */
 function InteractiveModel({ onModelLoaded, progress, scale = 600000, isMobile }) {
   const obj = useLoader(OBJLoader, "/models/F1.obj");
@@ -71,11 +71,8 @@ function InteractiveModel({ onModelLoaded, progress, scale = 600000, isMobile })
 
   useFrame(() => {
     if (!group.current) return;
-
-    // Whole animation plays across the entire scroll [0..1]
     const p = easeInOutCubic(clamp(progress));
 
-    // Scale up from 0 and move from deep Z toward camera
     const fromZ = isMobile ? 280000 : 420000;
     group.current.position.set(0, (1 - p) * (isMobile ? 2.5 : 4), -fromZ * (1 - p));
     group.current.rotation.y = (1 - p) * 0.45;
@@ -96,7 +93,7 @@ function InteractiveModel({ onModelLoaded, progress, scale = 600000, isMobile })
 }
 
 /* -----------------------------
-   Edge labels + connectors (now white, 20px)
+   Edge labels + connectors (white, thicker, 20px)
    ----------------------------- */
 function LabelsFollower({
   modelObjRef,
@@ -138,18 +135,18 @@ function LabelsFollower({
       const top = ay - labelRect.height / 2;
 
       labelEl.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      labelEl.style.opacity = tmp.current.z < 1 ? String(a) : "0";
+      labelEl.style.opacity = String(a); // always visible when alpha > 0
 
       // Connector: anchor → elbow → horizontal to label
-      const dx = isRight ? 120 : -120;
-      const dy = isRight ? -60 : 60;
+      const dx = isRight ? 140 : -140;
+      const dy = isRight ? -70 : 70;
       const elbowX = ax + dx;
       const elbowY = ay + dy;
       const endX = isRight ? left - linePadToText : left + labelRect.width + linePadToText;
       const endY = elbowY;
 
       poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${endX},${endY}`);
-      poly.setAttribute("opacity", tmp.current.z < 1 ? String(a) : "0");
+      poly.setAttribute("opacity", String(a));
     }
   });
 
@@ -157,16 +154,18 @@ function LabelsFollower({
 }
 
 /* -----------------------------
-   App: scroll-based timeline over the full hero
-   - Logo starts perfectly centered
-   - Entire animation scrubs with scroll 0→1
-   - Lines + labels visible (white, 20px)
-   - Scrollbars hidden but scrolling works
+   App: scroll-based timeline across the full hero with momentum
+   - Faster playback (shorter hero)
+   - Momentum smoothing for fluid feel
+   - Logo truly centered at start (separate scale wrapper)
+   - White, thicker lines and 20px labels
    ----------------------------- */
 export default function App() {
   const heroRef = useRef(null);
 
-  const heroLogoRef = useRef(null);
+  const logoWrapRef = useRef(null);   // handles position/translation
+  const logoScaleRef = useRef(null);  // handles only scale
+
   const modelObjRef = useRef(null);
   const anchorsRef = useRef([]);
 
@@ -174,7 +173,14 @@ export default function App() {
   const lineRefs = useRef([]);
 
   const [isMobile, setIsMobile] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..1
+
+  // Scroll state (raw and smoothed with momentum)
+  const rawProgressRef = useRef(0);
+  const progressRef = useRef(0);
+  const [, forceRerender] = useState(0); // used to trigger React updates from RAF
+
+  // Expose smoothed progress to children via ref state bridge
+  const getProgress = () => progressRef.current;
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 768);
@@ -183,56 +189,80 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Scroll progress across the hero section
+  // Faster animation: make hero shorter so the full range is reached sooner
+  const heroHeightVh = 150; // was 220
+
+  // Compute RAW progress from native scroll position
   useEffect(() => {
     const onScroll = () => {
       const el = heroRef.current;
       if (!el) return;
       const vh = window.innerHeight;
-      const total = el.offsetHeight - vh; // scrollable distance within hero
+      const total = Math.max(1, el.offsetHeight - vh);
       const y = clamp(window.scrollY, 0, total);
-      const t = total > 0 ? y / total : 0;
-      setProgress(clamp(t));
+      rawProgressRef.current = clamp(y / total);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Logo transform based on full-range progress
+  // Momentum smoothing (Lenis-like, but tiny and dependency-free)
   useEffect(() => {
-    const el = heroLogoRef.current;
-    if (!el) return;
+    let raf = 0;
+    let last = performance.now();
+    const strength = 10; // higher = snappier, lower = more floaty
 
-    // Always start perfectly centered
-    el.style.position = "fixed";
-    el.style.left = "50%";
-    el.style.top = "50%";
-    el.style.pointerEvents = "none";
-    el.style.zIndex = "40";
+    const loop = (now) => {
+      const dt = Math.max(0.001, (now - last) / 1000);
+      last = now;
+
+      // Exponential smoothing toward target
+      const target = rawProgressRef.current;
+      const current = progressRef.current;
+      const alpha = 1 - Math.pow(0.001, strength * dt); // time-corrected
+      const next = current + (target - current) * alpha;
+
+      // Only re-render if it changed a bit
+      if (Math.abs(next - current) > 1e-4) {
+        progressRef.current = next;
+        forceRerender((v) => v + 1);
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Logo transforms from center to top-left using wrapper (pos) + inner (scale)
+  useEffect(() => {
+    const wrap = logoWrapRef.current;
+    const scaleEl = logoScaleRef.current;
+    if (!wrap || !scaleEl) return;
 
     const startSize = isMobile ? 260 : 520;
     const endSize = isMobile ? 56 : 90;
+    const p = easeInOutCubic(clamp(getProgress()));
 
+    // Centered start using left/top 50% with -50% translate
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-
     const finalLeft = 16;
     const finalTop = 14;
-
     const dx = finalLeft - centerX;
     const dy = finalTop - centerY;
 
-    const p = easeInOutCubic(clamp(progress));
-    const size = startSize + (endSize - startSize) * p;
-    const scale = size / startSize;
+    // Position path (not affected by scale)
+    wrap.style.transform = `translate(-50%, -50%) translate(${dx * p}px, ${dy * p}px)`;
 
-    // Keep the initial center translation permanently, then add the path offset
-    el.style.transform = `translate(-50%, -50%) translate(${dx * p}px, ${dy * p}px) scale(${scale})`;
-    el.style.transformOrigin = "center center";
-  }, [progress, isMobile]);
+    // Scale only on the inner element
+    const scale = (startSize + (endSize - startSize) * p) / startSize;
+    scaleEl.style.transform = `scale(${scale})`;
+    scaleEl.style.transformOrigin = "left top";
+  });
 
-  // SVG overlay + labels (white, 20px)
+  // SVG overlay + labels (white, thicker, 20px)
   useEffect(() => {
     labelDomRefs.current = [];
     lineRefs.current = [];
@@ -248,30 +278,30 @@ export default function App() {
     svg.style.width = "100%";
     svg.style.height = "100%";
     svg.style.pointerEvents = "none";
-    svg.style.zIndex = "35"; // above canvas, below logo
+    svg.style.zIndex = "999"; // ensure above canvas
     svg.style.overflow = "visible";
     document.body.appendChild(svg);
 
     const baseLabelCSS = {
-      position: "fixed", // fixed so they follow the viewport
+      position: "fixed",
       left: "0px",
       top: "0px",
       transform: "translate3d(-9999px,-9999px,0)",
       pointerEvents: "none",
       opacity: "0",
-      color: "#ffffff", // WHITE
+      color: "#ffffff",
       fontFamily:
         "'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif",
       fontWeight: 700,
       letterSpacing: "0.01em",
       textTransform: "lowercase",
-      fontSize: "20px", // ~20 as requested
+      fontSize: "20px",
       lineHeight: "1",
       padding: "0",
       background: "transparent",
       border: "none",
       textShadow: "none",
-      zIndex: 36,
+      zIndex: 1000,
     };
 
     const texts = [...RIGHT_TAGS, ...LEFT_TAGS];
@@ -284,8 +314,8 @@ export default function App() {
 
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       poly.setAttribute("fill", "none");
-      poly.setAttribute("stroke", "#ffffff"); // WHITE lines
-      poly.setAttribute("stroke-width", String(isMobile ? 1.5 : 2));
+      poly.setAttribute("stroke", "#ffffff");
+      poly.setAttribute("stroke-width", String(isMobile ? 3.5 : 5)); // thicker
       poly.setAttribute("stroke-linecap", "round");
       poly.setAttribute("stroke-linejoin", "round");
       poly.setAttribute("opacity", "0");
@@ -308,8 +338,6 @@ export default function App() {
     const max = bbox.max;
 
     const anchors = [];
-
-    // RIGHT (upper spread)
     for (let i = 0; i < RIGHT_TAGS.length; i++) {
       const t = (i + 1) / (RIGHT_TAGS.length + 1);
       const x = max.x - size.x * 0.02;
@@ -317,8 +345,6 @@ export default function App() {
       const z = min.z + 0.45 * size.z;
       anchors.push(new THREE.Vector3(x, y, z));
     }
-
-    // LEFT (lower spread)
     for (let i = 0; i < LEFT_TAGS.length; i++) {
       const t = (i + 1) / (LEFT_TAGS.length + 1);
       const x = min.x + size.x * 0.02;
@@ -331,8 +357,8 @@ export default function App() {
     modelObjRef.current = loadedObj;
   };
 
-  // Hide scrollbars but keep page scrollable
-  const heroHeightVh = 220;
+  // Derived alpha for labels (fade in early so they’re visible)
+  const labelsAlpha = clamp((progressRef.current - 0.05) / 0.08); // visible by ~13% scroll
 
   return (
     <div style={{ width: "100vw", minHeight: "100vh", background: "#191919", position: "relative" }}>
@@ -348,9 +374,9 @@ export default function App() {
       <section ref={heroRef} style={{ height: `${heroHeightVh}vh`, position: "relative" }}>
         {/* Sticky stack */}
         <div style={{ position: "sticky", top: 0, height: "100vh", width: "100%" }}>
-          {/* Site-level logo (centered at start; scrubs to top-left) */}
+          {/* Site-level logo with separate wrappers for precise centering and scaling */}
           <div
-            ref={heroLogoRef}
+            ref={logoWrapRef}
             style={{
               position: "fixed",
               left: "50%",
@@ -362,7 +388,9 @@ export default function App() {
             }}
             aria-hidden
           >
-            <NPLogo size={isMobile ? 260 : 520} />
+            <div ref={logoScaleRef} style={{ transformOrigin: "left top" }}>
+              <NPLogo size={isMobile ? 260 : 520} />
+            </div>
           </div>
 
           {/* Canvas */}
@@ -388,7 +416,7 @@ export default function App() {
                 <Center>
                   <InteractiveModel
                     onModelLoaded={handleModelLoaded}
-                    progress={progress} // full-range scroll
+                    progress={progressRef.current} // full-range scroll (smoothed)
                     isMobile={isMobile}
                     scale={isMobile ? 300000 : 600000}
                   />
@@ -404,13 +432,13 @@ export default function App() {
                 />
               </Suspense>
 
-              {/* White edge labels + lines (visible across the range) */}
+              {/* White, thick edge labels + lines */}
               <LabelsFollower
                 modelObjRef={modelObjRef}
                 anchorsRef={anchorsRef}
                 labelDomRefs={labelDomRefs}
                 lineRefs={lineRefs}
-                alpha={Math.max(0, Math.min(1, (progress - 0.2) / 0.2))} // fade in around 20% scroll
+                alpha={labelsAlpha}
                 rightCount={RIGHT_TAGS.length}
               />
 
@@ -422,8 +450,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* Minimal content after hero to allow scrolling beyond it (optional) */}
-      <div style={{ height: "40vh" }} />
+      {/* Small tail to allow scrolling beyond hero */}
+      <div style={{ height: "60vh" }} />
     </div>
   );
 }

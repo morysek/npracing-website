@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState, Suspense } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Center, ContactShadows, useGLTF } from "@react-three/drei";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
@@ -10,7 +10,10 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-/* ---------- NPLogo (kept original SVG paths) ---------- */
+/* ---------- labels (4) ---------- */
+const LABELS = ["TEAM", "JOIN US", "SCHEDULE", "CONTACT"];
+
+/* ---------- NPLogo (original SVG paths — full, valid paths) ---------- */
 function NPLogo({ size = 300 }) {
   return (
     <svg
@@ -22,10 +25,19 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* ... original SVG content (unchanged) ... */}
       <g transform="translate(-54.124261,-130.25079)">
-        {/* (SVG content trimmed here in the example for brevity; paste your full SVG paths) */}
-        <path style={{ fill: "#ffcc00" }} d="M64 130 ..." />
+        <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
+          <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
+            <path d="m 53.020878,195.78621 h -2.060221 l -2.610554,-2.65289 h -1.509887 v 2.65289 H 45.23155 v -7.02733 h 6.02544 q 1.580443,0 1.580443,1.22767 v 1.91911 q 0,0.889 -0.818444,1.22766 h -1.693332 z m -1.763888,-4.41678 v -0.84666 q 0,-0.55033 -0.465666,-0.55033 h -3.951108 v 1.96144 h 3.951108 q 0.465666,0 0.465666,-0.56445 z" />
+            <path d="m 69.474419,195.78621 h -1.566332 l -0.917222,-1.53811 h -4.571996 l -0.874888,1.53811 h -1.622777 l 3.965219,-7.05555 h 1.566332 z m -3.217331,-2.82222 -1.580443,-2.86455 -1.566332,2.86455 z" />
+            <path d="m 84.756759,194.1211 q 0,0.98778 -0.380999,1.32644 -0.366889,0.33867 -1.368777,0.33867 h -4.190997 q -1.001888,0 -1.382888,-0.33867 -0.366888,-0.33866 -0.366888,-1.32644 v -3.71122 q 0,-.97367 .366888,-1.31233 .381,-.35278 1.382888,-.35278 h 4.190997 q 1.693332,.0141 1.749776,1.17122 v 1.03011 h -1.636887 v -.94544 h -4.416775 v 4.45911 h 4.416775 v -1.03011 h 1.636887 z" />
+            <path d="m 95.438876,195.78621 h -1.622777 v -7.05555 h 1.622777 z" />
+            <path d="m 112.80966,195.78621 h -1.42522 l -5.37633,-4.93889 v 4.93889h -1.49578 v -7.05555 h 1.397 l 5.43278,4.92477 v -4.92477 h 1.46755z" />
+            <path d="m 130.26509,194.1211 q 0,.98778 -.381,1.32644 -.36688,.33867 -1.36877,.33867 h -4.84011 q -1.00189,0 -1.38289,-.33867 -.36689,-.33866 -.36689,-1.32644 v -3.69711 q 0,-.98778 .36689,-1.32644 .381,-.33867 1.38289,-.33867 h 4.84011 q 1.04422,0 1.397,.36689 .35277,.35278 .35277,1.38289 h -1.59455 v -.49389 h -5.10822 v 4.445 h 5.10822 v -1.56634 h -2.94922 v -1.19944 h 4.54377 z" />
+          </g>
+        </g>
+        <path style={{ fill: "#ffcc00", strokeWidth: 1.61928, strokeLinecap: "round" }} d="m 64.083427,130.25096 -9.959082,21.06022 h 4.532023 l 9.959082,-21.06022 z m 11.342977,0 -9.959082,21.06022 h 1.139465 4.505151 3.62872 l 9.959082,-21.06022 h -3.628719 -4.505152 z m 14.738635,0 -9.959082,21.06022 h 1.783354 v 5.1e-4 h 13.889591 l 0.535368,-1.13223 h -0.001 l 9.42371,-19.9285 H 97.007033 91.94791 Z" />
+        <path style={{ fill: "#fff", strokeLinejoin: "round" }} d="m 111.60859,130.25083 c -0.96683,0.005 -1.91905,0.53479 -2.3828,1.51567 L 101.76888,147.53246 100,151.27435 h 5.85287 l 0.69867,-1.47846 h 5.2e-4 l 5.77949,-12.22045 11.88247,12.88242 c 1.27166,1.38021 3.53608,1.03468 4.33824,-0.66197 l 6.74016,-14.25185 h 16.1463 l -2.44895,5.17747 h -8.20725 l -2.50217,5.29115 h 12.38477 c 1.02253,-1.7e-4 1.95344,-0.58946 2.39107,-1.51361 l 4.95267,-10.46861 c 0.83036,-1.75547 -0.45016,-3.77762 -2.3921,-3.77755 h -21.99814 c -1.02309,-4.3e-4 -1.95475,0.58896 -2.39262,1.51361 l -5.7795,12.22096 -11.88247,-12.88294 c -0.53648,-0.58227 -1.24991,-0.85758 -1.95544,-0.85369 z" />
       </g>
     </svg>
   );
@@ -38,17 +50,10 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
 
   useEffect(() => {
     if (!gltf || !gltf.scene) return;
-    // ensure textures are in sRGB
     gltf.scene.traverse((c) => {
       if (c.isMesh && c.material) {
-        // convert maps to sRGB if present
-        if (c.material.map) {
-          c.material.map.encoding = THREE.sRGBEncoding;
-        }
-        if (c.material.emissiveMap) {
-          c.material.emissiveMap.encoding = THREE.sRGBEncoding;
-        }
-        // material tweaks:
+        if (c.material.map) c.material.map.encoding = THREE.sRGBEncoding;
+        if (c.material.emissiveMap) c.material.emissiveMap.encoding = THREE.sRGBEncoding;
         try {
           if ("metalness" in c.material) c.material.metalness = c.material.metalness ?? 0.05;
           if ("roughness" in c.material) c.material.roughness = c.material.roughness ?? 0.6;
@@ -63,33 +68,24 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
 
   useFrame((state) => {
     if (!group.current) return;
-    // appear progress
     const p = clamp(progressRef.current);
     const eased = easeInOutCubic(p);
     const fromZ = isMobile ? 280000 : 420000;
 
-    // appear motion (z/ y)
     group.current.position.set(0, (1 - eased) * (isMobile ? 2.5 : 4), -fromZ * (1 - eased));
-
-    // base appear rotation on X (when appearing)
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
-    // continuous idle rotation on all axes (time-based)
     const t = state.clock.getElapsedTime();
     group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
     group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
     group.current.rotation.z += 0.0012 + 0.015 * Math.cos(t * 0.6) * 0.01;
 
-    // scale in with appear; on mobile reduce scale so it fits viewport
     const mobileScale = isMobile ? baseScale * (window.innerWidth / 1200) : baseScale;
     const finalScale = (0.0001 + eased) * (mobileScale / baseScale);
     group.current.scale.setScalar(finalScale);
 
-    // ensure opacity
     gltf.scene.traverse((c) => {
-      if (c.isMesh && c.material) {
-        if ("opacity" in c.material) c.material.opacity = clamp(eased);
-      }
+      if (c.isMesh && c.material && "opacity" in c.material) c.material.opacity = clamp(eased);
     });
   });
 
@@ -100,14 +96,8 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, baseScale = 60
   );
 }
 
-/* ---------- Labels & CameraAnimator removed / commented out ---------- */
-/* Tags & camera zoom behavior were removed per your request. */
-
-/* ---------- Simple LoaderOverlay ----------
-   Blocks interaction until images + glb are loaded.
-------------------------------------------- */
+/* ---------- LoaderOverlay (uses Zalando font) ---------- */
 function LoaderOverlay({ progress }) {
-  // fancy loader with animated bars + percent
   return (
     <div
       style={{
@@ -117,14 +107,13 @@ function LoaderOverlay({ progress }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background:
-          "linear-gradient(180deg, rgba(10,12,16,0.95), rgba(20,22,28,0.95))",
+        background: "linear-gradient(180deg, rgba(10,12,16,0.95), rgba(20,22,28,0.95))",
         color: "#fff",
         pointerEvents: "auto",
       }}
     >
       <div style={{ textAlign: "center", maxWidth: 520, padding: 24 }}>
-        <div style={{ fontSize: 16, marginBottom: 12, opacity: 0.9, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>
+        <div style={{ fontSize: 16, marginBottom: 12, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>
           Loading NP Racing
         </div>
 
@@ -141,36 +130,9 @@ function LoaderOverlay({ progress }) {
 
         <div style={{ fontSize: 14, opacity: 0.95, fontFamily: "'ZalandoSans', Inter, sans-serif" }}>{Math.round(progress)}%</div>
 
-        <div
-          style={{
-            marginTop: 18,
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: "linear-gradient(135deg,#222,#141414)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 6px 18px rgba(0,0,0,0.6)",
-            }}
-          >
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: 6,
-                background: "#ffcc00",
-                animation: "loaderPulse 900ms infinite ease-in-out",
-              }}
-            />
+        <div style={{ marginTop: 18 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#222,#141414)", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(0,0,0,0.6)" }}>
+            <div style={{ width: 18, height: 18, borderRadius: 6, background: "#ffcc00", animation: "loaderPulse 900ms infinite ease-in-out" }} />
           </div>
         </div>
 
@@ -186,7 +148,7 @@ function LoaderOverlay({ progress }) {
   );
 }
 
-/* ---------- Content sections (provided by you, adapted) ---------- */
+/* ---------- Content components (unchanged, using Microgramma + Zalando fonts) ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -258,48 +220,40 @@ function JoinUsContent() {
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // fonts: Microgramma and Zalando (local @font-face). Place woff2 files in /public/fonts
+  // fonts: Microgramma + Zalando (must place .woff2 files in /public/fonts)
   useEffect(() => {
-    const style = document.createElement("style");
-    style.innerHTML = `
-      @font-face {
-        font-family: 'Microgramma';
-        src: url('/fonts/microgramma.woff2') format('woff2');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'ZalandoSans';
-        src: url('/fonts/zalando-sans-expanded.woff2') format('woff2');
-        font-weight: 400 800;
-        font-style: normal;
-        font-display: swap;
-      }
-      body {
-        font-family: 'ZalandoSans', Inter, sans-serif;
-      }
-      .zig { 
-        /* zig-zag paragraphs: alternate using nth-child via JS/CSS not reliable for static; we apply classes in markup */
-        margin: 10px 0;
-        line-height: 1.35;
-      }
-      /* hide scrollbars */
-      ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
-      html, body { scrollbar-width: none; -ms-overflow-style: none; }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+    const id = "__npr_fonts";
+    if (!document.getElementById(id)) {
+      const style = document.createElement("style");
+      style.id = id;
+      style.innerHTML = `
+        @font-face {
+          font-family: 'Microgramma';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'ZalandoSans';
+          src: url('/fonts/zalando-sans-expanded.woff2') format('woff2');
+          font-weight: 400 800;
+          font-style: normal;
+          font-display: swap;
+        }
+        body { font-family: 'ZalandoSans', Inter, sans-serif; background: #191919; margin: 0; }
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        html,body { scrollbar-width: none; -ms-overflow-style: none; }
+      `;
+      document.head.appendChild(style);
+    }
+    return () => {};
   }, []);
 
   // refs
   const logoWrapRef = useRef(null);
-
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
-  // labels & lines commented out as requested
-  // const labelDomRefs = useRef([]);
-  // const lineRefs = useRef([]);
 
   // responsive
   const [isMobile, setIsMobile] = useState(false);
@@ -311,23 +265,22 @@ export default function App() {
   }, []);
 
   // timeline
-  const timelineProgressRef = useRef(0); // 0..1 current
+  const timelineProgressRef = useRef(0);
   const timelineTargetRef = useRef(0);
   const animatingRef = useRef(false);
 
-  // labels visibility (disabled because tags commented out)
-  const [labelsVisible, setLabelsVisible] = useState(false);
+  // labels visibility (commented out tags per request)
+  const [labelsVisible] = useState(false);
 
   // loader state
   const [loadedCount, setLoadedCount] = useState(0);
-  const [totalAssets] = useState(4); // 3 images + 1 glb
+  const totalAssets = 4; // 3 images + 1 glb
   const loadingProgress = (loadedCount / totalAssets) * 100;
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
-  // track whether animation finished (so page becomes scrollable & canvas unpins)
+  // intro complete (unblocks scrolling)
   const [introComplete, setIntroComplete] = useState(false);
 
-  // manage body scroll: initially block, allow only after introComplete
   useEffect(() => {
     document.body.style.overflow = introComplete && assetsLoaded ? "auto" : "hidden";
   }, [introComplete, assetsLoaded]);
@@ -351,11 +304,12 @@ export default function App() {
     return () => (mounted = false);
   }, []);
 
-  // model on-loaded callback increments loadedCount (GLB)
+  // model loaded callback
   const handleModelLoaded = (gltfScene) => {
     modelRef.current = gltfScene;
     setLoadedCount((c) => c + 1);
-    // compute anchors if needed (kept but unused since tags commented)
+
+    // compute anchors (unused but kept)
     const bbox = new THREE.Box3().setFromObject(gltfScene);
     const size = bbox.getSize(new THREE.Vector3());
     const min = bbox.min;
@@ -369,14 +323,11 @@ export default function App() {
     anchorsRef.current = anchorsWorld.map((w) => gltfScene.worldToLocal(w.clone()));
   };
 
-  // mark when all assets loaded
   useEffect(() => {
-    if (loadedCount >= totalAssets) {
-      setAssetsLoaded(true);
-    }
-  }, [loadedCount, totalAssets]);
+    if (loadedCount >= totalAssets) setAssetsLoaded(true);
+  }, [loadedCount]);
 
-  // update logo transform in RAF loop; keep translate+scale on same wrapper (avoid jumps)
+  // logo transform RAF loop
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -388,8 +339,7 @@ export default function App() {
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        // finalLeft centered horizontally, keep specified vertical distance from top
-        const finalLeft = window.innerWidth / 2; // keep centered as requested
+        const finalLeft = window.innerWidth / 2;
         const finalTop = 100;
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
@@ -399,19 +349,15 @@ export default function App() {
         wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
       }
-      // if fully played -> mark introComplete (unblock scrolling)
-      if (p >= 0.9999) {
-        setIntroComplete(true);
-      } else {
-        setIntroComplete(false);
-      }
+      if (p >= 0.9999) setIntroComplete(true);
+      else setIntroComplete(false);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
 
-  // timeline animator (tween to target)
+  // timeline animator
   function animateTimelineTo(target = 0, duration = 700) {
     timelineTargetRef.current = clamp(target);
     if (animatingRef.current) return;
@@ -426,18 +372,12 @@ export default function App() {
       else {
         animatingRef.current = false;
         timelineProgressRef.current = timelineTargetRef.current;
-        // show labels? we commented out tags.
-        if (Math.abs(timelineProgressRef.current - 1) < 1e-6) {
-          setLabelsVisible(true);
-        } else {
-          setLabelsVisible(false);
-        }
       }
     }
     requestAnimationFrame(step);
   }
 
-  // scroll triggers: only when top area (<=100px) and assetsLoaded
+  // scroll triggers (only allow control when assets loaded)
   useEffect(() => {
     const onWheel = (e) => {
       if (!assetsLoaded) return;
@@ -474,25 +414,20 @@ export default function App() {
     };
   }, [assetsLoaded]);
 
-  // ensure renderer color space set to sRGB to show textures correctly.
-  // This is done inside Canvas onCreated below.
-
-  // keep canvas wrapper toggling between fixed (during intro) and normal flow (after)
   const canvasWrapperStyle = {
     position: introComplete ? "relative" : "fixed",
     inset: introComplete ? "auto" : 0,
     zIndex: 2,
     pointerEvents: "none",
     width: "100%",
-    height: introComplete ? "60vh" : "100vh", // when flow, reduce height so content follows
+    height: introComplete ? "60vh" : "100vh",
     top: introComplete ? undefined : 0,
   };
 
-  // styling for content sections container
   const contentContainerStyle = {
     background: "#191919",
     color: "#fff",
-    paddingTop: introComplete ? 20 : window.innerHeight, // ensure sections appear after intro when pinned
+    paddingTop: introComplete ? 20 : window.innerHeight,
   };
 
   return (
@@ -504,15 +439,13 @@ export default function App() {
         body { scrollbar-width: none; -ms-overflow-style: none; }
         h1 { margin: 12px 0; }
         .section { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
-        /* zig-zag paragraphs: alternate using .zig:nth-of-type(odd) etc. */
-        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; }
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35 }
         @media (min-width: 900px) {
           .zig:nth-of-type(odd) { transform: translateX(-6%); }
           .zig:nth-of-type(even) { transform: translateX(6%); }
         }
       `}</style>
 
-      {/* Logo wrapper (centered initially) */}
       <div
         ref={logoWrapRef}
         style={{
@@ -529,7 +462,6 @@ export default function App() {
         <NPLogo size={isMobile ? 260 : 520} />
       </div>
 
-      {/* Canvas wrapper - toggles between fixed (intro) and relative (after) */}
       <div style={canvasWrapperStyle}>
         <Canvas
           shadows
@@ -555,12 +487,7 @@ export default function App() {
           <Suspense fallback={null}>
             <Environment preset="city" background={false} />
             <Center>
-              <InteractiveModel
-                onModelLoaded={handleModelLoaded}
-                progressRef={timelineProgressRef}
-                isMobile={isMobile}
-                baseScale={isMobile ? 300000 : 600000}
-              />
+              <InteractiveModel onModelLoaded={handleModelLoaded} progressRef={timelineProgressRef} isMobile={isMobile} baseScale={isMobile ? 300000 : 600000} />
             </Center>
             <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
           </Suspense>
@@ -571,10 +498,8 @@ export default function App() {
         </Canvas>
       </div>
 
-      {/* Loader overlay blocks until assets are loaded */}
       {!assetsLoaded && <LoaderOverlay progress={loadingProgress} />}
 
-      {/* Content sections — scrollable after introComplete */}
       <div style={contentContainerStyle}>
         <div className="section">
           <TeamContent />

@@ -243,8 +243,8 @@ export default function App() {
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        const finalLeft = 1;
-        const finalTop = 2;
+        const finalLeft = 100;
+        const finalTop = 100;
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
 

@@ -26,7 +26,7 @@ function NPLogo({ size = 300 }) {
       style={{ display: "block" }}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* original SVG content */}
+      {/* original SVG content (unchanged) */}
       <g transform="translate(-54.124261,-130.25079)">
         <g transform="translate(0,-2.4052947)" style={{ fontSize: 17.6389, fontFamily: "Inconsolata, monospace", fill: "#fff", strokeWidth: 0.264583 }}>
           <g transform="scale(1.1966041,0.83569829)" style={{ fontSize: 14.1111, fontFamily: "Inconsolata, monospace", letterSpacing: 5.29167, fill: "#fff", strokeWidth: 2.21112 }}>
@@ -55,28 +55,25 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 
   useEffect(() => {
     if (!obj) return;
-    // tweak materials to get flatter, darker look with subtle sheen / rim highlight
+    // tweak materials for flatter, darker look with a warm rim
     obj.traverse((c) => {
       if (c.isMesh) {
         c.castShadow = true;
         c.receiveShadow = true;
         if (c.material) {
-          // prefer to keep textures if present; otherwise tune material
           try {
             c.material.flatShading = true;
             if ("metalness" in c.material) c.material.metalness = 0.05;
             if ("roughness" in c.material) c.material.roughness = 0.6;
             c.material.needsUpdate = true;
-          } catch (err) {
-            // ignore
-          }
+          } catch (err) {}
         }
       }
     });
     onModelLoaded && onModelLoaded(obj);
   }, [obj, onModelLoaded]);
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!group.current) return;
     // appear progress
     const p = clamp(progressRef.current);
@@ -88,7 +85,7 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
     // base appear rotation on X (when appearing)
     group.current.rotation.x = eased * (Math.PI * 0.12);
 
-    // continuous subtle idle rotation added to all axes (time-based)
+    // continuous idle rotation on all axes (time-based)
     const t = state.clock.getElapsedTime();
     group.current.rotation.x += 0.002 + 0.02 * Math.sin(t * 0.7) * 0.01;
     group.current.rotation.y += 0.0015 + 0.02 * Math.sin(t * 0.5) * 0.01;
@@ -112,7 +109,7 @@ function InteractiveModel({ onModelLoaded, progressRef, isMobile, scale = 600000
 }
 
 /* ---------- CameraAnimator
-   - when zoomTrigger true, smoothly moves camera to wheel and rotates model to exact orientation (X=0,Y=90deg,Z=0)
+   - when zoomTrigger true, smoothly moves camera to wheel and rotates model to exact orientation (X=90deg,Y=0,Z=0)
    - zooms only ~2x closer (target distance = default / 2)
 ---------- */
 function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
@@ -125,8 +122,8 @@ function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
     if (zoomTrigger) {
       anim.current.running = true;
       anim.current.t = 0;
-      // target quaternion: X=0, Y=90deg, Z=0
-      targetQuat.current.setFromEuler(new THREE.Euler(0, Math.PI / 2, 0, "XYZ"));
+      // target quaternion: X = 90deg, Y = 0, Z = 0
+      targetQuat.current.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0, "XYZ"));
     } else {
       anim.current.running = false;
       anim.current.t = 0;
@@ -151,11 +148,7 @@ function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
     tmp.current.copy(anchors[3]);
     model.localToWorld(tmp.current);
 
-    // vector from scene origin to camera (direction)
-    const dir = camera.position.clone().normalize();
-
-    // target position: move camera only 2x closer than default distance toward the wheel
-    // compute direction from wheel to camera and place camera at wheel + dir * (defaultDist/2)
+    // compute camera target: wheel + normalized direction * (defaultDist/2)
     const cwDir = camera.position.clone().sub(tmp.current).normalize();
     const dst = tmp.current.clone().add(cwDir.multiplyScalar(defaultDist / 2));
 
@@ -163,7 +156,8 @@ function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
     anim.current.t = Math.min(1, anim.current.t + delta * 0.8);
     const tt = easeInOutCubic(anim.current.t);
 
-    camera.position.lerp(dst, 0.06 * (0.5 + tt)); // progressive lerp
+    // smoother progressive lerp
+    camera.position.lerp(dst, 0.06 * (0.5 + tt));
     camera.lookAt(tmp.current);
 
     // slerp model toward target quaternion (absolute orientation requested)
@@ -176,8 +170,8 @@ function CameraAnimator({ anchorsRef, modelRef, zoomTrigger, isMobile }) {
 }
 
 /* ---------- LabelsFollower (inside Canvas)
-   Projects anchors (local model-space points) to screen and updates DOM polylines (tips move).
-   Label text positions (end of the polylines) are fixed on screen; polyline connects anchor -> elbow -> fixed end
+   - label text positions are fixed on-screen; only polyline tip/elbow near model moves
+   - mobile: labels placed above/below center
 ---------- */
 function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible, isMobile }) {
   const { camera, size } = useThree();
@@ -187,47 +181,36 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
     const anchors = anchorsRef.current;
     const model = modelRef.current;
     if (!model || !anchors || !anchors.length) {
-      // hide if not ready
+      // hide
       labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
       lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
       return;
     }
 
     if (!visible) {
-      // fade out quickly
-      labelDomRefs.current.forEach((el) => {
-        if (el) el.style.opacity = "0";
-      });
+      // fade-out
+      labelDomRefs.current.forEach((el) => el && (el.style.opacity = "0"));
       lineRefs.current.forEach((p) => p && p.setAttribute("opacity", "0"));
       return;
     }
 
-    // compute fixed end positions for labels (desktop: edges; mobile: above/below)
+    // compute fixed end positions for labels
     const fixedEnds = [];
     if (isMobile) {
-      // two above, two below
+      // two above, two below (centered horizontally)
       const aboveY = Math.max(40, size.height * 0.18);
       const belowY = Math.max(40, size.height * 0.82);
       const spacing = 16;
-      // measure widths (fallback)
-      const widths = labelDomRefs.current.map((el) => (el ? el.offsetWidth : 90));
-      const totalTopWidth = (widths[0] || 90) + (widths[1] || 90) + spacing;
-      const leftStartTop = (size.width - totalTopWidth) / 2;
-      const totalBottomWidth = (widths[2] || 90) + (widths[3] || 90) + spacing;
-      const leftStartBottom = (size.width - totalBottomWidth) / 2;
+      const widths = labelDomRefs.current.map((el) => (el ? el.offsetWidth || 90 : 90));
+      const topTotal = widths[0] + widths[1] + spacing;
+      const topLeft = Math.round((size.width - topTotal) / 2);
+      const bottomTotal = widths[2] + widths[3] + spacing;
+      const bottomLeft = Math.round((size.width - bottomTotal) / 2);
 
-      // top 2
-      for (let i = 0; i < 2; i++) {
-        const left = Math.round(leftStartTop + i * ((widths[i] || 90) + spacing));
-        fixedEnds.push({ x: left, y: Math.round(aboveY) + 0 });
-      }
-      // bottom 2
-      for (let i = 0; i < 2; i++) {
-        const left = Math.round(leftStartBottom + i * ((widths[2 + i] || 90) + spacing));
-        fixedEnds.push({ x: left, y: Math.round(belowY) + 0 });
-      }
+      for (let i = 0; i < 2; i++) fixedEnds.push({ x: topLeft + i * (widths[i] + spacing), y: Math.round(aboveY) });
+      for (let i = 0; i < 2; i++) fixedEnds.push({ x: bottomLeft + i * (widths[2 + i] + spacing), y: Math.round(belowY) });
 
-      // position label DOMs at fixed ends
+      // place labels
       for (let i = 0; i < labelDomRefs.current.length; i++) {
         const el = labelDomRefs.current[i];
         if (!el) continue;
@@ -236,38 +219,35 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
         el.style.transform = `translate3d(${fixedEnds[i].x}px, ${fixedEnds[i].y}px, 0)`;
       }
 
-      // polylines: anchor -> elbow -> end (end is fixed)
+      // polylines: anchor -> elbow -> fixed end
       for (let i = 0; i < anchors.length; i++) {
         tmp.current.copy(anchors[i]);
         model.localToWorld(tmp.current);
         tmp.current.project(camera);
         const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
         const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
-
         const end = fixedEnds[i];
-        // elbow: halfway between anchor and end with a slight x offset
         const elbowX = ax + (end.x - ax) * 0.35;
         const elbowY = ay + (end.y - ay) * 0.35;
-
         const poly = lineRefs.current[i];
         if (!poly) continue;
         poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${end.x},${end.y}`);
         poly.setAttribute("opacity", "1");
-        poly.setAttribute("stroke-width", String(isMobile ? 2 : 3));
+        poly.setAttribute("stroke-width", String(isMobile ? 2 : 2));
+        poly.setAttribute("stroke", "#ffffff");
       }
 
       return;
     }
 
-    // Desktop behavior: fixed label edges (left or right) and vertical distribution, only the tip/elbow near the model moves
+    // Desktop: fixed edges (left / right) with vertical distribution
     const edgePadding = 18;
-    const heights = [0.20, 0.36, 0.60, 0.76]; // vertical fractions for labels (top->bottom)
+    const heights = [0.20, 0.36, 0.60, 0.76]; // vertical fractions
     for (let i = 0; i < anchors.length; i++) {
-      const isRight = i < 2; // first two on the right, last two on left
+      const isRight = i < 2; // first two on right, last two left
       const rect = labelDomRefs.current[i] ? labelDomRefs.current[i].getBoundingClientRect() : { width: 120, height: 20 };
       const left = isRight ? size.width - edgePadding - rect.width : edgePadding;
       const top = Math.round(Math.max(12, Math.min(size.height - rect.height - 12, size.height * heights[i])));
-      // keep label text fixed:
       const el = labelDomRefs.current[i];
       if (el) {
         el.style.display = "block";
@@ -275,25 +255,23 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
         el.style.opacity = "1";
       }
 
-      // compute anchor projected
       tmp.current.copy(anchors[i]);
       model.localToWorld(tmp.current);
       tmp.current.project(camera);
       const ax = (tmp.current.x * 0.5 + 0.5) * size.width;
       const ay = (-tmp.current.y * 0.5 + 0.5) * size.height;
 
-      // small moving elbow: a short segment from anchor toward label end
-      // elbow is between anchor and end but much closer to the anchor (so only the tip moves)
       const endX = isRight ? left - 8 : left + rect.width + 8;
       const endY = top + rect.height / 2;
-      const elbowX = ax + (endX - ax) * 0.28; // closer to anchor
+      const elbowX = ax + (endX - ax) * 0.28;
       const elbowY = ay + (endY - ay) * 0.28;
 
       const poly = lineRefs.current[i];
       if (!poly) continue;
       poly.setAttribute("points", `${ax},${ay} ${elbowX},${elbowY} ${endX},${endY}`);
       poly.setAttribute("opacity", "1");
-      poly.setAttribute("stroke-width", String(isMobile ? 2 : 3));
+      poly.setAttribute("stroke-width", "1.5");
+      poly.setAttribute("stroke", "#ffffff");
     }
   });
 
@@ -302,21 +280,20 @@ function LabelsFollower({ modelRef, anchorsRef, labelDomRefs, lineRefs, visible,
 
 /* ---------- App (main) ---------- */
 export default function App() {
-  // inject Google Fonts (Roboto) once
+  // inject Google Fonts (Inconsolata) once
   useEffect(() => {
-    const id = "__npr_google_fonts_roboto";
+    const id = "__npr_google_fonts_inconsolata";
     if (!document.getElementById(id)) {
       const link = document.createElement("link");
       link.id = id;
       link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap";
+      link.href = "https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap";
       document.head.appendChild(link);
     }
   }, []);
 
   // refs
   const logoWrapRef = useRef(null);
-  const logoScaleRef = useRef(null);
 
   const modelRef = useRef(null);
   const anchorsRef = useRef([]);
@@ -374,12 +351,14 @@ export default function App() {
         opacity: "0",
         display: "none", // shown only when animation ends
         color: "#ffffff",
-        fontFamily: "Roboto, Inter, sans-serif",
+        fontFamily: "Inconsolata, monospace",
         fontSize: "16px",
         fontWeight: "700",
         padding: "0",
         background: "transparent",
         zIndex: 10000,
+        letterSpacing: "0.02em",
+        textTransform: "lowercase",
       });
       el.textContent = txt;
       el.style.transition = "opacity 420ms ease, transform 420ms ease";
@@ -389,7 +368,7 @@ export default function App() {
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       poly.setAttribute("fill", "none");
       poly.setAttribute("stroke", "#ffffff");
-      poly.setAttribute("stroke-width", String(isMobile ? 2 : 3));
+      poly.setAttribute("stroke-width", String(isMobile ? 1.5 : 1.5));
       poly.setAttribute("stroke-linecap", "round");
       poly.setAttribute("stroke-linejoin", "round");
       poly.setAttribute("opacity", "0");
@@ -427,7 +406,8 @@ export default function App() {
     anchorsRef.current = anchorsWorld.map((w) => loadedObj.worldToLocal(w.clone()));
   };
 
-  // ----- update logo transform (timeline) -----
+  // ----- update logo transform (timeline)
+  // Combined translate + scale applied to the *same* wrapper element to avoid jumps
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -435,24 +415,22 @@ export default function App() {
       const eased = easeInOutCubic(p);
 
       const wrap = logoWrapRef.current;
-      const scaleEl = logoScaleRef.current;
-      if (wrap && scaleEl) {
+      if (wrap) {
         const startSize = isMobile ? 260 : 520;
         const endSize = isMobile ? 56 : 90;
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        // finalLeft is centered horizontally per your request
+        // finalLeft centered horizontally, keep specified vertical distance from top
         const finalLeft = window.innerWidth / 2;
         const finalTop = 100;
         const dx = finalLeft - centerX;
         const dy = finalTop - centerY;
 
-        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px)`;
         const scale = (startSize + (endSize - startSize) * eased) / startSize;
-        scaleEl.style.transform = `scale(${scale})`;
-        scaleEl.style.transformOrigin = "center top";
-
-        // keep logo always visible (no disappearance)
+        // combine translate & scale so there are no transform jumps
+        wrap.style.transform = `translate(-50%,-50%) translate(${dx * eased}px, ${dy * eased}px) scale(${scale})`;
+        wrap.style.transformOrigin = "center top";
+        wrap.style.transition = "transform 0ms linear";
         wrap.style.opacity = "1";
       }
 
@@ -564,7 +542,7 @@ export default function App() {
         minHeight: "100vh",
         background: "#191919",
         position: "relative",
-        fontFamily: "'Roboto', 'Microgramma', sans-serif",
+        fontFamily: "'Inconsolata', 'Microgramma', monospace",
       }}
     >
       <style>{`
@@ -591,16 +569,14 @@ export default function App() {
               position: "fixed",
               left: "50%",
               top: "50%",
-              transform: "translate(-50%,-50%)",
+              transform: "translate(-50%,-50%) scale(1)",
               zIndex: 40,
               pointerEvents: "none",
-              willChange: "transform",
+              willChange: "transform, opacity",
             }}
             aria-hidden
           >
-            <div ref={logoScaleRef} style={{ transformOrigin: "center top", transition: "transform 420ms ease" }}>
-              <NPLogo size={isMobile ? 260 : 520} />
-            </div>
+            <NPLogo size={isMobile ? 260 : 520} />
           </div>
 
           {/* fixed Canvas */}
@@ -619,7 +595,6 @@ export default function App() {
                 scene.background = new THREE.Color(0x191919);
               }}
             >
-              {/* basic lighting, including warm rim for the picture look */}
               <ambientLight intensity={0.12} />
               <directionalLight intensity={0.9} position={[10, 20, 10]} color={0xffffff} />
               <directionalLight intensity={0.9} position={[-10, 12, -6]} color={0xffb27a} />
@@ -637,7 +612,6 @@ export default function App() {
                 <ContactShadows rotation-x={-Math.PI / 2} position={[0, -1, 0]} width={20} height={20} blur={1} opacity={0.45} far={10} />
               </Suspense>
 
-              {/* Labels follower (updates DOM labels & polylines) */}
               <LabelsFollower
                 modelRef={modelRef}
                 anchorsRef={anchorsRef}
@@ -647,7 +621,6 @@ export default function App() {
                 isMobile={isMobile}
               />
 
-              {/* Camera animator: zoom to wheel when zoomToWheel is true; rotates model to X=0,Y=90,Z=0 */}
               <CameraAnimator anchorsRef={anchorsRef} modelRef={modelRef} zoomTrigger={zoomToWheel} isMobile={isMobile} />
 
               <EffectComposer multisampling={4}>

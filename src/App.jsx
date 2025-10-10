@@ -1,14 +1,11 @@
 // src/App.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-/* ---------- helper ---------- */
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-
-/* ---------- Content components (Team / Schedule / Contact / Join Us) ---------- */
+/* ---------- small content components (from your earlier code) ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Team</h1>
 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 320px" }}>
@@ -28,7 +25,7 @@ function TeamContent() {
         </div>
       </div>
 
-      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h1>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", marginTop: 20 }}>About Us</h1>
       <div>
         <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
         <p className="zig">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
@@ -42,7 +39,7 @@ function TeamContent() {
 function ScheduleContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h1>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Schedule</h1>
       <p className="zig">Next up: Poland</p>
       <ol>
         <li>Oct 11</li>
@@ -54,7 +51,7 @@ function ScheduleContent() {
 function ContactContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Contact</h1>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Contact</h1>
       <p className="zig">
         For general inquiry:{" "}
         <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
@@ -68,111 +65,30 @@ function ContactContent() {
 function JoinUsContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
-      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Join Us</h1>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Join Us</h1>
       <p className="zig">Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
     </div>
   );
 }
 
-/* ---------- LoaderOverlay (RESPONSIVE & CENTERED) ---------- */
-function LoaderOverlay({ progress }) {
-  const p = Math.round(clamp(progress, 0, 100));
-
-  // pick correct svg according to ranges
-  let svgToShow = "/loading_25.svg";
-  if (p >= 100) svgToShow = "/loading_100.svg";
-  else if (p >= 75) svgToShow = "/loading_75.svg";
-  else if (p >= 50) svgToShow = "/loading_50.svg";
-  else svgToShow = "/loading_25.svg";
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#141414",
-        pointerEvents: "auto",
-      }}
-    >
-      {/* Centered content container */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-          padding: "20px",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* SVG: responsive sizing (caps width + height to viewport proportions) */}
-        <img
-          src={svgToShow}
-          alt="loading graphic"
-          style={{
-            width: "min(72vw, 680px)",
-            height: "auto",
-            maxHeight: "60vh",
-            display: "block",
-            objectFit: "contain",
-          }}
-        />
-
-        {/* Numeric progress centered under the svg */}
-        <div
-          style={{
-            marginTop: 20,
-            fontSize: "5.2vw",
-            minWidth: 40,
-            maxWidth: 220,
-            lineHeight: 1,
-            textAlign: "center",
-            fontFamily: "Microgramma, sans-serif",
-            fontWeight: 700,
-            color: "#ffcc00",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {String(p)}
-        </div>
-      </div>
-    </div>
-  );
+/* ---------- Loading+Hero logic ---------- */
+function chooseLoadingSvg(percent) {
+  // percent is 0..100
+  if (percent >= 100) return "/loading_100%.svg";
+  if (percent >= 75) return "/loading_75%.svg";
+  if (percent >= 50) return "/loading_50%.svg";
+  if (percent >= 25) return "/loading_25%.svg";
+  // default placeholder before 25%
+  return "/loading_25%.svg";
 }
 
-/* ---------- App (main) ---------- */
 export default function App() {
-  // ensure fonts are preloaded & available first
+  // fonts: inject Microgramma
   useEffect(() => {
-    if (!document.querySelector("link[data-npr-preload=microgramma]")) {
-      const l1 = document.createElement("link");
-      l1.rel = "preload";
-      l1.href = "/fonts/microgramma.woff2";
-      l1.as = "font";
-      l1.type = "font/woff2";
-      l1.crossOrigin = "anonymous";
-      l1.setAttribute("data-npr-preload", "microgramma");
-      document.head.appendChild(l1);
-    }
-    if (!document.querySelector("link[data-npr-preload=zalando]")) {
-      const l2 = document.createElement("link");
-      l2.rel = "preload";
-      l2.href = "/fonts/zalando-sans-expanded.woff2";
-      l2.as = "font";
-      l2.type = "font/woff2";
-      l2.crossOrigin = "anonymous";
-      l2.setAttribute("data-npr-preload", "zalando");
-      document.head.appendChild(l2);
-    }
-
-    if (!document.getElementById("__npr_font_faces")) {
+    const id = "__microgramma_font";
+    if (!document.getElementById(id)) {
       const style = document.createElement("style");
-      style.id = "__npr_font_faces";
+      style.id = id;
       style.innerHTML = `
         @font-face {
           font-family: 'Microgramma';
@@ -181,88 +97,243 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
-        @font-face {
-          font-family: 'ZalandoSans';
-          src: url('/fonts/zalando-sans-expanded.woff2') format('woff2');
-          font-weight: 400 800;
-          font-style: normal;
-          font-display: swap;
+        html,body,#root { height: 100%; background: #141414; }
+        body { margin: 0; background: #141414; color: #fff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+        /* small zig-zag class from earlier */
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; max-width: 900px; }
+        @media (min-width: 900px) {
+          .zig:nth-of-type(odd) { transform: translateX(-6%); }
+          .zig:nth-of-type(even) { transform: translateX(6%); }
         }
-        body { font-family: 'ZalandoSans', Inter, sans-serif; background: #141414; margin: 0; }
-        ::-webkit-scrollbar { display: none; width: 0; height: 0; }
-        html,body { scrollbar-width: none; -ms-overflow-style: none; }
       `;
       document.head.appendChild(style);
     }
   }, []);
 
-  // preload images
+  // assets to preload (images + glb)
+  const assets = [
+    "/images/team1.jpg",
+    "/images/team2.jpg",
+    "/images/team3.jpg",
+    "/models/F1.glb" // we just fetch it to count as loaded; user previously had .glb
+  ];
+  const totalAssets = assets.length;
+
   const [loadedCount, setLoadedCount] = useState(0);
-  const totalAssets = 3; // number of images
-  const progress = (loadedCount / totalAssets) * 100;
-  const assetsLoaded = loadedCount >= totalAssets;
+  const percent = Math.round((loadedCount / totalAssets) * 100);
+
+  // animated display number that counts up smoothly to percent
+  const [displayNumber, setDisplayNumber] = useState(0);
+  const displayNumberRef = useRef(displayNumber);
+  displayNumberRef.current = displayNumber;
 
   useEffect(() => {
-    // show page scroll only after assets are loaded (but hide scrollbars visually)
-    document.body.style.overflowY = assetsLoaded ? "auto" : "hidden";
-  }, [assetsLoaded]);
+    let raf = 0;
+    const start = performance.now();
+    const from = displayNumberRef.current;
+    const to = percent;
+    const duration = 350; // ms for each update
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const val = Math.round(from + (to - from) * t);
+      setDisplayNumber(val);
+      if (t < 1) raf = requestAnimationFrame(step);
+    }
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [percent]);
 
+  // preload routine
   useEffect(() => {
-    const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
     let mounted = true;
-    imgs.forEach((src) => {
-      const im = new Image();
-      im.onload = () => mounted && setLoadedCount((c) => c + 1);
-      im.onerror = () => mounted && setLoadedCount((c) => c + 1); // count it so loader doesn't hang on errors
-      im.src = src;
+    let localLoaded = 0;
+
+    // helper to increment safely
+    const markLoaded = () => {
+      if (!mounted) return;
+      localLoaded++;
+      setLoadedCount((c) => c + 1);
+    };
+
+    // preload images
+    assets.forEach((url) => {
+      if (url.match(/\.(jpe?g|png|webp|svg)$/i)) {
+        const img = new Image();
+        img.onload = markLoaded;
+        img.onerror = markLoaded;
+        img.src = url;
+        return;
+      }
+      // fallback: fetch other assets (e.g. .glb) as arrayBuffer
+      fetch(url, { method: "GET" })
+        .then((res) => {
+          if (!res.ok) throw new Error("fetch failed");
+          return res.arrayBuffer();
+        })
+        .then(() => markLoaded())
+        .catch(() => markLoaded());
     });
+
     return () => {
       mounted = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only once
 
-  // STYLES
-  const contentContainerStyle = {
-    background: "#141414",
-    color: "#fff",
-    paddingTop: 0,
-  };
+  const fullyLoaded = loadedCount >= totalAssets;
+
+  // hero full-screen: before and after load the hero occupies the viewport
+  // while not fullyLoaded we block scroll; once fullyLoaded we allow scrolling and
+  // hide the percentage text, showing loading_logo with final SVG instead.
+  useEffect(() => {
+    if (!fullyLoaded) {
+      document.body.style.overflow = "hidden";
+    } else {
+      // allow scroll after loaded. The user specified the rest of the site should be below this full-screen front page.
+      document.body.style.overflow = "auto";
+    }
+  }, [fullyLoaded]);
+
+  // which svg to show (main one)
+  const mainSvg = chooseLoadingSvg(percent);
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", position: "relative" }}>
-      <style>{`
-        h1 { margin: 12px 0; font-family: Microgramma, sans-serif; }
-        .section { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
-        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; color: #fff; }
-        @media (min-width: 900px) {
-          .zig:nth-of-type(odd) { transform: translateX(-6%); }
-          .zig:nth-of-type(even) { transform: translateX(6%); }
-        }
-      `}</style>
+    <div style={{ background: "#141414", minHeight: "100vh", color: "#fff" }}>
+      {/* Full-screen title/hero */}
+      <section
+        aria-label="Title page"
+        style={{
+          height: "100vh",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        {/* center container */}
+        <div
+          style={{
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 20,
+            padding: 20,
+            width: "100%",
+            maxWidth: 980,
+          }}
+        >
+          {/* dynamic main SVG (changes with progress) */}
+          <img
+            src={mainSvg}
+            alt="loading visual"
+            style={{
+              maxWidth: "60vw",
+              width: 480,
+              height: "auto",
+              filter: "drop-shadow(0 10px 30px rgba(255,204,0,0.12))",
+              transition: "opacity 360ms ease, transform 360ms ease"
+            }}
+          />
 
-      {/* FRONT / TITLE PAGE — visible only while assets loading */}
-      {!assetsLoaded && <LoaderOverlay progress={progress} />}
+          {/* percentage text (Microgramma bold). Hidden once fully loaded. */}
+          {!fullyLoaded && (
+            <div
+              aria-hidden={false}
+              style={{
+                fontFamily: "Microgramma, sans-serif",
+                fontWeight: 700,
+                fontSize: 48,
+                color: "#ffffff",
+                letterSpacing: "0.12em",
+                marginTop: 6,
+                transition: "opacity 300ms ease",
+              }}
+            >
+              {displayNumber}%
+            </div>
+          )}
 
-      {/* MAIN CONTENT — below the front/title area */}
-      <div style={contentContainerStyle}>
-        <div className="section">
-          <TeamContent />
+          {/* once fully loaded: hide percentage and show loading_logo.svg alongside the final SVG */}
+          {fullyLoaded && (
+            <div
+              style={{
+                display: "flex",
+                gap: 18,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 6,
+                transition: "opacity 360ms ease",
+              }}
+            >
+              <img
+                src="/loading_logo.svg"
+                alt="logo"
+                style={{
+                  width: 120,
+                  height: "auto",
+                  transformOrigin: "center",
+                }}
+              />
+              {/* also keep the final 100% svg visible */}
+              <img
+                src="/loading_100%.svg"
+                alt="final visual"
+                style={{
+                  width: 200,
+                  height: "auto",
+                  opacity: 1,
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="section">
-          <ScheduleContent />
-        </div>
+        {/* small instruction arrow/chevron to show there's more content below (only after fully loaded) */}
+        {fullyLoaded && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "#ffcc00",
+              fontFamily: "Microgramma, sans-serif",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              opacity: 0.9,
+              fontSize: 12,
+            }}
+          >
+            SCROLL
+          </div>
+        )}
+      </section>
 
-        <div className="section">
-          <JoinUsContent />
-        </div>
+      {/* ===== Main content below the full-screen title page ===== */}
+      <main style={{ background: "#141414", color: "#fff" }}>
+        <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
+          <section className="section" style={{ paddingTop: 28 }}>
+            <TeamContent />
+          </section>
 
-        <div className="section">
-          <ContactContent />
-        </div>
+          <section className="section">
+            <ScheduleContent />
+          </section>
 
-        <div style={{ height: 200 }} />
-      </div>
+          <section className="section">
+            <JoinUsContent />
+          </section>
+
+          <section className="section">
+            <ContactContent />
+          </section>
+
+          <div style={{ height: 200 }} />
+        </div>
+      </main>
     </div>
   );
 }

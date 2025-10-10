@@ -66,7 +66,7 @@ function LoaderScreen({ visible }) {
   return (
     <div className="loader-overlay" aria-hidden={!visible}>
       <div className="loader-inner">
-        <img src="/images/npbasic.svg" alt="NP Racing" className="loader-logo" />
+        <img src="npbasic.svg" alt="NP Racing" className="loader-logo" />
         <div className="loader-bar">
           <div className="loader-fill" style={{ width: `${Math.round(progress)}%` }} />
         </div>
@@ -285,7 +285,7 @@ export default function App() {
             style={{ pointerEvents: "auto" /* for hover interactions */ }}
           >
             <img
-              src="/images/np_logo.svg"
+              src="npbasic.svg"
               alt="NP Racing"
               className="logo-main"
               style={{ transformOrigin: "center" }}

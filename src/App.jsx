@@ -1,249 +1,281 @@
 // src/App.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-/**
- * Requirements implemented:
- * - fonts loaded first (FontFace API)
- * - loading screen shows appropriate /loading_*.svg based on progress ranges
- * - percentage number (no % sign) centered in Microgramma Bold, color #ffcc00
- * - loading_logo.svg also centered and on top (always on top of everything)
- * - removed 3D canvas and logo contraction animation
- * - front/title page occupies full viewport; main content sits below and is not visible until user scrolls past the front page
- * - scroll bar visually hidden
- */
-
-/* helpers */
+/* ---------- helper ---------- */
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
-export default function App() {
-  // font + assets states
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const totalAssets = 3; // team images only (fonts counted separately and loaded first)
-  const progress = Math.round((loadedCount / totalAssets) * 100);
+/* ---------- Content components (Team / Schedule / Contact / Join Us) ---------- */
+function TeamContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
 
-  // overall "assets loaded" (images)
-  const assetsLoaded = loadedCount >= totalAssets;
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px" }}>
+          <p className="zig">The Team</p>
+          <ul>
+            <li>Team Leader: Matěj Prokop</li>
+            <li>Engineer: Lukáš Moravec</li>
+            <li>Finance manager: Lukáš Martin</li>
+            <li>Marketing manager: Veronika Lindová</li>
+          </ul>
+        </div>
 
-  // whether the front (title) page was scrolled past
-  const [introComplete, setIntroComplete] = useState(false);
+        <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+        </div>
+      </div>
 
-  // load fonts first using FontFace API
-  useEffect(() => {
-    let mounted = true;
-    async function loadFonts() {
-      try {
-        const micro = new FontFace("Microgramma", "url(/fonts/microgramma.woff2)", { weight: "700", style: "normal" });
-        const zal = new FontFace("ZalandoSans", "url(/fonts/zalando-sans-expanded.woff2)", { weight: "400", style: "normal" });
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h1>
+      <div>
+        <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+        <p className="zig">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+        <p className="zig">Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
+        <p className="zig">We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
+      </div>
+    </div>
+  );
+}
 
-        // start loading
-        const [m, z] = await Promise.all([micro.load(), zal.load()]);
+function ScheduleContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h1>
+      <p className="zig">Next up: Poland</p>
+      <ol>
+        <li>Oct 11</li>
+      </ol>
+    </div>
+  );
+}
 
-        // register
-        if (mounted) {
-          document.fonts.add(m);
-          document.fonts.add(z);
-          // ensure fonts are considered loaded by the browser's FontFaceSet
-          await document.fonts.ready;
-          setFontsLoaded(true);
-        }
-      } catch (e) {
-        // if fonts fail, still continue so page doesn't hang forever
-        console.warn("Font loading failed:", e);
-        if (mounted) setFontsLoaded(true);
-      }
-    }
-    loadFonts();
-    return () => (mounted = false);
-  }, []);
+function ContactContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Contact</h1>
+      <p className="zig">
+        For general inquiry:{" "}
+        <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
+          prokopmatej@novyporg.cz
+        </a>
+      </p>
+    </div>
+  );
+}
 
-  // after fontsLoaded, preload images (team1..3)
-  useEffect(() => {
-    if (!fontsLoaded) return;
-    let mounted = true;
-    const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
-    imgs.forEach((src) => {
-      const im = new Image();
-      im.onload = () => mounted && setLoadedCount((c) => c + 1);
-      im.onerror = () => mounted && setLoadedCount((c) => c + 1);
-      im.src = src;
-    });
-    return () => (mounted = false);
-  }, [fontsLoaded]);
+function JoinUsContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Join Us</h1>
+      <p className="zig">Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+    </div>
+  );
+}
 
-  // when assets are loaded, allow scrolling (before that body overflow hidden)
-  useEffect(() => {
-    document.body.style.background = "#141414";
-    document.body.style.margin = "0";
-    // visually hide scrollbars
-    document.body.style.overflow = assetsLoaded ? "auto" : "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [assetsLoaded]);
+/* ---------- LoaderOverlay: front/title page ---------- */
+function LoaderOverlay({ progress, assetsLoaded }) {
+  // progress: 0..100
+  const p = Math.round(clamp(progress, 0, 100));
 
-  // listen for scroll to detect when user has scrolled past the front/title full viewport
-  useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY >= window.innerHeight - 10) setIntroComplete(true);
-      else setIntroComplete(false);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    // also check on load/resize
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // select SVG according to ranges you specified:
+  let svgToShow = "/loading_25.svg";
+  if (p >= 100) svgToShow = "/loading_100.svg";
+  else if (p >= 75) svgToShow = "/loading_75.svg";
+  else if (p >= 50) svgToShow = "/loading_50.svg";
+  else svgToShow = "/loading_25.svg";
 
-  // pick the loading svg based on progress ranges
-  const pickLoadingSvg = (p) => {
-    if (p >= 100) return "/loading_100.svg";
-    if (p >= 75) return "/loading_75.svg";
-    if (p >= 50) return "/loading_50.svg";
-    if (p >= 25) return "/loading_25.svg";
-    return "/loading_25.svg";
-  };
-
-  // Styles (kept inline for drop-in usage)
-  const overlayStyle = {
-    position: "fixed",
-    inset: 0,
-    display: introComplete ? "none" : "flex", // hide entire overlay when front page scrolled past
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 99999,
-    background: "#141414",
-    pointerEvents: "none", // let user interact with page once scrolling allowed; overlay is visual only
-  };
-
-  const centerStack = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 18,
-    pointerEvents: "none", // never block interactions
-  };
-
-  const percentStyle = {
-    fontFamily: "Microgramma, sans-serif",
-    fontWeight: 700,
-    color: "#ffcc00",
-    fontSize: 64,
-    lineHeight: 1,
-    marginTop: 4,
-    textAlign: "center",
-    userSelect: "none",
-    // keep on top visually
-    zIndex: 100000,
-    textRendering: "geometricPrecision",
-  };
-
-  const loadingLogoStyle = {
-    width: 160,
-    height: "auto",
-    userSelect: "none",
-    zIndex: 100001,
-  };
-
-  // Title/front page content that sits behind overlay; full viewport
-  const titlePage = (
+  return (
     <div
+      aria-hidden={false}
       style={{
-        height: "100vh",
-        width: "100%",
+        position: "fixed",
+        inset: 0,
+        zIndex: 99999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         background: "#141414",
+        pointerEvents: assetsLoaded ? "auto" : "auto", // allow scroll after assetsLoaded, but overlay remains visually as the front page
       }}
     >
-      {/* keep a centered decorative logo (npbasic.svg) but we intentionally DO NOT animate it.
-          overlay above will hold the loading svgs and percentage on top. */}
-      <img src="/npbasic.svg" alt="NP" style={{ width: 360, height: "auto", pointerEvents: "none" }} />
-    </div>
-  );
+      <div style={{ textAlign: "center", width: "100%", padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexDirection: "column" }}>
+          {/* progress SVG (changes by ranges) */}
+          <img src={svgToShow} alt="loading graphic" style={{ maxWidth: "60vw", height: "auto", display: "block" }} />
 
-  // main content (below title page) — kept consistent with previous content snippets (titles Microgramma, text Zalando)
-  const mainContent = (
-    <div style={{ background: "#141414", color: "#fff" }}>
-      <div style={{ maxWidth: 1300, margin: "0 auto", padding: 28 }}>
-        <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 320px" }}>
-            <p style={{ fontFamily: "ZalandoSans", color: "#fff" }}>The Team</p>
-            <ul style={{ fontFamily: "ZalandoSans", color: "#fff" }}>
-              <li>Team Leader: Matěj Prokop</li>
-              <li>Engineer: Lukáš Moravec</li>
-              <li>Finance manager: Lukáš Martin</li>
-              <li>Marketing manager: Veronika Lindová</li>
-            </ul>
-          </div>
-          <div style={{ flex: "1 1 320px", display: "grid", gap: 12 }}>
-            <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-            <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-            <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-          </div>
+          {/* If assets are not loaded: show numeric percentage (no percent sign).
+              When assetsLoaded: hide numeric percentage and show loading_logo.svg */}
+          {!assetsLoaded ? (
+            <div
+              style={{
+                marginTop: 18,
+                fontSize: 48,
+                fontFamily: "Microgramma, sans-serif",
+                fontWeight: 700,
+                color: "#ffcc00",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {String(p)}
+            </div>
+          ) : (
+            <img src="/loading_logo.svg" alt="loading logo" style={{ width: 160, height: "auto", marginTop: 18 }} />
+          )}
         </div>
-
-        <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h1>
-        <div>
-          <p style={{ fontFamily: "ZalandoSans" }}>We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
-          <p style={{ fontFamily: "ZalandoSans" }}>We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
-          <p style={{ fontFamily: "ZalandoSans" }}>Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
-          <p style={{ fontFamily: "ZalandoSans" }}>We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
-        </div>
-
-        <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Schedule</h1>
-        <p style={{ fontFamily: "ZalandoSans" }}>Next up: Poland — Oct 11</p>
-
-        <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Join Us</h1>
-        <p style={{ fontFamily: "ZalandoSans" }}>Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
-
-        <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Contact</h1>
-        <p style={{ fontFamily: "ZalandoSans" }}>
-          For general inquiry: <a href="mailto:prokopmatej@novyporg.cz" style={{ color: "#ffcc00" }}>prokopmatej@novyporg.cz</a>
-        </p>
       </div>
-      <div style={{ height: 200 }} />
     </div>
   );
+}
 
-  // the picture svg shown based on progress (behind the persistent logo+number)
-  const loadingSvg = pickLoadingSvg(progress);
+/* ---------- App (main) ---------- */
+export default function App() {
+  // ensure fonts are preloaded & available first
+  useEffect(() => {
+    // Preload font files early (so the numeric counter uses Microgramma immediately)
+    // NOTE: browsers only honor crossOrigin for fonts sometimes; keep crossorigin attribute for safety.
+    const head = document.head;
+
+    // preload Microgramma woff2
+    if (!document.querySelector("link[data-npr-preload=microgramma]")) {
+      const l1 = document.createElement("link");
+      l1.rel = "preload";
+      l1.href = "/fonts/microgramma.woff2";
+      l1.as = "font";
+      l1.type = "font/woff2";
+      l1.crossOrigin = "anonymous";
+      l1.setAttribute("data-npr-preload", "microgramma");
+      head.appendChild(l1);
+    }
+
+    // preload Zalando
+    if (!document.querySelector("link[data-npr-preload=zalando]")) {
+      const l2 = document.createElement("link");
+      l2.rel = "preload";
+      l2.href = "/fonts/zalando-sans-expanded.woff2";
+      l2.as = "font";
+      l2.type = "font/woff2";
+      l2.crossOrigin = "anonymous";
+      l2.setAttribute("data-npr-preload", "zalando");
+      head.appendChild(l2);
+    }
+
+    // Inject @font-face so Microgramma is available synchronously to JS-rendered text
+    if (!document.getElementById("__npr_font_faces")) {
+      const style = document.createElement("style");
+      style.id = "__npr_font_faces";
+      style.innerHTML = `
+        @font-face {
+          font-family: 'Microgramma';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'ZalandoSans';
+          src: url('/fonts/zalando-sans-expanded.woff2') format('woff2');
+          font-weight: 400 800;
+          font-style: normal;
+          font-display: swap;
+        }
+        body { font-family: 'ZalandoSans', Inter, sans-serif; background: #141414; margin: 0; }
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        html,body { scrollbar-width: none; -ms-overflow-style: none; }
+      `;
+      head.appendChild(style);
+    }
+  }, []);
+
+  // loading state for assets (images)
+  const [loadedCount, setLoadedCount] = useState(0);
+  const totalAssets = 3; // three images to preload
+  const progress = (loadedCount / totalAssets) * 100;
+  const assetsLoaded = loadedCount >= totalAssets;
+
+  // we want: front page visible and occupying full viewport until assetsLoaded. After assetsLoaded:
+  // - the numeric counter disappears and loading_logo.svg appears in its place (but the front page remains visible)
+  // - the page must become scrollable so the user can scroll down to see the rest of the content (no animations)
+  useEffect(() => {
+    document.body.style.overflow = assetsLoaded ? "auto" : "hidden";
+  }, [assetsLoaded]);
+
+  // Preload team images (increment loadedCount for each image)
+  useEffect(() => {
+    const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
+    let mounted = true;
+    imgs.forEach((src) => {
+      const im = new Image();
+      im.onload = () => mounted && setLoadedCount((c) => c + 1);
+      im.onerror = () => mounted && setLoadedCount((c) => c + 1); // still count errors so loader won't hang
+      im.src = src;
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // STYLES
+  const frontStyle = {
+    height: "100vh",
+    width: "100%",
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    background: "#141414",
+  };
+
+  const contentContainerStyle = {
+    background: "#141414",
+    color: "#fff",
+    paddingTop: 0,
+  };
 
   return (
-    <div style={{ width: "100%", minHeight: "100vh", background: "#141414" }}>
-      {/* visually hide native scrollbar while preserving scroll mechanics */}
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", position: "relative" }}>
       <style>{`
-        ::-webkit-scrollbar { width: 0; height: 0; }
-        html,body,#root { height: 100%; background: #141414; }
+        h1 { margin: 12px 0; font-family: Microgramma, sans-serif; }
+        .section { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; color: #fff; }
+        @media (min-width: 900px) {
+          .zig:nth-of-type(odd) { transform: translateX(-6%); }
+          .zig:nth-of-type(even) { transform: translateX(6%); }
+        }
       `}</style>
 
-      {/* FRONT/TITLE PAGE */}
-      {titlePage}
+      {/* FRONT / TITLE PAGE */}
+      <div style={frontStyle}>
+        <LoaderOverlay progress={progress} assetsLoaded={assetsLoaded} />
 
-      {/* LOADER OVERLAY (centered; top-most). Remains until user scrolls past the front page (introComplete). */}
-      <div style={overlayStyle} aria-hidden={introComplete}>
-        <div style={centerStack}>
-          {/* dynamic SVG (progress-based) */}
-          <img
-            src={loadingSvg}
-            alt="loading progress"
-            style={{ maxWidth: "60vw", height: "auto", display: "block", pointerEvents: "none" }}
-          />
-
-          {/* loading_logo.svg ALWAYS centered on top as requested */}
-          <img src="/loading_logo.svg" alt="loading logo" style={loadingLogoStyle} />
-
-          {/* percentage number (no percent sign) - stays in the middle and above the progress svgs */}
-          <div style={percentStyle}>{String(progress)}</div>
-        </div>
+        {/* NOTE: no extra logos or canvases. The LoaderOverlay itself is the front page.
+            After assetsLoaded the overlay still visually shows the final logo (loading_logo.svg).
+            Because document.body.overflow is set, user can scroll to reveal content below.
+            No animation applied between front and rest — simple layout stacking. */}
       </div>
 
-      {/* MAIN CONTENT */}
-      {!titlePage ? null : null}
-      {/* content sits below the title area; user scrolls past the front page to reach it */}
-      <div style={{ marginTop: 0 }}>{mainContent}</div>
+      {/* MAIN CONTENT — below the front/title area */}
+      <div style={contentContainerStyle}>
+        <div className="section">
+          <TeamContent />
+        </div>
+
+        <div className="section">
+          <ScheduleContent />
+        </div>
+
+        <div className="section">
+          <JoinUsContent />
+        </div>
+
+        <div className="section">
+          <ContactContent />
+        </div>
+
+        <div style={{ height: 200 }} />
+      </div>
     </div>
   );
 }

@@ -222,7 +222,7 @@ export default function App() {
           <div style={{ position: "relative", width: isMobile ? 260 : 520, height: isMobile ? 180 : 260 }}>
             <img
               ref={logoRef}
-              src="/images/npbasic.svg"
+              src="npbasic.svg"
               alt="np logo"
               style={{
                 position: "absolute",

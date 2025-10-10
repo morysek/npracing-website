@@ -74,12 +74,11 @@ function JoinUsContent() {
   );
 }
 
-/* ---------- LoaderOverlay: front/title page ---------- */
-function LoaderOverlay({ progress, assetsLoaded }) {
-  // progress: 0..100
+/* ---------- LoaderOverlay (RESPONSIVE & CENTERED) ---------- */
+function LoaderOverlay({ progress }) {
   const p = Math.round(clamp(progress, 0, 100));
 
-  // select SVG according to ranges you specified:
+  // pick correct svg according to ranges
   let svgToShow = "/loading_25.svg";
   if (p >= 100) svgToShow = "/loading_100.svg";
   else if (p >= 75) svgToShow = "/loading_75.svg";
@@ -88,7 +87,6 @@ function LoaderOverlay({ progress, assetsLoaded }) {
 
   return (
     <div
-      aria-hidden={false}
       style={{
         position: "fixed",
         inset: 0,
@@ -97,32 +95,50 @@ function LoaderOverlay({ progress, assetsLoaded }) {
         alignItems: "center",
         justifyContent: "center",
         background: "#141414",
-        pointerEvents: assetsLoaded ? "auto" : "auto", // allow scroll after assetsLoaded, but overlay remains visually as the front page
+        pointerEvents: "auto",
       }}
     >
-      <div style={{ textAlign: "center", width: "100%", padding: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexDirection: "column" }}>
-          {/* progress SVG (changes by ranges) */}
-          <img src={svgToShow} alt="loading graphic" style={{ maxWidth: "60vw", height: "auto", display: "block" }} />
+      {/* Centered content container */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          padding: "20px",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* SVG: responsive sizing (caps width + height to viewport proportions) */}
+        <img
+          src={svgToShow}
+          alt="loading graphic"
+          style={{
+            width: "min(72vw, 680px)",
+            height: "auto",
+            maxHeight: "60vh",
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
 
-          {/* If assets are not loaded: show numeric percentage (no percent sign).
-              When assetsLoaded: hide numeric percentage and show loading_logo.svg */}
-          {!assetsLoaded ? (
-            <div
-              style={{
-                marginTop: 18,
-                fontSize: 48,
-                fontFamily: "Microgramma, sans-serif",
-                fontWeight: 700,
-                color: "#ffcc00",
-                letterSpacing: "0.02em",
-              }}
-            >
-              {String(p)}
-            </div>
-          ) : (
-            <img src="/loading_logo.svg" alt="loading logo" style={{ width: 160, height: "auto", marginTop: 18 }} />
-          )}
+        {/* Numeric progress centered under the svg */}
+        <div
+          style={{
+            marginTop: 20,
+            fontSize: "5.2vw",
+            minWidth: 40,
+            maxWidth: 220,
+            lineHeight: 1,
+            textAlign: "center",
+            fontFamily: "Microgramma, sans-serif",
+            fontWeight: 700,
+            color: "#ffcc00",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {String(p)}
         </div>
       </div>
     </div>
@@ -133,11 +149,6 @@ function LoaderOverlay({ progress, assetsLoaded }) {
 export default function App() {
   // ensure fonts are preloaded & available first
   useEffect(() => {
-    // Preload font files early (so the numeric counter uses Microgramma immediately)
-    // NOTE: browsers only honor crossOrigin for fonts sometimes; keep crossorigin attribute for safety.
-    const head = document.head;
-
-    // preload Microgramma woff2
     if (!document.querySelector("link[data-npr-preload=microgramma]")) {
       const l1 = document.createElement("link");
       l1.rel = "preload";
@@ -146,10 +157,8 @@ export default function App() {
       l1.type = "font/woff2";
       l1.crossOrigin = "anonymous";
       l1.setAttribute("data-npr-preload", "microgramma");
-      head.appendChild(l1);
+      document.head.appendChild(l1);
     }
-
-    // preload Zalando
     if (!document.querySelector("link[data-npr-preload=zalando]")) {
       const l2 = document.createElement("link");
       l2.rel = "preload";
@@ -158,10 +167,9 @@ export default function App() {
       l2.type = "font/woff2";
       l2.crossOrigin = "anonymous";
       l2.setAttribute("data-npr-preload", "zalando");
-      head.appendChild(l2);
+      document.head.appendChild(l2);
     }
 
-    // Inject @font-face so Microgramma is available synchronously to JS-rendered text
     if (!document.getElementById("__npr_font_faces")) {
       const style = document.createElement("style");
       style.id = "__npr_font_faces";
@@ -181,34 +189,31 @@ export default function App() {
           font-display: swap;
         }
         body { font-family: 'ZalandoSans', Inter, sans-serif; background: #141414; margin: 0; }
-        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        ::-webkit-scrollbar { display: none; width: 0; height: 0; }
         html,body { scrollbar-width: none; -ms-overflow-style: none; }
       `;
-      head.appendChild(style);
+      document.head.appendChild(style);
     }
   }, []);
 
-  // loading state for assets (images)
+  // preload images
   const [loadedCount, setLoadedCount] = useState(0);
-  const totalAssets = 3; // three images to preload
+  const totalAssets = 3; // number of images
   const progress = (loadedCount / totalAssets) * 100;
   const assetsLoaded = loadedCount >= totalAssets;
 
-  // we want: front page visible and occupying full viewport until assetsLoaded. After assetsLoaded:
-  // - the numeric counter disappears and loading_logo.svg appears in its place (but the front page remains visible)
-  // - the page must become scrollable so the user can scroll down to see the rest of the content (no animations)
   useEffect(() => {
-    document.body.style.overflow = assetsLoaded ? "auto" : "hidden";
+    // show page scroll only after assets are loaded (but hide scrollbars visually)
+    document.body.style.overflowY = assetsLoaded ? "auto" : "hidden";
   }, [assetsLoaded]);
 
-  // Preload team images (increment loadedCount for each image)
   useEffect(() => {
     const imgs = ["/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
     let mounted = true;
     imgs.forEach((src) => {
       const im = new Image();
       im.onload = () => mounted && setLoadedCount((c) => c + 1);
-      im.onerror = () => mounted && setLoadedCount((c) => c + 1); // still count errors so loader won't hang
+      im.onerror = () => mounted && setLoadedCount((c) => c + 1); // count it so loader doesn't hang on errors
       im.src = src;
     });
     return () => {
@@ -217,17 +222,6 @@ export default function App() {
   }, []);
 
   // STYLES
-  const frontStyle = {
-    height: "100vh",
-    width: "100%",
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    background: "#141414",
-  };
-
   const contentContainerStyle = {
     background: "#141414",
     color: "#fff",
@@ -246,15 +240,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* FRONT / TITLE PAGE */}
-      <div style={frontStyle}>
-        <LoaderOverlay progress={progress} assetsLoaded={assetsLoaded} />
-
-        {/* NOTE: no extra logos or canvases. The LoaderOverlay itself is the front page.
-            After assetsLoaded the overlay still visually shows the final logo (loading_logo.svg).
-            Because document.body.overflow is set, user can scroll to reveal content below.
-            No animation applied between front and rest — simple layout stacking. */}
-      </div>
+      {/* FRONT / TITLE PAGE — visible only while assets loading */}
+      {!assetsLoaded && <LoaderOverlay progress={progress} />}
 
       {/* MAIN CONTENT — below the front/title area */}
       <div style={contentContainerStyle}>

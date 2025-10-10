@@ -74,12 +74,12 @@ function JoinUsContent() {
 /* ---------- Loading+Hero logic ---------- */
 function chooseLoadingSvg(percent) {
   // percent is 0..100
-  if (percent >= 100) return "/loading_100%.svg";
-  if (percent >= 75) return "/loading_75%.svg";
-  if (percent >= 50) return "/loading_50%.svg";
-  if (percent >= 25) return "/loading_25%.svg";
+  if (percent >= 100) return "/public/loading_100.svg";
+  if (percent >= 75) return "/public/loading_75.svg";
+  if (percent >= 50) return "/public/loading_50.svg";
+  if (percent >= 25) return "/public/loading_25.svg";
   // default placeholder before 25%
-  return "/loading_25%.svg";
+  return "/public/loading_25.svg";
 }
 
 export default function App() {
@@ -269,7 +269,7 @@ export default function App() {
               }}
             >
               <img
-                src="/loading_logo.svg"
+                src="/public/loading_logo.svg"
                 alt="logo"
                 style={{
                   width: 120,
@@ -279,7 +279,7 @@ export default function App() {
               />
               {/* also keep the final 100% svg visible */}
               <img
-                src="/loading_100%.svg"
+                src="/public/loading_100.svg"
                 alt="final visual"
                 style={{
                   width: 200,

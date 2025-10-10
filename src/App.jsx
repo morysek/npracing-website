@@ -1,356 +1,339 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * App:
- * - Centered npbasic.svg logo during load (reacts to mouse)
- * - Numeric count-up loader (percentage)
- * - Smooth/inertial scroll by lerping transform of the content wrapper
- * - Background #141414, titles in Microgramma (#ffcc00), body text Zalando
- * - Uses images /images/team1.jpg team2.jpg team3.jpg
- *
- * Notes:
- * - Place fonts at /public/fonts/microgramma.woff2 and /public/fonts/zalando-sans-expanded.woff2
- * - Place npbasic.svg at /images/npbasic.svg
- * - If fonts are missing, system fallbacks will be used.
- */
+/* ---------- small content components (from your earlier code) ---------- */
+function TeamContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Team</h1>
 
-function preloadImage(src) {
-  return new Promise((resolve) => {
-    const im = new Image();
-    im.onload = () => resolve(src);
-    im.onerror = () => resolve(src); // resolve anyway to avoid hang
-    im.src = src;
-  });
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px" }}>
+          <p className="zig">The Team</p>
+          <ul>
+            <li>Team Leader: Matěj Prokop</li>
+            <li>Engineer: Lukáš Moravec</li>
+            <li>Finance manager: Lukáš Martin</li>
+            <li>Marketing manager: Veronika Lindová</li>
+          </ul>
+        </div>
+
+        <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+          <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
+        </div>
+      </div>
+
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", marginTop: 20 }}>About Us</h1>
+      <div>
+        <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+        <p className="zig">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+        <p className="zig">Founded at Nový PORG, a prestigious school, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
+        <p className="zig">We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Schedule</h1>
+      <p className="zig">Next up: Poland</p>
+      <ol>
+        <li>Oct 11</li>
+      </ol>
+    </div>
+  );
+}
+
+function ContactContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Contact</h1>
+      <p className="zig">
+        For general inquiry:{" "}
+        <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
+          prokopmatej@novyporg.cz
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function JoinUsContent() {
+  return (
+    <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
+      <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Join Us</h1>
+      <p className="zig">Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+    </div>
+  );
+}
+
+/* ---------- Loading+Hero logic ---------- */
+function chooseLoadingSvg(percent) {
+  // percent is 0..100
+  if (percent >= 100) return "/loading_100%.svg";
+  if (percent >= 75) return "/loading_75%.svg";
+  if (percent >= 50) return "/loading_50%.svg";
+  if (percent >= 25) return "/loading_25%.svg";
+  // default placeholder before 25%
+  return "/loading_25%.svg";
 }
 
 export default function App() {
-  // assets to preload (svg logo + 3 images)
-  const assets = ["/images/npbasic.svg", "/images/team1.jpg", "/images/team2.jpg", "/images/team3.jpg"];
+  // fonts: inject Microgramma
+  useEffect(() => {
+    const id = "__microgramma_font";
+    if (!document.getElementById(id)) {
+      const style = document.createElement("style");
+      style.id = id;
+      style.innerHTML = `
+        @font-face {
+          font-family: 'Microgramma';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        html,body,#root { height: 100%; background: #141414; }
+        body { margin: 0; background: #141414; color: #fff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+        /* small zig-zag class from earlier */
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; max-width: 900px; }
+        @media (min-width: 900px) {
+          .zig:nth-of-type(odd) { transform: translateX(-6%); }
+          .zig:nth-of-type(even) { transform: translateX(6%); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // assets to preload (images + glb)
+  const assets = [
+    "/images/team1.jpg",
+    "/images/team2.jpg",
+    "/images/team3.jpg",
+    "/models/F1.glb" // we just fetch it to count as loaded; user previously had .glb
+  ];
   const totalAssets = assets.length;
 
-  // loading state
   const [loadedCount, setLoadedCount] = useState(0);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [displayedPercent, setDisplayedPercent] = useState(0);
-  const percentTarget = Math.round((loadedCount / totalAssets) * 100);
+  const percent = Math.round((loadedCount / totalAssets) * 100);
 
-  // overlay visibility
-  const [overlayVisible, setOverlayVisible] = useState(true);
+  // animated display number that counts up smoothly to percent
+  const [displayNumber, setDisplayNumber] = useState(0);
+  const displayNumberRef = useRef(displayNumber);
+  displayNumberRef.current = displayNumber;
 
-  // logo pointer interactions
-  const logoRef = useRef(null);
-  const overlayRef = useRef(null);
-
-  // smooth scroll refs
-  const contentRef = useRef(null);
-  const rafRef = useRef(null);
-  const targetY = useRef(window.scrollY || 0);
-  const currentY = useRef(window.scrollY || 0);
-
-  // mobile detection
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // inject fonts (expecting .woff2 at /public/fonts)
-  useEffect(() => {
-    const id = "__npr_inject_fonts";
-    if (document.getElementById(id)) return;
-    const style = document.createElement("style");
-    style.id = id;
-    style.innerHTML = `
-      @font-face {
-        font-family: 'Microgramma';
-        src: url('/fonts/microgramma.woff2') format('woff2');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'ZalandoSans';
-        src: url('/fonts/zalando-sans-expanded.woff2') format('woff2');
-        font-weight: 400 800;
-        font-style: normal;
-        font-display: swap;
-      }
-      html,body,#root { height: 100%; background: #141414; }
-      body { margin: 0; background: #141414; }
-      ::-webkit-scrollbar { width: 0; height: 0; }
-      html,body { scrollbar-width: none; -ms-overflow-style: none; }
-    `;
-    document.head.appendChild(style);
-  }, []);
-
-  // preload assets
-  useEffect(() => {
-    let mounted = true;
-    Promise.all(
-      assets.map((src) =>
-        preloadImage(src).then(() => {
-          if (!mounted) return;
-          setLoadedCount((c) => c + 1);
-        })
-      )
-    ).then(() => {
-      if (!mounted) return;
-      setAssetsLoaded(true);
-    });
-    return () => (mounted = false);
-  }, []);
-
-  // animate numeric count-up to percentTarget smoothly
   useEffect(() => {
     let raf = 0;
     const start = performance.now();
-    const startVal = displayedPercent;
-    const endVal = percentTarget;
-    const duration = 300; // ms for each step update
-    function step(ts) {
-      const elapsed = ts - start;
-      // ramp to new target
-      const t = Math.min(1, elapsed / duration);
-      const val = Math.round(startVal + (endVal - startVal) * t);
-      setDisplayedPercent(val);
+    const from = displayNumberRef.current;
+    const to = percent;
+    const duration = 350; // ms for each update
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const val = Math.round(from + (to - from) * t);
+      setDisplayNumber(val);
       if (t < 1) raf = requestAnimationFrame(step);
     }
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [percentTarget]);
+  }, [percent]);
 
-  // when everything loaded -> finish overlay after a short delay
+  // preload routine
   useEffect(() => {
-    if (!assetsLoaded) return;
-    const id = setTimeout(() => {
-      // animate the overlay fade and hide centered logo; we remove the centered logo from scrolling page
-      setOverlayVisible(false);
-    }, 600); // small delay so count hits 100 and user sees it
-    return () => clearTimeout(id);
-  }, [assetsLoaded]);
+    let mounted = true;
+    let localLoaded = 0;
 
-  // smooth/inertial scroll: we lerp contentRef transform to window.scrollY
-  useEffect(() => {
-    const onScroll = () => {
-      targetY.current = window.scrollY || 0;
+    // helper to increment safely
+    const markLoaded = () => {
+      if (!mounted) return;
+      localLoaded++;
+      setLoadedCount((c) => c + 1);
     };
-    // ensure targetY updated (necessary)
-    window.addEventListener("scroll", onScroll, { passive: true });
 
-    const animate = () => {
-      // ease factor - smaller = slower/inertia feel. tuned for slower start & nicer inertia.
-      const ease = 0.08;
-      currentY.current += (targetY.current - currentY.current) * ease;
-      if (contentRef.current) {
-        // apply a rounded translate to avoid subpixel blurriness
-        contentRef.current.style.transform = `translate3d(0, ${-currentY.current}px, 0)`;
+    // preload images
+    assets.forEach((url) => {
+      if (url.match(/\.(jpe?g|png|webp|svg)$/i)) {
+        const img = new Image();
+        img.onload = markLoaded;
+        img.onerror = markLoaded;
+        img.src = url;
+        return;
       }
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
+      // fallback: fetch other assets (e.g. .glb) as arrayBuffer
+      fetch(url, { method: "GET" })
+        .then((res) => {
+          if (!res.ok) throw new Error("fetch failed");
+          return res.arrayBuffer();
+        })
+        .then(() => markLoaded())
+        .catch(() => markLoaded());
+    });
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("scroll", onScroll);
+      mounted = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only once
 
-  // logo pointer interactions (tilt + small warp + neon glow)
+  const fullyLoaded = loadedCount >= totalAssets;
+
+  // hero full-screen: before and after load the hero occupies the viewport
+  // while not fullyLoaded we block scroll; once fullyLoaded we allow scrolling and
+  // hide the percentage text, showing loading_logo with final SVG instead.
   useEffect(() => {
-    const el = overlayRef.current;
-    const logo = logoRef.current;
-    if (!el || !logo) return;
-
-    function onPointerMove(e) {
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / rect.width;
-      const dy = (e.clientY - cy) / rect.height;
-      // tilt & translate
-      const rotX = clamp(-dy * 10, -12, 12); // degrees
-      const rotY = clamp(dx * 14, -18, 18);
-      const tx = clamp(dx * 10, -12, 12);
-      const ty = clamp(dy * 10, -12, 12);
-      logo.style.transform = `translate(-50%, -50%) rotateX(${rotX}deg) rotateY(${rotY}deg) translate3d(${tx}px, ${ty}px, 0) scale(${isMobile ? 1.95 : 1.05})`;
-      // letter spacing effect for SVG path group: we just scale a bit for "warp"
-      logo.style.filter = `drop-shadow(0 8px 18px rgba(0,255,200,0.06)) drop-shadow(0 0 14px rgba(255,204,0,0.08))`;
+    if (!fullyLoaded) {
+      document.body.style.overflow = "hidden";
+    } else {
+      // allow scroll after loaded. The user specified the rest of the site should be below this full-screen front page.
+      document.body.style.overflow = "auto";
     }
+  }, [fullyLoaded]);
 
-    function onPointerLeave() {
-      logo.style.transition = "transform 600ms cubic-bezier(.2,.9,.2,1), filter 600ms ease";
-      logo.style.transform = `translate(-50%, -50%) scale(${isMobile ? 1.95 : 1.0})`;
-      logo.style.filter = "";
-      setTimeout(() => (logo.style.transition = ""), 650);
-    }
+  // which svg to show (main one)
+  const mainSvg = chooseLoadingSvg(percent);
 
-    el.addEventListener("pointermove", onPointerMove);
-    el.addEventListener("pointerleave", onPointerLeave);
-    return () => {
-      el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerleave", onPointerLeave);
-    };
-  }, [isMobile]);
-
-  // small helper
-  function clamp(v, a = -Infinity, b = Infinity) {
-    return Math.min(b, Math.max(a, v));
-  }
-
-  // content markup
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflow: "auto" }}>
-      {/* center loading overlay with interactive logo */}
-      {overlayVisible && (
+    <div style={{ background: "#141414", minHeight: "100vh", color: "#fff" }}>
+      {/* Full-screen title/hero */}
+      <section
+        aria-label="Title page"
+        style={{
+          height: "100vh",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        {/* center container */}
         <div
-          ref={overlayRef}
-          aria-hidden={false}
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 99999,
+            textAlign: "center",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            background: "#141414",
-            transition: "opacity 500ms ease",
+            gap: 20,
+            padding: 20,
+            width: "100%",
+            maxWidth: 980,
           }}
         >
-          <div style={{ position: "relative", width: isMobile ? 260 : 520, height: isMobile ? 180 : 260 }}>
-            <img
-              ref={logoRef}
-              src="npbasic.svg"
-              alt="np logo"
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%,-50%) scale(${isMobile ? 1.95 : 1})`,
-                transformOrigin: "center center",
-                willChange: "transform, filter",
-                transition: "transform 220ms cubic-bezier(.2,.9,.2,1)",
-                maxWidth: "100%",
-                height: "auto",
-                display: "block",
-                filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.6))",
-              }}
-            />
-          </div>
+          {/* dynamic main SVG (changes with progress) */}
+          <img
+            src={mainSvg}
+            alt="loading visual"
+            style={{
+              maxWidth: "60vw",
+              width: 480,
+              height: "auto",
+              filter: "drop-shadow(0 10px 30px rgba(255,204,0,0.12))",
+              transition: "opacity 360ms ease, transform 360ms ease"
+            }}
+          />
 
-          {/* numeric loader */}
+          {/* percentage text (Microgramma bold). Hidden once fully loaded. */}
+          {!fullyLoaded && (
+            <div
+              aria-hidden={false}
+              style={{
+                fontFamily: "Microgramma, sans-serif",
+                fontWeight: 700,
+                fontSize: 48,
+                color: "#ffffff",
+                letterSpacing: "0.12em",
+                marginTop: 6,
+                transition: "opacity 300ms ease",
+              }}
+            >
+              {displayNumber}%
+            </div>
+          )}
+
+          {/* once fully loaded: hide percentage and show loading_logo.svg alongside the final SVG */}
+          {fullyLoaded && (
+            <div
+              style={{
+                display: "flex",
+                gap: 18,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 6,
+                transition: "opacity 360ms ease",
+              }}
+            >
+              <img
+                src="/loading_logo.svg"
+                alt="logo"
+                style={{
+                  width: 120,
+                  height: "auto",
+                  transformOrigin: "center",
+                }}
+              />
+              {/* also keep the final 100% svg visible */}
+              <img
+                src="/loading_100%.svg"
+                alt="final visual"
+                style={{
+                  width: 200,
+                  height: "auto",
+                  opacity: 1,
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* small instruction arrow/chevron to show there's more content below (only after fully loaded) */}
+        {fullyLoaded && (
           <div
             style={{
               position: "absolute",
-              bottom: isMobile ? 60 : 80,
-              textAlign: "center",
-              width: "100%",
-              pointerEvents: "none",
-              fontFamily: "'ZalandoSans', Inter, sans-serif",
+              bottom: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
               color: "#ffcc00",
-              fontSize: isMobile ? 18 : 20,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
+              fontFamily: "Microgramma, sans-serif",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              opacity: 0.9,
+              fontSize: 12,
             }}
           >
-            {displayedPercent}%
+            SCROLL
           </div>
+        )}
+      </section>
+
+      {/* ===== Main content below the full-screen title page ===== */}
+      <main style={{ background: "#141414", color: "#fff" }}>
+        <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
+          <section className="section" style={{ paddingTop: 28 }}>
+            <TeamContent />
+          </section>
+
+          <section className="section">
+            <ScheduleContent />
+          </section>
+
+          <section className="section">
+            <JoinUsContent />
+          </section>
+
+          <section className="section">
+            <ContactContent />
+          </section>
+
+          <div style={{ height: 200 }} />
         </div>
-      )}
-
-      {/* once overlay is hidden, we no longer render the centered logo (logo removed from the scrolling page) */}
-      {/* MAIN CONTENT: we render content inside a fixed wrapper that will be transformed for smooth scroll */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          // set height equal to document scroll space so native scrollbar works while we animate content transform
-          // content wrapper itself will be transformed by requestAnimationFrame
-          minHeight: "200vh",
-        }}
-      >
-        {/* This invisible spacer preserves native scroll height */}
-        <div style={{ position: "relative", width: "100%", minHeight: "100vh", boxSizing: "border-box" }} />
-
-        {/* content fixed wrapper that we translate for smooth scrolling */}
-        <div
-          ref={contentRef}
-          style={{
-            position: "fixed",
-            left: 0,
-            top: 0,
-            width: "100%",
-            minHeight: "100vh",
-            willChange: "transform",
-            zIndex: 2,
-            pointerEvents: "auto",
-            overflow: "visible",
-          }}
-        >
-          <div style={{ maxWidth: 1300, margin: "0 auto", padding: "80px 20px" }}>
-            {/* sections — Titles Microgramma with #ffcc00, text Zalando */}
-            <section style={{ marginBottom: 20 }}>
-              <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", margin: "8px 0" }}>Team</h1>
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <div style={{ flex: "1 1 320px" }}>
-                  <p style={{ color: "#fff", fontFamily: "ZalandoSans" }} className="zig">
-                    The Team
-                  </p>
-                  <ul style={{ color: "#fff", fontFamily: "ZalandoSans" }}>
-                    <li>Team Leader: Matěj Prokop</li>
-                    <li>Engineer: Lukáš Moravec</li>
-                    <li>Finance manager: Lukáš Martin</li>
-                    <li>Marketing manager: Veronika Lindová</li>
-                  </ul>
-                </div>
-                <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr", gap: 12 }}>
-                  <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-                  <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-                  <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
-                </div>
-              </div>
-            </section>
-
-            <section style={{ marginBottom: 20 }}>
-              <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", margin: "8px 0" }}>Schedule</h1>
-              <p style={{ color: "#fff", fontFamily: "ZalandoSans" }} className="zig">
-                Next up: Poland — Oct 11
-              </p>
-            </section>
-
-            <section style={{ marginBottom: 20 }}>
-              <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", margin: "8px 0" }}>Join Us</h1>
-              <p style={{ color: "#fff", fontFamily: "ZalandoSans" }} className="zig">
-                Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!
-              </p>
-            </section>
-
-            <section style={{ marginBottom: 20 }}>
-              <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", margin: "8px 0" }}>Contact</h1>
-              <p style={{ color: "#fff", fontFamily: "ZalandoSans" }} className="zig">
-                For general inquiry: <a href="mailto:prokopmatej@novyporg.cz" style={{ color: "#ffcc00" }}>prokopmatej@novyporg.cz</a>
-              </p>
-            </section>
-
-            <div style={{ height: 400 }} />
-          </div>
-        </div>
-      </div>
-
-      {/* small decorative styles and zig-zag effect */}
-      <style>{`
-        .zig { line-height: 1.45; margin: 8px 0; }
-        @media (min-width:900px) {
-          .zig:nth-of-type(odd) { transform: translateX(-6%); }
-          .zig:nth-of-type(even) { transform: translateX(6%); }
-        }
-        /* ensure images keep aspect ratio on mobile and stack vertically (we already used grid) */
-        @media (max-width:768px) {
-          img { max-width: 100%; height: auto; display:block; }
-        }
-      `}</style>
+      </main>
     </div>
   );
 }

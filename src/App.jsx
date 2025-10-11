@@ -164,8 +164,8 @@ export default function App() {
   return (
     <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflowX: "hidden" }}>
       <style>{`
-        @font-face { font-family: 'Workbench'; src: url('/fonts/workbench.woff2') format('woff2'); font-weight: 400 800; font-style: normal; font-display: swap; }
-        @font-face { font-family: 'Microgramma'; src: url('/fonts/microgramma.woff2') format('woff2'); font-weight:700; font-style:normal; font-display:swap; }
+        @font-face { font-family: 'Workbench'; src: url('/fonts/spacegrotesk.woff2') format('woff2'); font-weight: 400 800; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Microgramma'; src: url('/fonts/workbench.woff2') format('woff2'); font-weight:700; font-style:normal; font-display:swap; }
         html, body, #root { height: 100%; background: #141414; margin: 0; }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display:none; }

@@ -10,7 +10,7 @@ function chooseLoadingSvg(percent) {
   return "/loading_25.svg";
 }
 
-/* ---------- small content (kept short) ---------- */
+/* ---------- small content components (rendered only after load) ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -82,10 +82,9 @@ export default function App() {
 
   // assets to preload
   const assets = [
-    "/images/mory.png",
-    "/images/matej.png",
-    "/images/adam.png",
-    "/images/drip.png",
+    "/images/team1.jpg",
+    "/images/team2.jpg",
+    "/images/team3.jpg",
     "/loading_25.svg",
     "/loading_50.svg",
     "/loading_75.svg",
@@ -96,17 +95,16 @@ export default function App() {
 
   const [loadedCount, setLoadedCount] = useState(0);
   const percent = Math.round((loadedCount / totalAssets) * 100);
-  const fullyLoaded = loadedCount >= totalAssets;
+  const assetsLoaded = loadedCount >= totalAssets;
 
-  // animated display number
+  // animated display number (quick tween)
   const [displayNumber, setDisplayNumber] = useState(0);
   useEffect(() => {
-    // animate number quickly toward percent
     let raf = 0;
     const start = performance.now();
     const from = displayNumber;
     const to = percent;
-    const duration = 260;
+    const duration = 220;
     function step(now) {
       const t = Math.min(1, (now - start) / duration);
       const val = Math.round(from + (to - from) * t);
@@ -117,7 +115,7 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [percent]);
 
-  // preload assets
+  // preload assets (images & svgs). Each success increments loadedCount.
   useEffect(() => {
     let mounted = true;
     const markLoaded = () => {
@@ -126,39 +124,31 @@ export default function App() {
     };
 
     assets.forEach((url) => {
-      if (url.match(/\.(jpe?g|png|webp|svg)$/i)) {
-        const img = new Image();
-        img.onload = markLoaded;
-        img.onerror = markLoaded;
-        img.src = url;
-        return;
-      }
-      // fallback fetch for non-image resources
-      fetch(url, { method: "GET" })
-        .then((res) => res.ok ? res.arrayBuffer() : Promise.reject())
-        .then(() => markLoaded())
-        .catch(() => markLoaded());
+      // images & svgs via Image
+      const image = new Image();
+      image.onload = markLoaded;
+      image.onerror = markLoaded;
+      image.src = url;
     });
 
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // resizing helper so graphics never overflow the hero area
-  const graphicsRef = useRef(null);
+  // disable page scroll until all assets are loaded
   useEffect(() => {
-    if (!graphicsRef.current) return;
-    const el = graphicsRef.current;
-    let ro = null;
-    if (window.ResizeObserver) {
-      ro = new ResizeObserver(() => {
-        // no-op hook in case you want to compute sizes later
-      });
-      ro.observe(el);
-    }
-    return () => ro && ro.disconnect();
-  }, []);
+    document.body.style.overflow = assetsLoaded ? "auto" : "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [assetsLoaded]);
 
-  const chosenSvg = chooseLoadingSvg(percent);
+  // reference for hero graphics sizing (keeps svgs inside the hero)
+  const graphicsRef = useRef(null);
+
+  // choose which svg to show (25/50/75/100)
+  const chosenSvg = assetsLoaded ? "/loading_100.svg" : chooseLoadingSvg(percent);
 
   return (
     <div style={{ minHeight: "100vh", background: "#141414", color: "#fff" }}>
@@ -173,6 +163,7 @@ export default function App() {
           justifyContent: "center",
           position: "relative",
           overflow: "hidden",
+          background: "#141414",
         }}
       >
         {/* Graphics wrapper (centered, responsive square) */}
@@ -188,11 +179,10 @@ export default function App() {
             justifyContent: "center",
             position: "relative",
             boxSizing: "border-box",
-            transition: "opacity 360ms ease, transform 360ms ease",
-            opacity: fullyLoaded ? 0 : 1, // fade out when done
-            pointerEvents: fullyLoaded ? "none" : "auto",
+            pointerEvents: "none",
           }}
         >
+          {/* Loading stage SVG (no CSS transition on the image itself) */}
           <img
             src={chosenSvg}
             alt="loading visual"
@@ -205,119 +195,102 @@ export default function App() {
               display: "block",
               userSelect: "none",
               pointerEvents: "none",
+              transition: "none", /* <- disable any fade/transition for the SVG itself */
             }}
           />
         </div>
 
         {/* PERCENT NUMBER OVERLAY: always centered and on top of graphics.
-            Hidden when fullyLoaded (we fade it out). */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%,-50%)",
-            zIndex: 60,
-            pointerEvents: "none",
-            transition: "opacity 420ms ease, transform 420ms ease",
-            opacity: fullyLoaded ? 0 : 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            textAlign: "center",
-          }}
-        >
+            Hidden when fully loaded. */}
+        {!assetsLoaded && (
           <div
+            aria-hidden
             style={{
-              fontFamily: "Microgramma, sans-serif",
-              fontWeight: 700,
-              color: "#ffcc00",
-              fontSize: "clamp(28px, 8vw, 64px)",
-              letterSpacing: "0.12em",
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%,-50%)",
+              zIndex: 60,
+              pointerEvents: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              textAlign: "center",
             }}
           >
-            {displayNumber}
+            <div
+              style={{
+                fontFamily: "Microgramma, sans-serif",
+                fontWeight: 700,
+                color: "#ffcc00",
+                fontSize: "clamp(28px, 8vw, 64px)",
+                letterSpacing: "0.12em",
+                userSelect: "none",
+              }}
+            >
+              {displayNumber}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* FINAL LOGO OVERLAY: appears after fully loaded and stays centered.
-            We show this overlay logo and keep it visible while the hero is visible.
-            It is independent of the graphics wrapper (so it stays perfectly centered). */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: fullyLoaded ? "translate(-50%,-50%) scale(1)" : "translate(-50%,-50%) scale(0.98)",
-            zIndex: 70,
-            pointerEvents: "none",
-            transition: "opacity 420ms ease, transform 420ms ease",
-            opacity: fullyLoaded ? 1 : 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "min(70vw, 70vh)",
-            maxWidth: 600,
-          }}
-        >
-          <img
-            src="/loading_logo.svg"
-            alt="main logo"
+        {/* When fully loaded: show loading_100.svg (already chosenSvg) and also display the final logo if you want */}
+        {assetsLoaded && (
+          <div
             style={{
-              width: "100%",
-              height: "auto",
-              objectFit: "contain",
-              display: "block",
-              userSelect: "none",
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%,-50%)",
+              zIndex: 70,
               pointerEvents: "none",
+              width: "min(70vw, 70vh)",
+              maxWidth: 600,
             }}
-          />
-        </div>
+          >
+            {/* final overlay logo (no transition on image) */}
+            <img
+              src="/loading_logo.svg"
+              alt="final logo"
+              style={{
+                width: "100%",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
+                userSelect: "none",
+                pointerEvents: "none",
+                transition: "none",
+              }}
+            />
+          </div>
+        )}
 
-        {/* subtle SCROLL hint */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 18,
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "#ffcc00",
-            fontFamily: "Microgramma, sans-serif",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            opacity: fullyLoaded ? 0.95 : 0.15,
-            fontSize: 12,
-            pointerEvents: "none",
-          }}
-        >
-          SCROLL
-        </div>
       </div>
 
-      {/* MAIN content below the hero - user only sees this after they scroll past the full-screen hero */}
-      <main style={{ background: "#141414", color: "#fff" }}>
-        <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
-          <section className="section" style={{ paddingTop: 28 }}>
-            <TeamContent />
-          </section>
+      {/* MAIN content — render only after assetsLoaded is true (hidden until then) */}
+      {assetsLoaded && (
+        <main style={{ background: "#141414", color: "#fff" }}>
+          <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
+            <section className="section" style={{ paddingTop: 28 }}>
+              <TeamContent />
+            </section>
 
-          <section className="section">
-            <ScheduleContent />
-          </section>
+            <section className="section">
+              <ScheduleContent />
+            </section>
 
-          <section className="section">
-            <JoinUsContent />
-          </section>
+            <section className="section">
+              <JoinUsContent />
+            </section>
 
-          <section className="section">
-            <ContactContent />
-          </section>
+            <section className="section">
+              <ContactContent />
+            </section>
 
-          <div style={{ height: 200 }} />
-        </div>
-      </main>
+            <div style={{ height: 200 }} />
+          </div>
+        </main>
+      )}
     </div>
   );
 }

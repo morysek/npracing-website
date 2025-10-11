@@ -253,7 +253,7 @@ export default function App() {
               src="/loading_logo.svg"
               alt="final logo"
               style={{
-                width: "100%",
+                width: "80%",
                 height: "auto",
                 objectFit: "contain",
                 display: "block",

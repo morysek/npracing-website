@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/* ---------- content components (unchanged, shortened for brevity) ---------- */
+/* ---------- simple content components (unchanged) ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -71,20 +71,25 @@ function JoinUsContent() {
   );
 }
 
-/* ---------- small helper to choose the loader svg (no % in filenames) ---------- */
+/* ---------- choose the appropriate loading svg based on percent ---------- */
 function chooseLoadingSvg(percent) {
+  // user-specified thresholds:
+  // 25 <= p < 50 -> loading_25.svg
+  // 50 <= p < 75 -> loading_50.svg
+  // 75 <= p < 100 -> loading_75.svg
+  // p === 100 -> loading_100.svg
   if (percent >= 100) return "/loading_100.svg";
   if (percent >= 75) return "/loading_75.svg";
   if (percent >= 50) return "/loading_50.svg";
-  if (percent >= 25) return "/loading_25.svg";
+  // percent >= 25 OR <25 default -> loading_25.svg
   return "/loading_25.svg";
 }
 
 /* ---------- App ---------- */
 export default function App() {
-  // inject Microgramma font (assumes /public/fonts/microgramma.woff2)
+  // inject Microgramma font (assumes /fonts/microgramma.woff2 exists in public)
   useEffect(() => {
-    const id = "__microgramma_font";
+    const id = "__npr_microgramma";
     if (!document.getElementById(id)) {
       const style = document.createElement("style");
       style.id = id;
@@ -96,9 +101,11 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
-        html,body,#root { height: 100%; background: #141414; }
-        body { margin: 0; background: #141414; color: #fff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; max-width: 900px; }
+        body { background: #141414; color: #fff; margin: 0; }
+        html, body, #root { height: 100%; background: #141414; }
+        ::-webkit-scrollbar { width: 0; height: 0; }
+        html,body { scrollbar-width: none; -ms-overflow-style: none; }
+        .zig { text-align: left; margin: 8px 0; font-family: 'ZalandoSans', Inter, sans-serif; line-height:1.35; }
         @media (min-width: 900px) {
           .zig:nth-of-type(odd) { transform: translateX(-6%); }
           .zig:nth-of-type(even) { transform: translateX(6%); }
@@ -108,7 +115,7 @@ export default function App() {
     }
   }, []);
 
-  // assets to preload (images + glb + loader svgs + logo)
+  // assets to preload (adjust as needed)
   const assets = [
     "/images/team1.jpg",
     "/images/team2.jpg",
@@ -125,17 +132,14 @@ export default function App() {
   const [loadedCount, setLoadedCount] = useState(0);
   const percent = Math.round((loadedCount / totalAssets) * 100);
 
-  // animated displayed number (counts smoothly up to percent)
+  // animate displayed number to avoid jumpiness
   const [displayNumber, setDisplayNumber] = useState(0);
-  const displayNumberRef = useRef(displayNumber);
-  displayNumberRef.current = displayNumber;
-
   useEffect(() => {
     let raf = 0;
     const start = performance.now();
-    const from = displayNumberRef.current;
+    const from = displayNumber;
     const to = percent;
-    const duration = 350;
+    const duration = 300;
     function step(now) {
       const t = Math.min(1, (now - start) / duration);
       const val = Math.round(from + (to - from) * t);
@@ -144,16 +148,14 @@ export default function App() {
     }
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [percent]);
 
-  // preload routine (images via Image, other files via fetch)
+  // preload routine
   useEffect(() => {
     let mounted = true;
-    let localLoaded = 0;
-
     const markLoaded = () => {
       if (!mounted) return;
-      localLoaded++;
       setLoadedCount((c) => c + 1);
     };
 
@@ -165,7 +167,7 @@ export default function App() {
         img.src = url;
         return;
       }
-      // fetch other assets (e.g., .glb)
+      // for other assets (e.g. glb)
       fetch(url, { method: "GET" })
         .then((res) => {
           if (!res.ok) throw new Error("fetch failed");
@@ -182,17 +184,13 @@ export default function App() {
   }, []);
 
   const fullyLoaded = loadedCount >= totalAssets;
+  const chosenSvg = chooseLoadingSvg(percent);
 
-  // block/unblock scroll while loading hero is visible
-  useEffect(() => {
-    document.body.style.overflow = fullyLoaded ? "auto" : "hidden";
-  }, [fullyLoaded]);
-
-  const mainSvg = chooseLoadingSvg(percent);
-
+  // We don't block scrolling. The hero is full-screen (100vh) so the rest of the content sits below and is visible only when user scrolls past.
+  // Hero-local centering: svg and number are centered inside the hero container only.
   return (
     <div style={{ background: "#141414", minHeight: "100vh", color: "#fff" }}>
-      {/* Full-screen title/hero */}
+      {/* HERO / title page (100vh) */}
       <section
         aria-label="Title page"
         style={{
@@ -205,95 +203,96 @@ export default function App() {
           overflow: "hidden",
         }}
       >
+        {/* Hero inner container keeps svgs centered and constrained */}
         <div
           style={{
-            textAlign: "center",
+            width: "100%",
+            maxWidth: 980,
+            padding: "20px",
+            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 20,
-            padding: 20,
-            width: "100%",
-            maxWidth: 980,
+            gap: 18,
           }}
         >
+          {/* chosen stage svg */}
           <img
-            src={mainSvg}
+            src={chosenSvg}
             alt="loading visual"
             style={{
-              maxWidth: "60vw",
-              width: 480,
+              width: "min(72vw, 720px)", // always fit inside hero
+              maxHeight: "60vh",
               height: "auto",
-              filter: "drop-shadow(0 10px 30px rgba(255,204,0,0.12))",
-              transition: "opacity 360ms ease, transform 360ms ease",
+              objectFit: "contain",
+              filter: "drop-shadow(0 10px 30px rgba(255,204,0,0.08))",
+              transition: "opacity 260ms ease, transform 260ms ease",
             }}
           />
 
-          {/* percentage text without % symbol; colored like titles (#ffcc00) */}
+          {/* percentage number (Microgramma bold), hidden when fully loaded */}
           {!fullyLoaded && (
             <div
-              aria-hidden={false}
               style={{
                 fontFamily: "Microgramma, sans-serif",
                 fontWeight: 700,
-                fontSize: 48,
+                fontSize: "48px",
                 color: "#ffcc00",
                 letterSpacing: "0.12em",
                 marginTop: 6,
-                transition: "opacity 300ms ease",
               }}
             >
               {displayNumber}
             </div>
           )}
 
+          {/* when fully loaded: hide percent and show loading_logo.svg along with final svg */}
           {fullyLoaded && (
-            <div
-              style={{
-                display: "flex",
-                gap: 18,
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: 6,
-                transition: "opacity 360ms ease",
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <img
                 src="/loading_logo.svg"
                 alt="logo"
                 style={{
                   width: 120,
                   height: "auto",
+                  objectFit: "contain",
                   transformOrigin: "center",
                 }}
               />
-              <img src="/loading_100.svg" alt="final visual" style={{ width: 200, height: "auto", opacity: 1 }} />
+              <img
+                src="/loading_100.svg"
+                alt="final visual"
+                style={{
+                  width: "min(40vw, 320px)",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
             </div>
           )}
         </div>
 
-        {/* small pointer/chevron after loaded */}
-        {fullyLoaded && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 20,
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "#ffcc00",
-              fontFamily: "Microgramma, sans-serif",
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              opacity: 0.9,
-              fontSize: 12,
-            }}
-          >
-            SCROLL
-          </div>
-        )}
+        {/* subtle scroll hint */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 18,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#ffcc00",
+            fontFamily: "Microgramma, sans-serif",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            opacity: fullyLoaded ? 0.95 : 0.25,
+            fontSize: 12,
+            pointerEvents: "none",
+          }}
+        >
+          SCROLL
+        </div>
       </section>
 
-      {/* Main content below the full-screen title page */}
+      {/* Main content below the hero */}
       <main style={{ background: "#141414", color: "#fff" }}>
         <div style={{ maxWidth: 1300, margin: "0 auto", padding: 24 }}>
           <section className="section" style={{ paddingTop: 28 }}>

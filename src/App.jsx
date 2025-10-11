@@ -1,33 +1,24 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * Loading overlay that:
- * - preloads assets (including loading svgs) but doesn't display them
- * - shows a centered Microgramma number count-up
- * - disables scrolling until the end of a zoom+fade transition
- * - forces scroll to top on mount/reload
- * - hides the scrollbar
- * - reveals the hero / below-content after the transition
- */
-
 export default function App() {
   const [progress, setProgress] = useState(0); // 0..100
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [startTransition, setStartTransition] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(true); // overlay present until turned off
+  const [overlayVisible, setOverlayVisible] = useState(true);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [showLeftLogo, setShowLeftLogo] = useState(false);
 
   const loadingOverlayRef = useRef(null);
 
-  // Ensure page is at top on load/reload
+  // ensure top on load/reload
   useEffect(() => {
     try {
       window.scrollTo(0, 0);
     } catch (e) {}
   }, []);
 
-  // Preload assets (images + svgs + any other files)
+  // preload assets (images + svgs)
   useEffect(() => {
     const assetsToLoad = [
       "/images/team1.jpg",
@@ -68,7 +59,7 @@ export default function App() {
       img.src = src;
     });
 
-    // small visual fallback incrementer so users see progress even if network is instant
+    // fallback ticker so progress increases visually if loads are instant
     const fallbackTicker = setInterval(() => {
       setProgress((cur) => {
         if (cur >= 100) return 100;
@@ -82,45 +73,51 @@ export default function App() {
     };
   }, []);
 
-  // Disable scrolling until overlay is removed
+  // disable scrolling until overlay removed
   useEffect(() => {
-    // hide scrollbar (CSS below also hides it, this ensures no overflow)
     document.body.style.overflow = overlayVisible ? "hidden" : "auto";
     return () => {
       document.body.style.overflow = "auto";
     };
   }, [overlayVisible]);
 
-  // When all assets loaded -> small delay -> start zoom+fade transition
+  // shorter delay then start transition; larger zoom
   useEffect(() => {
     if (!assetsLoaded) return;
-    const delayBeforeTransition = 320; // ms
+    const delayBeforeTransition = 120; // shorter delay now
     const t = setTimeout(() => {
       setStartTransition(true);
 
-      // duration should match CSS transition time
-      const transitionMs = 700; // same as CSS
+      const transitionMs = 700;
       setTimeout(() => {
-        // after transition ends, reveal hero and remove overlay
         setHeroVisible(true);
-
-        // remove overlay after a short time so hero is visible
         setTimeout(() => {
           setOverlayVisible(false);
-        }, 120); // let hero settle
+        }, 140);
       }, transitionMs);
     }, delayBeforeTransition);
 
     return () => clearTimeout(t);
   }, [assetsLoaded]);
 
-  // Utility: pick which loading svg (we still loaded them, but per request we don't display them)
-  function loadingSvgForProgress(p) {
-    if (p >= 100) return "/loading_100.svg";
-    if (p >= 75) return "/loading_75.svg";
-    if (p >= 50) return "/loading_50.svg";
-    if (p >= 25) return "/loading_25.svg";
-    return "/loading_25.svg";
+  // show small left logo after user scrolls past the hero
+  useEffect(() => {
+    const onScroll = () => {
+      const threshold = window.innerHeight - 10; // once user scrolls past 1vh shy of hero bottom
+      if (window.scrollY > threshold && heroVisible && !overlayVisible) setShowLeftLogo(true);
+      else setShowLeftLogo(false);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // call once
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [heroVisible, overlayVisible]);
+
+  function scrollToContent() {
+    window.scrollTo({
+      top: window.innerHeight,
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -148,7 +145,6 @@ export default function App() {
         ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* front page full-viewport */
         .frontPage {
           height: 100vh;
           width: 100%;
@@ -160,15 +156,34 @@ export default function App() {
           overflow: hidden;
         }
 
-        /* hero logo center */
+        /* hero logo responsive larger */
         .heroLogo {
-          width: 320px;
-          max-width: 56vmin;
+          width: min(720px, 72vmin);
+          max-width: 90vw;
           transform-origin: center center;
           transition: transform 420ms cubic-bezier(.2,.9,.25,1), opacity 420ms ease;
           opacity: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          filter: drop-shadow(0 10px 26px rgba(255, 80, 0, 0.06));
         }
         .heroLogo img { width: 100%; height: auto; display: block; }
+
+        /* small left logo */
+        .leftLogo {
+          position: fixed;
+          left: 18px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 9998;
+          width: 96px;
+          height: auto;
+          opacity: 0;
+          transition: opacity 360ms ease, transform 360ms cubic-bezier(.2,.9,.25,1);
+          filter: drop-shadow(0 6px 18px rgba(255, 80, 0, 0.06));
+        }
+        .leftLogo.show { opacity: 1; transform: translateY(-50%) translateX(0); }
 
         /* loading overlay */
         .loadingOverlay {
@@ -182,10 +197,10 @@ export default function App() {
           pointer-events: all;
           transform-origin: 50% 50%;
         }
-        /* zoom+fade transition: overlay and children zoom in & fade out together */
+        /* zoom+fade: increased zoom scale */
         .loadingOverlay.zoomFade {
           transition: transform 700ms cubic-bezier(.2,.9,.25,1), opacity 700ms ease;
-          transform: scale(1.9);
+          transform: scale(2.6); /* larger zoom */
           opacity: 0;
           pointer-events: none;
         }
@@ -193,7 +208,7 @@ export default function App() {
         .loadingNumber {
           font-family: 'Microgramma', 'SpaceGrotesk', sans-serif;
           font-weight: 700;
-          font-size: 72px;
+          font-size: 76px;
           color: #ffcc00;
           line-height: 1;
           letter-spacing: 0.02em;
@@ -202,7 +217,37 @@ export default function App() {
           user-select: none;
         }
 
-        /* below content area (hidden until overlay removed via scroll / normal flow) */
+        /* animated arrow */
+        .scrollArrow {
+          position: absolute;
+          bottom: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 28px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 30;
+          opacity: 0;
+          transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.9,.25,1);
+        }
+        .scrollArrow.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .scrollArrow .chev {
+          width: 12px;
+          height: 12px;
+          border-right: 2px solid rgba(255,255,255,0.9);
+          border-bottom: 2px solid rgba(255,255,255,0.9);
+          transform: rotate(45deg);
+          animation: arrowBounce 1400ms infinite;
+          opacity: 0.95;
+        }
+        @keyframes arrowBounce {
+          0% { transform: rotate(45deg) translateY(0); opacity: .95; }
+          50% { transform: rotate(45deg) translateY(8px); opacity: .6; }
+          100% { transform: rotate(45deg) translateY(0); opacity: .95; }
+        }
+
         .below {
           background: #141414;
           color: #eee;
@@ -222,23 +267,28 @@ export default function App() {
             transform: heroVisible ? "scale(1)" : "scale(0.92)",
             transitionDelay: heroVisible ? "80ms" : "0ms",
             zIndex: 10,
+            cursor: "default",
           }}
         >
           <img src="/np_website.svg" alt="NP Website Logo" />
         </div>
+
+        {/* animated scroll arrow */}
+        <div className={`scrollArrow ${heroVisible && !overlayVisible ? "show" : ""}`} onClick={scrollToContent} role="button" aria-label="Scroll down">
+          <div className="chev" />
+        </div>
       </div>
 
-      {/* LOADING OVERLAY: show number centered, zoom+fade when startTransition */}
+      {/* small left logo: appears fixed middle-left once user scrolls past hero */}
+      <div style={{ pointerEvents: "none" }}>
+        <img src="/loading_logo.svg" alt="small logo" className={`leftLogo ${showLeftLogo ? "show" : ""}`} />
+      </div>
+
+      {/* LOADING OVERLAY: only number shown; we preloaded svgs but don't display them */}
       {overlayVisible && (
-        <div
-          ref={loadingOverlayRef}
-          className={`loadingOverlay ${startTransition ? "zoomFade" : ""}`}
-          aria-hidden={!overlayVisible}
-        >
+        <div ref={loadingOverlayRef} className={`loadingOverlay ${startTransition ? "zoomFade" : ""}`} aria-hidden={!overlayVisible}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", maxWidth: 980 }}>
             <div style={{ position: "relative", width: "100%", textAlign: "center" }}>
-              {/* We purposely DO NOT DISPLAY the loading_* svgs per your request, but they were preloaded above.
-                  Only the big centered number is shown. */}
               <div className="loadingNumber" aria-live="polite" aria-atomic="true">
                 {progress}
               </div>

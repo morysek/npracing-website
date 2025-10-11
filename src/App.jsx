@@ -1,182 +1,283 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
+/* ---------- Helper data ---------- */
+const TEAM_IMAGES = [
+  "/images/drip.png",
+  "/images/mory.png",
+  "/images/adam.png",
+  "/images/matej.png",
+];
+const TEAM_CAPTIONS = [
+  "Drip — Lead aerodynamicist",
+  "Mory — Mechanical engineer",
+  "Adam — Electronics & controls",
+  "Matěj — Team lead & strategy",
+];
+const TEAM_TEXTS = [
+  "Drip focuses on aerodynamic performance and CFD-driven decisions.",
+  "Mory develops mechanical subsystems and suspension geometry.",
+  "Adam handles wiring, sensors and embedded controls.",
+  "Matěj coordinates the team and race strategy, and leads the project.",
+];
+
 export default function App() {
-  // --- assets & captions
-  const TEAM_IMAGES = ["/images/drip.png", "/images/mory.png", "/images/adam.png", "/images/matej.png"];
-  const TEAM_CAPTIONS = [
-    "Drip — Lead aerodynamicist",
-    "Mory — Mechanical engineer",
-    "Adam — Electronics & controls",
-    "Matěj — Team lead & strategy",
-  ];
+  // loading / hero states (kept minimal for this example)
+  const [progress, setProgress] = useState(100); // assume loaded for brevity; wire up your loader if needed
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [heroVisible, setHeroVisible] = useState(true);
 
-  // --- refs
+  // hero & team refs
   const heroRef = useRef(null);
-  const teamSectionRef = useRef(null);
+  const seqRef = useRef(null);
 
-  // --- UI state
-  const [progress] = useState(100); // keep loader logic elsewhere; not touched here
-  const [heroPassed, setHeroPassed] = useState(false);
-  const [inTeamSection, setInTeamSection] = useState(false);
-  const [teamIndex, setTeamIndex] = useState(0);
-  const [imagesFixed, setImagesFixed] = useState(false);
-  const lastIndex = TEAM_IMAGES.length - 1;
+  // scroll-driven states
+  const [heroPassed, setHeroPassed] = useState(false); // true when hero scrolled out of view
+  const [imageIndex, setImageIndex] = useState(0); // current image shown (0..n-1)
+  const [sequenceActive, setSequenceActive] = useState(false); // true while sticky sequence is active
+  const [sequenceEnded, setSequenceEnded] = useState(false); // true after last image passed
 
-  // ensure reload always at top
+  // left small logo fade
+  const [showLeftLogo, setShowLeftLogo] = useState(false);
+
+  // ensure reload always lands at top
   useEffect(() => {
     if (history && "scrollRestoration" in history) history.scrollRestoration = "manual";
     window.scrollTo(0, 0);
   }, []);
 
-  // single scroll handler that:
-  // - updates heroPassed (user scrolled past hero)
-  // - updates whether team section is in view
-  // - computes relative scroll inside team section to pick teamIndex
-  // - decides whether images are fixed or released
+  // detect hero passed (scrolled past) and update left logo display
   useEffect(() => {
-    const handleScroll = () => {
+    function onScroll() {
       const heroEl = heroRef.current;
-      const teamEl = teamSectionRef.current;
+      if (!heroEl) return;
+      const heroRect = heroEl.getBoundingClientRect();
+      const passed = heroRect.bottom <= 0;
+      setHeroPassed(passed);
+      setShowLeftLogo(passed);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
-      // determine heroPassed: true once hero bottom is <= 0 (scrolled past)
-      if (heroEl) {
-        const r = heroEl.getBoundingClientRect();
-        setHeroPassed(r.bottom <= 0);
-      }
+  // compute image index while the user scrolls through the sequence container
+  useEffect(() => {
+    const onScroll = () => {
+      const wrapper = seqRef.current;
+      if (!wrapper) return;
 
-      if (!teamEl) {
-        setInTeamSection(false);
+      const rect = wrapper.getBoundingClientRect();
+      const vh = window.innerHeight;
+
+      // The sequence should only be "active" once hero is passed
+      if (!heroPassed) {
+        setSequenceActive(false);
+        setImageIndex(0);
+        setSequenceEnded(false);
         return;
       }
 
-      const rect = teamEl.getBoundingClientRect();
-      const vh = window.innerHeight;
-
-      // section in view if any part intersects viewport
-      const intersecting = rect.top < vh && rect.bottom > 0;
-      setInTeamSection(intersecting);
-
-      // compute index only when the team section is being interacted with (and hero passed)
-      // The logic: we map the portion of scroll from section top entering the viewport to section fully passed
-      // to an index delta across TEAM_IMAGES.
-      if (intersecting && heroEl) {
-        const sectionHeight = Math.max(1, rect.height);
-        // amount the user has scrolled into the section (0 when its top first hits viewport bottom)
-        // We'll use (vh - rect.top) as how many pixels of the section are visible starting from top
-        const visibleFromTop = Math.min(sectionHeight + vh, Math.max(0, vh - rect.top));
-        // normalize in [0,1]
-        const relative = Math.max(0, Math.min(1, visibleFromTop / (sectionHeight + 0.0001)));
-        // pick index proportional to relative progress through section
-        const idx = Math.min(lastIndex, Math.floor(relative * (TEAM_IMAGES.length)));
-        setTeamIndex(idx);
+      // When wrapper is not yet reached -> not active
+      if (rect.top > 0 && rect.top > vh * 0.25) {
+        setSequenceActive(false);
+        setImageIndex(0);
+        setSequenceEnded(false);
+        return;
       }
 
-      // decide whether images should be fixed (stuck to viewport) or not
-      // imagesFixed when:
-      //  - user has scrolled past hero (heroPassed)
-      //  - team section intersects viewport (inTeamSection)
-      //  - user has NOT yet reached the last image (teamIndex < lastIndex)
-      // Once user reaches lastIndex and scrolls a bit more so the bottom of the section passes,
-      // imagesFixed becomes false and images will scroll away as normal.
-      const shouldBeFixed = heroEl && rect && rect.top < vh && rect.bottom > 0 && teamIndex < lastIndex && (heroEl.getBoundingClientRect().bottom <= 0);
-      setImagesFixed(Boolean(shouldBeFixed));
+      // When wrapper bottom is above top of viewport -> finished
+      if (rect.bottom <= 0) {
+        setSequenceActive(false);
+        setImageIndex(TEAM_IMAGES.length - 1);
+        setSequenceEnded(true);
+        return;
+      }
+
+      // Sequence active: compute position inside the wrapper
+      // We'll make wrapperHeight such that each image occupies roughly a viewport's worth of scroll.
+      const wrapperHeight = rect.height; // set in CSS to n * 100vh
+      const scrolled = Math.min(wrapperHeight - 1, Math.max(0, window.innerHeight - rect.top));
+      const ratio = scrolled / wrapperHeight; // 0..(≈1)
+      const idx = Math.min(TEAM_IMAGES.length - 1, Math.floor(ratio * TEAM_IMAGES.length));
+      setSequenceActive(true);
+      setImageIndex(idx);
+      setSequenceEnded(false);
     };
 
-    // passive scroll
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-    // call once to initialise states
-    handleScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
-  }, [teamIndex, lastIndex]);
+  }, [heroPassed]);
+
+  /* ---------- Styles (kept inline for single-file deliverable) ---------- */
+  const css = `
+    :root { --accent: #ffcc00; --bg: #141414; --muted: #dcdcdc; }
+    html,body,#root { background: var(--bg); height: 100%; margin:0; }
+    * { box-sizing: border-box; }
+    .hidden-scroll::-webkit-scrollbar { display:none; } /* hide scrollbar facsimile */
+    .frontPage {
+      height: 100vh; width:100%; display:flex; align-items:center; justify-content:center;
+      background: var(--bg); position:relative;
+    }
+    .hero-logo {
+      width: min(540px, 56vmin); max-width: 90vw; transition: transform .42s cubic-bezier(.2,.9,.25,1), opacity .32s;
+    }
+    .hero-logo img { width:100%; height:auto; display:block; filter: drop-shadow(0 0 18px rgba(255,204,0,0.12)); }
+    .left-logo {
+      position: fixed; left: 18px; top: 24px; width: 96px; opacity: 0; transition: opacity .36s ease; z-index: 50;
+    }
+    .left-logo.show { opacity: 1; }
+    /* Sequence wrapper: total height = imagesCount * 100vh (so scrolling through triggers the image steps) */
+    .sequenceWrapper {
+      width:100%; display:block; position:relative; background: transparent;
+    }
+    .sequenceSpacer { height: calc(100vh * var(--count)); } /* created by inlined style */
+    .sequenceSticky {
+      position: sticky; top: 80px; height: calc(100vh - 160px); display:flex; align-items:center; justify-content:center;
+      margin: 0 auto; width: min(640px, 56vw); max-width: 90vw;
+    }
+    .seqImage {
+      position:absolute; left:50%; top:50%; transform: translate(-50%,-50%) translateY(12px);
+      max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain;
+      opacity:0; transition: opacity .42s ease, transform .56s cubic-bezier(.2,.9,.25,1);
+      will-change: opacity, transform;
+      filter: drop-shadow(0 16px 36px rgba(0,0,0,0.6));
+    }
+    .seqImage.active {
+      opacity:1; transform: translate(-50%,-50%) translateY(0);
+    }
+    .captionWrap { margin-bottom: 12px; color: #ddd; font-family: 'Microgramma', sans-serif; }
+    .captionTitle { color: var(--accent); font-family: 'Microgramma', sans-serif; font-weight:700; text-transform:uppercase; }
+    .belowContent { padding: 40px 20px; max-width:1200px; margin:0 auto; color:#ddd; background:transparent; }
+  `;
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflowX: "hidden" }}>
-      <style>{`
-        @font-face { font-family: 'Microgramma'; src: url('/fonts/microgramma.woff2') format('woff2'); font-weight:700; font-style:normal; font-display:swap; }
-        html,body,#root{height:100%;margin:0;background:#141414}
-        ::-webkit-scrollbar{width:0;height:0}
-        html,body{scrollbar-width:none;-ms-overflow-style:none}
-        .frontPage { height:100vh; display:flex; align-items:center; justify-content:center; }
-        .heroLogo img { display:block; width:min(540px,60vmin); max-width:90vw; filter: drop-shadow(0 0 12px rgba(255,204,0,0.14)); }
-        .teamSection { position: relative; padding: 48px 20px; max-width:1200px; margin: 0 auto; display:flex; gap:24px; align-items:flex-start; min-height:120vh; }
-        .teamText { flex:1 1 360px; color:#eee; font-family: 'Microgramma', sans-serif; }
-        .teamImages { flex:1 1 480px; height: calc(100vh - 120px); position: relative; }
-        /* fixed container that keeps images absolutely centered in viewport */
-        .teamImages.fixed { position: fixed; right: 50%; transform: translateX(50%); top: 80px; width: 48vw; max-width: 560px; height: calc(100vh - 160px); z-index: 20; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-        /* normal flow container (once released) */
-        .teamImages.relative { position: relative; width: 100%; height: auto; display:block; }
-        .teamImages .slot { position: relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-        .teamImages img { position:absolute; left:50%; top:50%; transform: translate(-50%,-50%) translateY(10px); max-width:100%; max-height:100%; opacity:0; transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.9,.25,1); object-fit:contain; }
-        .teamImages img.active { opacity:1; transform: translate(-50%,-50%) translateY(0); }
-        .restContent { max-width:1200px; margin: 0 auto; padding: 48px 20px; color: #ddd; }
-      `}</style>
+    <div style={{ background: "#141414", minHeight: "100vh", color: "#fff" }}>
+      <style>{css}</style>
 
       {/* FRONT PAGE / HERO */}
-      <div ref={heroRef} className="frontPage" aria-label="Hero front page">
-        <div className="heroLogo"><img src="/np_website.svg" alt="hero logo" /></div>
+      <div className="frontPage" ref={heroRef}>
+        <div
+          className="hero-logo"
+          style={{
+            opacity: heroVisible && !overlayVisible ? 1 : 1,
+            transform: heroVisible ? "scale(1)" : "scale(0.96)",
+          }}
+        >
+          <img src="/np_website.svg" alt="Hero logo" />
+        </div>
       </div>
 
-      {/* TEAM SECTION */}
-      <section ref={teamSectionRef} className="teamSection" aria-label="Team">
-        <div className="teamText">
-          <h1 style={{ color: "#ffcc00", marginTop: 0 }}>TEAM</h1>
+      {/* small left logo that fades when hero has been scrolled past */}
+      <img src="/loading_logo.svg" alt="small logo" className={`left-logo ${showLeftLogo ? "show" : ""}`} />
 
-          {/* caption for current image */}
-          <div style={{ marginTop: 12, marginBottom: 18 }}>
-            <h3 style={{ margin: 0, color: "#fff", fontFamily: "Microgramma" }}>{TEAM_CAPTIONS[teamIndex]}</h3>
-            <p style={{ color: "#ddd", marginTop: 8 }}>
-              {[
-                "Drip focuses on aerodynamic performance and CFD-driven decisions.",
-                "Mory develops mechanical subsystems and suspension geometry.",
-                "Adam handles wiring, sensors and embedded controls.",
-                "Matěj coordinates the team and race strategy, and leads the project.",
-              ][teamIndex]}
-            </p>
+      {/* ===================
+          IMAGE SEQUENCE SECTION
+          - the wrapper has height = imagesCount * 100vh so scrolling across it steps through images
+          - the sticky container keeps images fixed in viewport while scrolling inside wrapper
+         ==================== */}
+      <section
+        className="sequenceWrapper"
+        ref={seqRef}
+        aria-label="Team image sequence"
+        style={{
+          // we set a CSS variable to be used by .sequenceSpacer for height
+          ["--count"]: TEAM_IMAGES.length,
+        }}
+      >
+        {/* spacer drives the scroll length */}
+        <div className="sequenceSpacer" style={{ height: `${TEAM_IMAGES.length * 100}vh` }} />
+
+        {/* sticky area: only becomes visually active once heroPassed is true (we fade images in/out via CSS) */}
+        <div
+          className="sequenceSticky"
+          style={{
+            pointerEvents: "none",
+            opacity: heroPassed ? 1 : 0,
+            transition: "opacity 420ms ease",
+          }}
+        >
+          {/* images stacked, only the active one is visible */}
+          <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            {TEAM_IMAGES.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                className={`seqImage ${i === imageIndex && sequenceActive ? "active" : i === imageIndex && !sequenceActive && !sequenceEnded ? "active" : i === imageIndex && sequenceEnded ? "active" : ""}`}
+                alt={`team-${i}`}
+                style={{ zIndex: i === imageIndex ? 6 : 1 }}
+              />
+            ))}
           </div>
-
-          {/* minimal list relevant to images (kept inside team section) */}
-          <ul style={{ color: "#ddd" }}>
-            <li>Team Leader: Matěj Prokop</li>
-            <li>Engineer: Lukáš Moravec</li>
-            <li>Finance manager: Lukáš Martin</li>
-            <li>Marketing manager: Veronika Lindová</li>
-          </ul>
         </div>
 
-        {/* Images container: either fixed (centered in viewport) or normal flow when released */}
-        <div className={`teamImages ${imagesFixed ? "fixed" : "relative"}`} aria-hidden={!heroPassed}>
-          {/* single visual slot: show all images stacked, only active one is visible */}
-          <div className="slot">
-            {TEAM_IMAGES.map((src, i) => (
-              <img key={src} src={src} alt={`team-${i}`} className={i === teamIndex ? "active" : ""} />
-            ))}
+        {/* caption area positioned above the sticky images (left column behavior earlier) */}
+        <div style={{ maxWidth: 1200, margin: "24px auto 24px", padding: "0 20px" }}>
+          <div className="captionWrap">
+            <div className="captionTitle" style={{ fontSize: 20 }}>
+              {TEAM_CAPTIONS[imageIndex]}
+            </div>
+            <div style={{ color: "#ddd", marginTop: 8 }}>{TEAM_TEXTS[imageIndex]}</div>
           </div>
         </div>
       </section>
 
-      {/* REST CONTENT below the images */}
-      <div className="restContent" aria-label="Rest of content">
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>ABOUT US</h2>
-        <p>
+      {/* ===================
+          BELOW: rest of Team text & the rest of the page
+          - These are placed below the picture sequence, per your request.
+         ==================== */}
+      <div className="belowContent" aria-live="polite">
+        {/* Here goes the rest of the team text that should be shown after pictures.
+            Same content as earlier but now placed below the sequence. */}
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 6 }}>Team</h2>
+        <p style={{ color: "#ddd" }}>
+          The Team
+        </p>
+        <ul>
+          <li>Team Leader: Matěj Prokop</li>
+          <li>Engineer: Lukáš Moravec</li>
+          <li>Finance manager: Lukáš Martin</li>
+          <li>Marketing manager: Veronika Lindová</li>
+        </ul>
+
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h2>
+        <p style={{ color: "#ddd" }}>
           We are the only Czech team and a top contender in the prestigious international STEM racing competition.
+        </p>
+        <p style={{ color: "#ddd" }}>
           We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.
         </p>
+        <p style={{ color: "#ddd" }}>
+          Founded at Nový PORG, NP Racing unites skills in engineering, manufacturing, and marketing.
+        </p>
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>SCHEDULE</h2>
-        <p>Next up: Poland — Oct 11</p>
+        {/* ... Schedule / Join / Contact etc. follow */}
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Schedule</h2>
+        <p style={{ color: "#ddd" }}>Next up: Poland — Oct 11</p>
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>JOIN US</h2>
-        <p>Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Join Us</h2>
+        <p style={{ color: "#ddd" }}>
+          Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!
+        </p>
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>CONTACT</h2>
-        <p>For general inquiry: <a href="mailto:prokopmatej@novyporg.cz" style={{ color: "#ffcc00" }}>prokopmatej@novyporg.cz</a></p>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Contact</h2>
+        <p style={{ color: "#ddd" }}>
+          For general inquiry:{" "}
+          <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
+            prokopmatej@novyporg.cz
+          </a>
+        </p>
 
-        <div style={{ height: 200 }} />
+        <div style={{ height: 240 }} />
       </div>
     </div>
   );

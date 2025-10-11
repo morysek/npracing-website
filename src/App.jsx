@@ -2,43 +2,47 @@
 import React, { useEffect, useRef, useState } from "react";
 
 export default function App() {
-  // existing loading/overlay state (keeps previous behavior)
+  // loading overlay state (unchanged from earlier)
   const [progress, setProgress] = useState(0);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [startTransition, setStartTransition] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [heroVisible, setHeroVisible] = useState(false);
 
-  // new: small left logo shown after hero logo scrolled past
+  // left logo fade state
   const [showLeftLogo, setShowLeftLogo] = useState(false);
 
-  // team flicker logic
+  // team scroll-driven image index
+  const [teamIndex, setTeamIndex] = useState(0);
   const [inTeamSection, setInTeamSection] = useState(false);
-  const [currentFlickerIdx, setCurrentFlickerIdx] = useState(0);
   const [showRestContent, setShowRestContent] = useState(false);
 
-  // refs
-  const loadingOverlayRef = useRef(null);
   const heroLogoRef = useRef(null);
   const teamSectionRef = useRef(null);
-  const flickerTimerRef = useRef(null);
 
-  // image list to flicker (adjust filenames if needed)
-  const FLICKER_IMAGES = [
+  // assets for the team image sequence and captions
+  const TEAM_IMAGES = [
     "/images/drip.png",
     "/images/mory.png",
     "/images/adam.png",
     "/images/matej.png",
   ];
+  const TEAM_CAPTIONS = [
+    "Drip — Lead aerodynamicist",
+    "Mory — Mechanical engineer",
+    "Adam — Electronics & controls",
+    "Matěj — Team lead & strategy",
+  ];
 
-  // ensure reload goes to top
+  // ensure reload always lands at top
   useEffect(() => {
-    try {
-      window.scrollTo(0, 0);
-    } catch (e) {}
+    if (history && "scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
   }, []);
 
-  // add material icons stylesheet for arrow (via JS so it's included by this component)
+  // include material icons (arrow loaded elsewhere in your project if needed)
   useEffect(() => {
     const id = "__material_symbols_link";
     if (!document.getElementById(id)) {
@@ -51,13 +55,9 @@ export default function App() {
     }
   }, []);
 
-  // fake asset preloader (you already had one) - keep so loading number increases
+  // preload assets (keeps your loading counter behavior)
   useEffect(() => {
-    const assets = [
-      "/np_website.svg",
-      "/loading_logo.svg",
-      ...FLICKER_IMAGES,
-    ];
+    const assets = ["/np_website.svg", "/loading_logo.svg", ...TEAM_IMAGES];
     let loaded = 0;
     let mounted = true;
 
@@ -100,37 +100,32 @@ export default function App() {
     return () => (document.body.style.overflow = "auto");
   }, [overlayVisible]);
 
-  // start transition once assetsLoaded (shorter delay)
+  // start transition when assets ready
   useEffect(() => {
     if (!assetsLoaded) return;
-    const delayBeforeTransition = 120;
+    const delayBeforeTransition = 120; // short delay
     const t = setTimeout(() => {
       setStartTransition(true);
-      // transition duration 700ms, then heroVisible true, then overlay removed shortly after
+      // animation time -> show hero -> remove overlay
       const transitionMs = 700;
       setTimeout(() => {
         setHeroVisible(true);
-        setTimeout(() => {
-          setOverlayVisible(false);
-        }, 140);
+        setTimeout(() => setOverlayVisible(false), 140);
       }, transitionMs);
     }, delayBeforeTransition);
     return () => clearTimeout(t);
   }, [assetsLoaded]);
 
-  // heroLogo scroll detection: show left logo when user scrolls past the hero logo element
+  // heroLogo scroll detection: fade left logo in/out when user scrolls past hero logo element
   useEffect(() => {
     function checkHeroRect() {
       const el = heroLogoRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      // element bottom less than 0 means scrolled past
-      const scrolledPast = rect.bottom < 0;
-      setShowLeftLogo(scrolledPast);
+      setShowLeftLogo(rect.bottom < 0);
     }
     window.addEventListener("scroll", checkHeroRect, { passive: true });
     window.addEventListener("resize", checkHeroRect);
-    // initial check
     checkHeroRect();
     return () => {
       window.removeEventListener("scroll", checkHeroRect);
@@ -138,106 +133,80 @@ export default function App() {
     };
   }, [heroVisible, overlayVisible]);
 
-  // Team section intersection: detect when user is inside the team section
-  useEffect(() => {
-    const el = teamSectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          // when the team section is at least 10% visible, start flicker
-          if (entry.isIntersecting && entry.intersectionRatio > 0.10) {
-            setInTeamSection(true);
-            setShowRestContent(false);
-          } else {
-            setInTeamSection(false);
-          }
-        });
-      },
-      { threshold: [0.1, 0.5, 0.9] }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // flicker while in team section
-  useEffect(() => {
-    if (inTeamSection) {
-      // start fast flicker
-      if (flickerTimerRef.current) clearInterval(flickerTimerRef.current);
-      flickerTimerRef.current = setInterval(() => {
-        setCurrentFlickerIdx((i) => (i + 1) % FLICKER_IMAGES.length);
-      }, 120); // flicker every 120ms (adjust)
-    } else {
-      // stop flicker and reset to first image
-      if (flickerTimerRef.current) {
-        clearInterval(flickerTimerRef.current);
-        flickerTimerRef.current = null;
-      }
-      setCurrentFlickerIdx(0);
-    }
-    return () => {
-      if (flickerTimerRef.current) clearInterval(flickerTimerRef.current);
-      flickerTimerRef.current = null;
-    };
-  }, [inTeamSection]);
-
-  // detect when user scrolls past the team section (i.e. past the last image)
+  // compute team image index based on scroll inside team section
   useEffect(() => {
     function onScroll() {
       const el = teamSectionRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      // when top of team is above - (sectionHeight - viewportHeight) meaning we've scrolled past
-      // easier: when rect.bottom <= 0 -> fully scrolled past
-      if (rect.bottom <= 0) {
-        setShowRestContent(true);
-      } else {
-        setShowRestContent(false);
-      }
+      const vh = window.innerHeight;
+
+      // Determine if the team section is in viewport at all
+      const isIntersecting = rect.top < vh && rect.bottom > 0;
+      setInTeamSection(isIntersecting);
+
+      // when fully scrolled past team section -> show rest content
+      setShowRestContent(rect.bottom <= 0);
+
+      if (!isIntersecting) return;
+
+      // We want normalized progress 0..1 as user scrolls through the section.
+      // We'll use the amount the top has moved from just entering to fully leaving.
+      // Compute sectionTop relative to page:
+      const sectionHeight = rect.height;
+      const scrolled = Math.min(Math.max(0, vh - rect.top), sectionHeight + vh); // how far through
+      // Normalized (0..1)
+      const relative = Math.min(1, Math.max(0, scrolled / (sectionHeight + 0.0001)));
+
+      // Map to indices (one image per equal chunk)
+      const n = TEAM_IMAGES.length;
+      // use Math.floor so images appear stepwise as you scroll
+      const idx = Math.min(n - 1, Math.floor(relative * n));
+      setTeamIndex(idx);
     }
+
+    // run on scroll & resize & init
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
-  // helper to scroll to below hero
-  function scrollToContent() {
+  // quick helper to scroll to content below hero
+  const gotoContent = () => {
     window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
-  }
+  };
 
   return (
     <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflowX: "hidden" }}>
       <style>{`
-        @font-face {
-          font-family: 'Microgramma';
-          src: url('/fonts/microgramma.woff2') format('woff2');
-          font-weight: 700;
-          font-style: normal;
-          font-display: swap;
-        }
+        /* fonts (you must provide these files in /public/fonts) */
+        @font-face { font-family: 'Microgramma'; src: url('/fonts/microgramma.woff2') format('woff2'); font-weight:700; font-style:normal; font-display:swap; }
+        @font-face { font-family: 'SpaceGrotesk'; src: url('/fonts/spacegrotesk.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+
         html, body, #root { height: 100%; background: #141414; margin: 0; }
         * { box-sizing: border-box; }
-        /* hide scrollbar */
-        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display:none; }
         html, body { scrollbar-width: none; -ms-overflow-style: none; }
 
         .frontPage {
           height: 100vh;
           width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-          background: #141414;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          position:relative;
+          overflow:hidden;
+          background:#141414;
         }
 
         .heroLogo {
-          width: min(640px, 68vmin);
+          width: min(540px, 60vmin);
           max-width: 90vw;
-          transform-origin: center center;
+          transform-origin:center center;
           transition: transform 420ms cubic-bezier(.2,.9,.25,1), opacity 420ms ease;
           opacity: 0;
           display:flex;
@@ -246,34 +215,36 @@ export default function App() {
         }
         .heroLogo img { width: 100%; height: auto; display:block; }
 
+        /* left logo fades only (no slide) */
         .leftLogo {
           position: fixed;
           left: 18px;
           top: 50%;
-          transform: translateY(-50%) translateX(-8px);
+          transform: translateY(-50%);
           z-index: 9998;
           width: 96px;
           height: auto;
           opacity: 0;
-          transition: opacity 360ms ease, transform 360ms cubic-bezier(.2,.9,.25,1);
+          transition: opacity 360ms ease;
+          pointer-events: none;
         }
-        .leftLogo.show { opacity: 1; transform: translateY(-50%) translateX(0); }
+        .leftLogo.show { opacity: 1; }
 
         /* Loading overlay */
         .loadingOverlay {
           position: fixed;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 99999;
+          inset:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          z-index:99999;
           background: #141414;
           pointer-events: all;
           transform-origin: 50% 50%;
         }
         .loadingOverlay.zoomFade {
           transition: transform 700ms cubic-bezier(.2,.9,.25,1), opacity 700ms ease;
-          transform: scale(2.6); /* larger zoom */
+          transform: scale(2.6);
           opacity: 0;
           pointer-events: none;
         }
@@ -286,35 +257,34 @@ export default function App() {
           user-select: none;
         }
 
-        /* scroll arrow replacement: material icon + SCROLL text */
         .scrollArrowWrap {
           position: absolute;
           bottom: 40px;
           left: 50%;
           transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          z-index: 30;
-          cursor: pointer;
-          opacity: 0;
+          display:flex;
+          align-items:center;
+          gap:10px;
+          z-index:30;
+          cursor:pointer;
+          opacity:0;
           transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.9,.25,1);
         }
-        .scrollArrowWrap.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .scrollArrowWrap.show { opacity:1; transform: translateX(-50%) translateY(0); }
         .material-symbols-outlined {
           font-variation-settings: 'wght' 400;
           font-size: 36px;
           color: #ffcc00;
-          display: inline-block;
+          display:inline-block;
           transform: translateY(0);
           animation: arrowBounce 1400ms infinite;
         }
         .scrollText {
           font-family: 'Microgramma', sans-serif;
-          color: #ffcc00;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          font-size: 14px;
+          color:#ffcc00;
+          font-weight:700;
+          letter-spacing:0.04em;
+          font-size:14px;
         }
         @keyframes arrowBounce {
           0% { transform: translateY(0); opacity: 1; }
@@ -322,21 +292,21 @@ export default function App() {
           100% { transform: translateY(0); opacity: 1; }
         }
 
-        /* team section layout */
+        /* TEAM section */
         .teamSection {
-          min-height: 120vh; /* leave room to scroll through image area */
-          display: flex;
-          gap: 24px;
-          align-items: flex-start;
+          min-height: 120vh;
+          display:flex;
+          gap:24px;
+          align-items:flex-start;
           padding: 48px 20px;
-          max-width: 1200px;
+          max-width:1200px;
           margin: 0 auto;
         }
         .teamText {
           flex: 1 1 360px;
           position: relative;
-          top: 0;
           font-family: 'SpaceGrotesk', sans-serif;
+          color: #eee;
         }
         .teamImages {
           flex: 1 1 480px;
@@ -348,27 +318,38 @@ export default function App() {
           top: 80px;
           width: 100%;
           height: calc(100vh - 160px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .teamImages img {
-          max-width: 100%;
-          max-height: 100%;
-          width: auto;
-          height: auto;
-          object-fit: contain;
-          display: block;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          overflow:hidden;
         }
 
-        /* rest content hidden until you pass team */
-        .restContent.hidden { display: none; }
-        .restContent.visible { display: block; }
+        /* image transition: only the active image is visible */
+        .teamImages img {
+          position:absolute;
+          left:50%;
+          top:50%;
+          transform: translate(-50%,-50%) translateY(10px);
+          max-width:100%;
+          max-height:100%;
+          width:auto;
+          height:auto;
+          object-fit:contain;
+          opacity:0;
+          transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.9,.25,1);
+          pointer-events: none;
+        }
+        .teamImages img.active {
+          opacity:1;
+          transform: translate(-50%,-50%) translateY(0);
+        }
+
+        /* rest content */
+        .restContent { background: transparent; color: #ddd; padding: 48px 20px; max-width:1200px; margin: 0 auto; }
 
       `}</style>
 
-      {/* FRONT PAGE / HERO */}
+      {/* HERO / FRONT PAGE */}
       <div className="frontPage" aria-hidden={!overlayVisible && !heroVisible}>
         <div
           className="heroLogo"
@@ -383,19 +364,18 @@ export default function App() {
           <img src="/np_website.svg" alt="NP Website Logo" />
         </div>
 
-        {/* scroll arrow + SCROLL text */}
-        <div className={`scrollArrowWrap ${heroVisible && !overlayVisible ? "show" : ""}`} onClick={scrollToContent}>
+        <div className={`scrollArrowWrap ${heroVisible && !overlayVisible ? "show" : ""}`} onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}>
           <span className="material-symbols-outlined">keyboard_double_arrow_down</span>
           <div className="scrollText">SCROLL</div>
         </div>
       </div>
 
-      {/* small left logo: appears when user scrolls past hero logo element */}
+      {/* small left logo (fade only) */}
       <img src="/loading_logo.svg" alt="small logo" className={`leftLogo ${showLeftLogo ? "show" : ""}`} />
 
-      {/* Loading overlay with number only */}
+      {/* Loading overlay with number */}
       {overlayVisible && (
-        <div ref={loadingOverlayRef} className={`loadingOverlay ${startTransition ? "zoomFade" : ""}`} aria-hidden={!overlayVisible}>
+        <div className={`loadingOverlay ${startTransition ? "zoomFade" : ""}`} aria-hidden={!overlayVisible}>
           <div style={{ textAlign: "center" }}>
             <div className="loadingNumber" aria-live="polite" aria-atomic="true">
               {progress}
@@ -404,48 +384,56 @@ export default function App() {
         </div>
       )}
 
-      {/* ----- TEAM SECTION ----- */}
+      {/* TEAM SECTION */}
       <section ref={teamSectionRef} className="teamSection" aria-label="Team section">
         <div className="teamText">
           <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
-          <p style={{ color: "#eee" }}>
-            The Team
-          </p>
-          <ul style={{ color: "#ddd" }}>
-            <li>Team Leader: Matěj Prokop</li>
-            <li>Engineer: Lukáš Moravec</li>
-            <li>Finance manager: Lukáš Martin</li>
-            <li>Marketing manager: Veronika Lindová</li>
-          </ul>
+
+          {/* The caption changes according to which image is active */}
+          <div style={{ marginTop: 8, marginBottom: 12, minHeight: 72 }}>
+            <p style={{ color: "#eee", fontSize: 18, margin: 0 }}>{TEAM_CAPTIONS[teamIndex]}</p>
+            <p style={{ color: "#ddd", marginTop: 8 }}>
+              {/* example accompanying paragraph — you can replace these lines with any text per image */}
+              {[
+                "Drip focuses on aerodynamic performance and CFD-driven decisions.",
+                "Mory develops mechanical subsystems and suspension geometry.",
+                "Adam handles wiring, sensors and embedded controls.",
+                "Matěj coordinates the team and race strategy, and leads the project.",
+              ][teamIndex]}
+            </p>
+          </div>
+
           <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 20 }}>About Us</h2>
-          <p style={{ color: "#ddd" }}>We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+          <p style={{ color: "#ddd" }}>
+            We are the only Czech team and a top contender in the prestigious international STEM racing competition.
+          </p>
         </div>
 
         <div className="teamImages" aria-hidden={!inTeamSection}>
           <div className="sticky">
-            {/* This image flickers while user is in the team section */}
-            <img src={FLICKER_IMAGES[currentFlickerIdx]} alt="team flicker" />
+            {TEAM_IMAGES.map((src, i) => (
+              <img key={src} src={src} alt={`team-${i}`} className={i === teamIndex ? "active" : ""} />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ----- REST (hidden until team scrolled past) ----- */}
-      <div className={`restContent ${showRestContent ? "visible" : "hidden"}`}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 20px", color: "#eee" }}>
-          <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h2>
-          <p>Next up: Poland — Oct 11</p>
+      {/* REST CONTENT (appears after scrolling past team) */}
+      <div className="restContent" style={{ opacity: showRestContent ? 1 : 0.98 }}>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Schedule</h2>
+        <p>Next up: Poland — Oct 11</p>
 
-          <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Join Us</h2>
-          <p>Want to have the chance to compete for a scholarship? Contact us!</p>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Join Us</h2>
+        <p>Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
 
-          <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Contact</h2>
-          <p>
-            For general inquiry:{" "}
-            <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
-              prokopmatej@novyporg.cz
-            </a>
-          </p>
-        </div>
+        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Contact</h2>
+        <p>
+          For general inquiry:{" "}
+          <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">
+            prokopmatej@novyporg.cz
+          </a>
+        </p>
+        <div style={{ height: 200 }} />
       </div>
     </div>
   );

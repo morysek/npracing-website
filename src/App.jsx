@@ -1,12 +1,19 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/* ---------- simple content components (unchanged) ---------- */
+/* ---------- helper to pick the stage SVG ---------- */
+function chooseLoadingSvg(percent) {
+  if (percent >= 100) return "/loading_100.svg";
+  if (percent >= 75) return "/loading_75.svg";
+  if (percent >= 50) return "/loading_50.svg";
+  return "/loading_25.svg";
+}
+
+/* ---------- small content stubs (unchanged) ---------- */
 function TeamContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
       <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif" }}>Team</h1>
-
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 320px" }}>
           <p className="zig">The Team</p>
@@ -17,14 +24,12 @@ function TeamContent() {
             <li>Marketing manager: Veronika Lindová</li>
           </ul>
         </div>
-
         <div style={{ flex: "1 1 320px", display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           <img src="/images/team1.jpg" alt="team1" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
           <img src="/images/team2.jpg" alt="team2" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
           <img src="/images/team3.jpg" alt="team3" style={{ width: "100%", height: "auto", objectFit: "cover" }} />
         </div>
       </div>
-
       <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma, sans-serif", marginTop: 20 }}>About Us</h1>
       <div>
         <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
@@ -35,7 +40,6 @@ function TeamContent() {
     </div>
   );
 }
-
 function ScheduleContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -47,7 +51,6 @@ function ScheduleContent() {
     </div>
   );
 }
-
 function ContactContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -61,7 +64,6 @@ function ContactContent() {
     </div>
   );
 }
-
 function JoinUsContent() {
   return (
     <div style={{ color: "#fff", padding: 20, maxWidth: 1300 }}>
@@ -71,29 +73,15 @@ function JoinUsContent() {
   );
 }
 
-/* ---------- choose the appropriate loading svg based on percent ---------- */
-function chooseLoadingSvg(percent) {
-  // user-specified thresholds:
-  // 25 <= p < 50 -> loading_25.svg
-  // 50 <= p < 75 -> loading_50.svg
-  // 75 <= p < 100 -> loading_75.svg
-  // p === 100 -> loading_100.svg
-  if (percent >= 100) return "/loading_100.svg";
-  if (percent >= 75) return "/loading_75.svg";
-  if (percent >= 50) return "/loading_50.svg";
-  // percent >= 25 OR <25 default -> loading_25.svg
-  return "/loading_25.svg";
-}
-
-/* ---------- App ---------- */
+/* ---------- App (main) ---------- */
 export default function App() {
-  // inject Microgramma font (assumes /fonts/microgramma.woff2 exists in public)
+  // inject Microgramma font + base CSS
   useEffect(() => {
     const id = "__npr_microgramma";
     if (!document.getElementById(id)) {
       const style = document.createElement("style");
       style.id = id;
-      style.innerHTML = `
+      style.textContent = `
         @font-face {
           font-family: 'Microgramma';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -115,7 +103,7 @@ export default function App() {
     }
   }, []);
 
-  // assets to preload (adjust as needed)
+  // assets to preload (same as earlier)
   const assets = [
     "/images/team1.jpg",
     "/images/team2.jpg",
@@ -132,7 +120,7 @@ export default function App() {
   const [loadedCount, setLoadedCount] = useState(0);
   const percent = Math.round((loadedCount / totalAssets) * 100);
 
-  // animate displayed number to avoid jumpiness
+  // animated display number
   const [displayNumber, setDisplayNumber] = useState(0);
   useEffect(() => {
     let raf = 0;
@@ -148,10 +136,9 @@ export default function App() {
     }
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [percent]);
 
-  // preload routine
+  // preload assets (images & fetch for others)
   useEffect(() => {
     let mounted = true;
     const markLoaded = () => {
@@ -167,7 +154,6 @@ export default function App() {
         img.src = url;
         return;
       }
-      // for other assets (e.g. glb)
       fetch(url, { method: "GET" })
         .then((res) => {
           if (!res.ok) throw new Error("fetch failed");
@@ -180,19 +166,18 @@ export default function App() {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fullyLoaded = loadedCount >= totalAssets;
   const chosenSvg = chooseLoadingSvg(percent);
 
-  // We don't block scrolling. The hero is full-screen (100vh) so the rest of the content sits below and is visible only when user scrolls past.
-  // Hero-local centering: svg and number are centered inside the hero container only.
+  // HOME is now a div that contains the centered graphics
+  // graphics wrapper ensures everything fits (see CSS below)
   return (
-    <div style={{ background: "#141414", minHeight: "100vh", color: "#fff" }}>
-      {/* HERO / title page (100vh) */}
-      <section
-        aria-label="Title page"
+    <div style={{ minHeight: "100vh", background: "#141414", color: "#fff" }}>
+      {/* HOME DIV (title page) */}
+      <div
+        className="home"
         style={{
           height: "100vh",
           width: "100%",
@@ -203,67 +188,75 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        {/* Hero inner container keeps svgs centered and constrained */}
+        {/* The graphics wrapper is a responsive square sized to the viewport.
+            - min(90vw, 90vh) ensures it always fits inside the home div.
+            - All inner images use max-width/max-height 100% so they cannot overflow.
+            - The logo is sized relative to this wrapper so it scales in step with the other graphics. */}
         <div
+          className="graphics"
           style={{
-            width: "100%",
+            width: "min(90vw, 90vh)",
+            height: "min(90vw, 90vh)",
             maxWidth: 980,
-            padding: "20px",
-            boxSizing: "border-box",
+            maxHeight: 980,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
             gap: 18,
+            boxSizing: "border-box",
+            padding: 20,
           }}
         >
-          {/* chosen stage svg */}
+          {/* stage svg */}
           <img
             src={chosenSvg}
             alt="loading visual"
             style={{
-              width: "min(72vw, 720px)", // always fit inside hero
-              maxHeight: "60vh",
+              width: "100%",
               height: "auto",
+              maxHeight: "66%",
               objectFit: "contain",
-              filter: "drop-shadow(0 10px 30px rgba(255,204,0,0.08))",
-              transition: "opacity 260ms ease, transform 260ms ease",
+              display: "block",
+              transition: "opacity 220ms ease, transform 220ms ease",
             }}
           />
 
-          {/* percentage number (Microgramma bold), hidden when fully loaded */}
+          {/* percentage number (hidden when fully loaded) */}
           {!fullyLoaded && (
             <div
               style={{
                 fontFamily: "Microgramma, sans-serif",
                 fontWeight: 700,
-                fontSize: "48px",
+                fontSize: "clamp(28px, 6vw, 48px)",
                 color: "#ffcc00",
                 letterSpacing: "0.12em",
-                marginTop: 6,
+                lineHeight: 1,
+                textAlign: "center",
               }}
             >
               {displayNumber}
             </div>
           )}
 
-          {/* when fully loaded: hide percent and show loading_logo.svg along with final svg */}
+          {/* when fully loaded show loading_logo + final stage svg together; logo sized relative to wrapper */}
           {fullyLoaded && (
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <img
                 src="/loading_logo.svg"
                 alt="logo"
                 style={{
-                  width: 120,
+                  width: "24%", // scales with wrapper
                   height: "auto",
                   objectFit: "contain",
-                  transformOrigin: "center",
+                  display: "block",
                 }}
               />
               <img
                 src="/loading_100.svg"
                 alt="final visual"
                 style={{
-                  width: "min(40vw, 320px)",
+                  width: "40%",
                   height: "auto",
                   objectFit: "contain",
                 }}
@@ -290,7 +283,7 @@ export default function App() {
         >
           SCROLL
         </div>
-      </section>
+      </div>
 
       {/* Main content below the hero */}
       <main style={{ background: "#141414", color: "#fff" }}>

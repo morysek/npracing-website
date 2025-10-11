@@ -82,9 +82,10 @@ export default function App() {
 
   // assets to preload
   const assets = [
-    "/images/team1.jpg",
-    "/images/team2.jpg",
-    "/images/team3.jpg",
+    "/images/mory.png",
+    "/images/matej.png",
+    "/images/adam.png",
+    "/images/drip.png",
     "/loading_25.svg",
     "/loading_50.svg",
     "/loading_75.svg",

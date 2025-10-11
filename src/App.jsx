@@ -2,170 +2,58 @@
 import React, { useEffect, useRef, useState } from "react";
 
 /**
- * Front-page loader -> hero transition with proximity "neon blob" effects.
+ * App.jsx
  *
- * Requirements implemented:
- * - small centered hero logo
- * - loading number overlay (Microgramma bold) centered over the front page
- * - show appropriate loading SVG based on progress thresholds
- * - when loaded: small delay, then loading overlay zooms in+fades out, hero "pops" in
- * - two proximity blobs that appear when mouse is near the logo (near / closer)
- * - faint neon glow on svgs
- * - fonts: Microgramma for loading number; SpaceGrotesk for main text
- * - front page occupies full viewport; rest of content lives below (not shown until you scroll)
+ * Key changes:
+ * - no gradient/proximity cursor
+ * - loading overlay: centered numeric count-up (Microgramma bold)
+ * - still preloads the loading_*.svg + images, but doesn't display them
+ * - disables native scrolling until the intro transition finishes
+ * - after transition, enables a custom smooth/inertial scroller (transform-based)
+ * - forces scroll to top on load/reload
  *
- * Drop this file into your React app and ensure the assets exist at the given paths.
+ * Note: put font files in /public/fonts/
+ * - /public/fonts/microgramma.woff2
+ * - /public/fonts/spacegrotesk.woff2
+ *
+ * Assets assumed at:
+ * - /np_website.svg (hero logo)
+ * - /images/team1.jpg, /images/team2.jpg, /images/team3.jpg
+ * - /loading_25.svg, /loading_50.svg, /loading_75.svg, /loading_100.svg, /loading_logo.svg
  */
 
 export default function App() {
-  // progress (0..100)
-  const [progress, setProgress] = useState(0);
+  // loading state
+  const [progress, setProgress] = useState(0); // 0..100
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
-  // frontend states for transition
+  // transition / intro
   const [startTransition, setStartTransition] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [scrollerActive, setScrollerActive] = useState(false); // enables custom scroller
 
   // refs
   const loadingOverlayRef = useRef(null);
-  const heroLogoRef = useRef(null);
-  const proximityBlob1Ref = useRef(null);
-  const proximityBlob2Ref = useRef(null);
+  const heroRef = useRef(null);
+  const contentRef = useRef(null);
+  const scrollProxyRef = useRef({ target: 0, current: 0, raf: 0, max: 0, isRunning: false, velocity: 0 });
 
-  // control flow:
-  // preload assets & increment progress as they load
+  // ensure on reload/go to top
   useEffect(() => {
-    const assetsToLoad = [
-      "/images/team1.jpg",
-      "/images/team2.jpg",
-      "/images/team3.jpg",
-      "/loading_logo.svg", // optional: ensures the final logo file also accounted for
-    ];
-    let loaded = 0;
-    const total = assetsToLoad.length;
-
-    function markOne() {
-      loaded += 1;
-      const pct = Math.round((loaded / total) * 100);
-      setProgress(pct);
-      if (loaded >= total) {
-        // make sure we show 100% briefly
-        setTimeout(() => {
-          setAssetsLoaded(true);
-          setProgress(100);
-        }, 120);
-      }
-    }
-
-    assetsToLoad.forEach((src) => {
-      const img = new Image();
-      img.onload = () => markOne();
-      img.onerror = () => markOne();
-      img.src = src;
-    });
-
-    // safety: animate a slow count-up so user sees progress even if very fast
-    let fake = 0;
-    const ticker = setInterval(() => {
-      // don't override actual progress beyond it
-      setProgress((cur) => {
-        if (cur >= 100) return 100;
-        const next = Math.min(100, Math.max(cur, Math.round(cur + 2 + Math.random() * 6)));
-        return next;
-      });
-      fake += 1;
-      if (fake > 150) clearInterval(ticker);
-    }, 160);
-
-    return () => clearInterval(ticker);
+    try {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (e) {}
   }, []);
 
-  // When assetsLoaded becomes true -> wait small delay -> start transition
+  // inject fonts + hide native scrollbar globally
   useEffect(() => {
-    if (!assetsLoaded) return;
-    const delayMs = 420; // small delay before transition
-    const id = setTimeout(() => {
-      // animate the overlay zoom/fade then reveal hero
-      setStartTransition(true);
-
-      // when overlay animation ends reveal hero (give overlay 700ms to animate)
-      setTimeout(() => {
-        setHeroVisible(true);
-        // after hero visible, hide overlay element entirely
-        setTimeout(() => {
-          // remove overlay from DOM visually
-          if (loadingOverlayRef.current) {
-            loadingOverlayRef.current.style.display = "none";
-          }
-        }, 700);
-      }, 700);
-    }, delayMs);
-
-    return () => clearTimeout(id);
-  }, [assetsLoaded]);
-
-  // Mouse proximity handler for hero
-  useEffect(() => {
-    const root = document.documentElement;
-    const onMove = (e) => {
-      const el = heroLogoRef.current;
-      if (!el || !proximityBlob1Ref.current || !proximityBlob2Ref.current) return;
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy);
-
-      // position the blobs relative to the logo center so they "follow" the cursor
-      const blob1 = proximityBlob1Ref.current;
-      const blob2 = proximityBlob2Ref.current;
-
-      // normalized vector
-      const nx = dx / (rect.width || 1);
-      const ny = dy / (rect.height || 1);
-
-      // blob offsets: scale smaller offsets for blob2
-      blob1.style.transform = `translate(${nx * 20}px, ${ny * 14}px)`;
-      blob2.style.transform = `translate(${nx * -18}px, ${ny * -12}px)`;
-
-      // show intensities based on distance threshold
-      const nearThresh = Math.min(window.innerWidth, window.innerHeight) * 0.28; // near
-      const closeThresh = Math.min(window.innerWidth, window.innerHeight) * 0.12; // close
-
-      if (dist < closeThresh) {
-        blob1.style.opacity = "1";
-        blob1.style.transform += " scale(1.08)";
-        blob2.style.opacity = "1";
-        blob2.style.transform += " scale(0.95)";
-      } else if (dist < nearThresh) {
-        blob1.style.opacity = "0.9";
-        blob2.style.opacity = "0.7";
-      } else {
-        blob1.style.opacity = "0";
-        blob2.style.opacity = "0";
-      }
-    };
-
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
-  // pick which loading SVG to show depending on progress
-  function loadingSvgForProgress(p) {
-    if (p >= 100) return "/loading_100.svg";
-    if (p >= 75) return "/loading_75.svg";
-    if (p >= 50) return "/loading_50.svg";
-    if (p >= 25) return "/loading_25.svg";
-    // below 25: show first as well
-    return "/loading_25.svg";
-  }
-
-  // fonts and base styles injected inline for convenience
-  return (
-    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflowX: "hidden" }}>
-      <style>{`
-        /* fonts: adjust paths to your .woff2 location inside /public/fonts */
+    const id = "__npr_fonts_and_styles";
+    if (!document.getElementById(id)) {
+      const style = document.createElement("style");
+      style.id = id;
+      style.innerHTML = `
         @font-face {
           font-family: 'Microgramma';
           src: url('/fonts/microgramma.woff2') format('woff2');
@@ -180,9 +68,214 @@ export default function App() {
           font-style: normal;
           font-display: swap;
         }
+        html,body,#root { height: 100%; background: #141414; margin: 0; }
+        body { font-family: 'SpaceGrotesk', Inter, sans-serif; background: #141414; color: #fff; }
+        /* hide native scrollbar */
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+        html,body { scrollbar-width: none; -ms-overflow-style: none; }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
-        body, html, #root { background: #141414; margin: 0; height: 100%; }
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  // Preload assets (images + loading svgs + logo) but DO NOT use loading_* svgs for UI now
+  useEffect(() => {
+    const assets = [
+      "/images/team1.jpg",
+      "/images/team2.jpg",
+      "/images/team3.jpg",
+      "/loading_25.svg",
+      "/loading_50.svg",
+      "/loading_75.svg",
+      "/loading_100.svg",
+      "/loading_logo.svg",
+      "/np_website.svg",
+    ];
+    let loaded = 0;
+    const total = assets.length;
+
+    const mark = () => {
+      loaded += 1;
+      const pct = Math.min(100, Math.round((loaded / total) * 100));
+      setProgress(pct);
+      if (loaded >= total) {
+        setTimeout(() => {
+          setAssetsLoaded(true);
+          setProgress(100);
+        }, 120);
+      }
+    };
+
+    assets.forEach((src) => {
+      // for svg and img we can use Image
+      const img = new Image();
+      img.onload = mark;
+      img.onerror = mark;
+      img.src = src;
+    });
+
+    // fallback fake progress so the user sees motion even if network is fast
+    let ticker = 0;
+    const interv = setInterval(() => {
+      setProgress((cur) => {
+        if (cur >= 98) return cur;
+        return Math.min(98, cur + Math.ceil(Math.random() * 3));
+      });
+      ticker++;
+      if (ticker > 200) clearInterval(interv);
+    }, 160);
+
+    return () => clearInterval(interv);
+  }, []);
+
+  // when all assets loaded -> trigger transition timeline
+  useEffect(() => {
+    if (!assetsLoaded) return;
+    // small delay then start the zoom/fade transition
+    const preDelay = 420;
+    const id = setTimeout(() => {
+      setStartTransition(true);
+      // allow the overlay to animate (zoom+fade) for 700ms, then show hero
+      setTimeout(() => {
+        setHeroVisible(true);
+        // after hero visible, remove overlay from the DOM flow after a short delay
+        setTimeout(() => {
+          if (loadingOverlayRef.current) loadingOverlayRef.current.style.display = "none";
+          // activate custom scroller after overlay removed
+          setScrollerActive(true);
+        }, 400);
+      }, 700);
+    }, preDelay);
+
+    return () => clearTimeout(id);
+  }, [assetsLoaded]);
+
+  /**
+   * CUSTOM SMOOTH SCROLLER
+   * We disable native scrolling and simulate scroll by transforming the content container.
+   * This is activated only after the intro transition completes (scrollerActive = true).
+   *
+   * Basic strategy:
+   * - set document height (via a spacer) equal to contentRef scrollHeight, to preserve scrollbar-less page length
+   * - intercept wheel/touch and update scrollProxyRef.target
+   * - RAF loop lerps scrollProxyRef.current -> target, and transforms contentRef by translateY(-current)
+   * - provides gentle easing/inertia
+   */
+  useEffect(() => {
+    // nothing while scroller inactive
+    if (!scrollerActive) {
+      // ensure native body overflow hidden until scroller active
+      document.body.style.overflow = "hidden";
+      return;
+    }
+
+    // enable our scroller: still keep native overflow hidden
+    document.body.style.overflow = "hidden";
+
+    const contentEl = contentRef.current;
+    if (!contentEl) return;
+
+    // create a spacer element that determines page height (so user can still reach bottom)
+    let spacer = document.getElementById("__scroll_spacer");
+    if (!spacer) {
+      spacer = document.createElement("div");
+      spacer.id = "__scroll_spacer";
+      document.body.appendChild(spacer);
+    }
+
+    const recalc = () => {
+      const height = contentEl.scrollHeight;
+      spacer.style.height = `${height}px`;
+      scrollProxyRef.current.max = Math.max(0, height - window.innerHeight);
+      // clamp target/current
+      scrollProxyRef.current.target = Math.max(0, Math.min(scrollProxyRef.current.target, scrollProxyRef.current.max));
+      scrollProxyRef.current.current = Math.max(0, Math.min(scrollProxyRef.current.current, scrollProxyRef.current.max));
+    };
+
+    recalc();
+    window.addEventListener("resize", recalc);
+
+    // wheel handling: increment target
+    let wheelTimeout;
+    const onWheel = (ev) => {
+      ev.preventDefault();
+      const delta = ev.deltaY;
+      // apply step with scaling and clamp
+      const step = delta * 1.6; // adjust sensitivity
+      scrollProxyRef.current.target = Math.max(0, Math.min(scrollProxyRef.current.max, scrollProxyRef.current.target + step));
+      // small debounce to allow velocity-based smoothing
+      clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => {
+        // nothing; leaving for possible future damping
+      }, 50);
+    };
+
+    // touch handling
+    let touchStartY = null;
+    const onTouchStart = (ev) => {
+      touchStartY = ev.touches ? ev.touches[0].clientY : null;
+    };
+    const onTouchMove = (ev) => {
+      if (touchStartY == null) return;
+      const y = ev.touches ? ev.touches[0].clientY : null;
+      if (y == null) return;
+      const dy = touchStartY - y;
+      touchStartY = y;
+      scrollProxyRef.current.target = Math.max(0, Math.min(scrollProxyRef.current.max, scrollProxyRef.current.target + dy));
+    };
+    const onTouchEnd = () => {
+      touchStartY = null;
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: false });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd, { passive: false });
+
+    // RAF loop
+    const ease = 0.12; // lower = slower smoothing; tune for "thevariable" feel
+    const loop = () => {
+      const s = scrollProxyRef.current;
+      // simple lerp to target
+      s.current += (s.target - s.current) * ease;
+      // small velocity for inertial feel
+      s.velocity = (s.target - s.current);
+
+      // apply transform
+      contentEl.style.transform = `translate3d(0,${-Math.round(s.current)}px,0)`;
+
+      // request next
+      s.raf = requestAnimationFrame(loop);
+    };
+    scrollProxyRef.current.isRunning = true;
+    scrollProxyRef.current.raf = requestAnimationFrame(loop);
+
+    // ensure we start at top
+    scrollProxyRef.current.current = 0;
+    scrollProxyRef.current.target = 0;
+    contentEl.style.willChange = "transform";
+
+    // cleanup
+    return () => {
+      window.removeEventListener("resize", recalc);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      if (scrollProxyRef.current.raf) cancelAnimationFrame(scrollProxyRef.current.raf);
+      scrollProxyRef.current.isRunning = false;
+      // remove spacer
+      if (spacer && spacer.parentNode) spacer.parentNode.removeChild(spacer);
+    };
+  }, [scrollerActive]);
+
+  // small helper: overlay class toggles
+  const overlayClass = startTransition ? "loadingOverlay transitioning" : "loadingOverlay";
+
+  // styles inlined to keep component self-contained
+  return (
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflow: "hidden" }}>
+      <style>{`
         .frontPage {
           height: 100vh;
           width: 100%;
@@ -191,36 +284,17 @@ export default function App() {
           justify-content: center;
           position: relative;
           overflow: hidden;
+          background: #141414;
         }
         .heroLogo {
           display: inline-block;
-          width: 320px;           /* smaller hero logo */
+          width: 320px;
           max-width: 56vmin;
           transform-origin: center center;
           transition: transform 420ms cubic-bezier(.2,.9,.25,1), opacity 420ms ease;
-          filter: drop-shadow(0 6px 20px rgba(255,80,40,0.08));
-        }
-        .heroLogo img { width: 100%; height: auto; display: block; }
-
-        /* proximity blobs */
-        .blob {
-          position: absolute;
-          width: 360px;
-          height: 360px;
-          border-radius: 50%;
-          pointer-events: none;
-          mix-blend-mode: screen;
-          filter: blur(34px);
-          transition: opacity 300ms ease, transform 300ms ease;
           opacity: 0;
         }
-        .blob.one { background: radial-gradient(circle at 30% 30%, rgba(255,100,40,0.95) 0%, rgba(255,100,40,0.15) 28%, transparent 60%); }
-        .blob.two { background: radial-gradient(circle at 70% 70%, rgba(255,140,90,0.85) 0%, rgba(255,140,90,0.08) 30%, transparent 60%); }
-
-        /* neon glow for svg artwork */
-        .svgWrapper img { filter: drop-shadow(0 0 18px rgba(255,140,90,0.06)) drop-shadow(0 6px 24px rgba(0,0,0,0.6)); }
-
-        /* loading overlay */
+        .heroLogo.visible { opacity: 1; transform: scale(1); }
         .loadingOverlay {
           position: fixed;
           left: 0; top: 0; right: 0; bottom: 0;
@@ -232,123 +306,46 @@ export default function App() {
           pointer-events: all;
           transform-origin: 50% 50%;
         }
-        .loadingInner {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-direction: column;
-          gap: 28px;
-          text-align: center;
-        }
-        .loadingSvg {
-          max-width: min(48vw, 520px);
-          width: 48vw;
-          height: auto;
-          display: block;
-          margin: 0 auto;
+        .loadingOverlay.transitioning {
+          transition: transform 700ms cubic-bezier(.2,.9,.25,1), opacity 700ms ease;
+          transform: scale(1.9);
+          opacity: 0;
+          pointer-events: none;
         }
         .loadingNumber {
           font-family: 'Microgramma', SpaceGrotesk, sans-serif;
           font-weight: 700;
-          font-size: 72px;
-          color: #ffcc00; /* match titles color per earlier request */
-          line-height: 1;
+          font-size: 74px;
+          color: #ffcc00;
           letter-spacing: 0.02em;
-          position: absolute;
-          transform: translateY(-6px);
-          pointer-events: none;
-          text-shadow:
-            0 2px 6px rgba(0,0,0,0.6),
-            0 0 24px rgba(255,204,0,0.06);
         }
-
-        /* overlay transition states */
-        .loadingOverlay.transitioning {
-          transition: transform 700ms cubic-bezier(.2,.9,.25,1), opacity 700ms ease;
-          transform: scale(1.9);  /* zoom in */
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        /* hero entrance "pop" */
-        .heroEnter {
-          transform: scale(1.06);
-          opacity: 1;
-        }
-        .heroHidden {
-          opacity: 0;
-          transform: scale(0.9);
-        }
-
-        /* below-front-page content */
         .below {
+          position: relative;
+          min-height: 200vh; /* content height determined dynamically; spacer will be used for page length */
           background: #141414;
-          color: #eee;
-          padding: 48px 20px;
-          min-height: 100vh;
         }
       `}</style>
 
-      {/* FRONT PAGE (full-screen) */}
+      {/* FRONT PAGE / HERO */}
       <div className="frontPage" aria-hidden={!heroVisible}>
-        {/* proximity blobs (centered over hero) */}
         <div
-          ref={proximityBlob1Ref}
-          className="blob one"
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%,-50%)",
-            zIndex: 5,
-            opacity: 0,
-          }}
-        />
-        <div
-          ref={proximityBlob2Ref}
-          className="blob two"
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%,-50%)",
-            zIndex: 6,
-            opacity: 0,
-          }}
-        />
-
-        {/* HERO LOGO (centered). Hidden until heroVisible true */}
-        <div
-          ref={heroLogoRef}
-          className="heroLogo"
+          ref={heroRef}
+          className={`heroLogo ${heroVisible ? "visible" : ""}`}
           style={{
             zIndex: 10,
-            opacity: heroVisible ? 1 : 0,
-            transform: heroVisible ? "scale(1)" : "scale(0.92)",
             transitionDelay: heroVisible ? "80ms" : "0ms",
+            pointerEvents: "none",
           }}
         >
-          <img src="/np_website.svg" alt="NP Website Logo" style={{ filter: "drop-shadow(0 10px 36px rgba(255,100,40,0.06))" }} />
+          <img src="/np_website.svg" alt="NP Website Logo" style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
       </div>
 
-      {/* LOADING OVERLAY (covers whole viewport until removed) */}
+      {/* LOADING OVERLAY */}
       {!startTransition && (
         <div ref={loadingOverlayRef} className="loadingOverlay" style={{ zIndex: 99999 }}>
-          <div className="loadingInner" style={{ position: "relative", width: "100%", maxWidth: 980 }}>
-            {/* svg that switches based on progress */}
-            <div className="svgWrapper" style={{ position: "relative" }}>
-              <img
-                className="loadingSvg"
-                src={loadingSvgForProgress(progress)}
-                alt="loading art"
-                style={{
-                  // ensure no fade transitions for loading svgs (user asked to disable fade for loading svgs)
-                  transition: "none",
-                  filter: "drop-shadow(0 20px 60px rgba(255,140,80,0.06))",
-                }}
-              />
-            </div>
-
-            {/* big number centered overlay - overlay style so it stays at center of page */}
+          <div style={{ textAlign: "center" }}>
+            {/* we intentionally DO NOT render the loading_*.svg images here; only show numeric progress */}
             <div className="loadingNumber" aria-hidden={assetsLoaded}>
               {String(progress)}
             </div>
@@ -356,29 +353,28 @@ export default function App() {
         </div>
       )}
 
-      {/* when startTransition is true we add the transition class so the overlay zooms/fades and the hero pops in */}
+      {/* transitioning overlay: zoom+fade (we still display nothing but keep overlay to animate out) */}
       {startTransition && !heroVisible && (
-        <div
-          ref={loadingOverlayRef}
-          className="loadingOverlay transitioning"
-          style={{
-            zIndex: 99999,
-            // still show the final svg as it zooms past viewer (no fade on svg itself required)
-          }}
-        >
-          <div className="loadingInner" style={{ position: "relative", width: "100%", maxWidth: 980 }}>
-            <img className="loadingSvg" src="/loading_100.svg" alt="final loading art" style={{ transition: "none" }} />
-            {/* number hidden when assetsLoaded and transitioning */}
-          </div>
-        </div>
+        <div ref={loadingOverlayRef} className="loadingOverlay transitioning" style={{ zIndex: 99999 }} />
       )}
 
-      {/* BELOW / MAIN CONTENT (locked below the front page; you scroll past the front page to reach it) */}
-      <div className="below" style={{ paddingTop: 48 }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", color: "#eee", fontFamily: "SpaceGrotesk, Inter, sans-serif" }}>
-          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginBottom: 6 }}>Team</h1>
-          <p style={{ marginTop: 0 }} className="zig">The Team</p>
-          <div style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* MAIN CONTENT (rendered below the hero). We will transform this container for the smooth scroller */}
+      <div
+        ref={contentRef}
+        style={{
+          position: "relative",
+          top: 0,
+          left: 0,
+          width: "100%",
+          transform: "translate3d(0,0,0)",
+          transition: "transform 0s",
+          willChange: "transform",
+        }}
+      >
+        <div style={{ padding: 48, maxWidth: 1200, margin: "0 auto" }}>
+          <h1 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>Team</h1>
+          <p style={{ color: "#fff" }}>The Team</p>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 320px" }}>
               <ul>
                 <li>Team Leader: Matěj Prokop</li>
@@ -395,19 +391,20 @@ export default function App() {
           </div>
 
           <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>About Us</h2>
-          <p className="zig">We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
-          <p className="zig">We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+          <p>We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
 
           <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Schedule</h2>
-          <p className="zig">Next up: Poland — Oct 11</p>
+          <p>Next up: Poland — Oct 11</p>
 
           <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Join Us</h2>
-          <p className="zig">Want to have the chance to compete for a scholarship? Contact us!</p>
+          <p>Want to have the chance to compete for a scholarship? Contact us!</p>
 
           <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 24 }}>Contact</h2>
-          <p className="zig">
+          <p>
             For general inquiry: <a style={{ color: "#ffcc00" }} href="mailto:prokopmatej@novyporg.cz">prokopmatej@novyporg.cz</a>
           </p>
+
+          <div style={{ height: 300 }} />
         </div>
       </div>
     </div>

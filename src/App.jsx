@@ -1,271 +1,335 @@
 // src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * Scroll-pinned Team section:
- * - Team section height = items.length * 100vh
- * - .teamInner is position:sticky; top:0 and fills viewport while scrolling through the section
- * - scroll progress inside section drives which item is visible
- */
-
-const TEAM_ITEMS = [
-  {
-    img: "/images/team1.jpg",
-    title: "DRIP",
-    caption: "Lead aerodynamicist",
-    text:
-      "DRIP is our lead aerodynamicist — responsible for CFD, wing geometry and low-drag performance.",
-  },
-  {
-    img: "/images/team2.jpg",
-    title: "MORY",
-    caption: "Mechanical engineer",
-    text:
-      "MORY handles the mechanical design and assemblies, optimizing stiffness and reliability.",
-  },
-  {
-    img: "/images/team3.jpg",
-    title: "ADAM",
-    caption: "Electronics & controls",
-    text:
-      "ADAM leads the electronics stack and control algorithms which drive the car's systems.",
-  },
-  {
-    img: "/images/team4.jpg",
-    title: "MATĚJ",
-    caption: "Team lead & strategy",
-    text:
-      "MATĚJ coordinates the team, competition strategy and external partnerships.",
-  },
-];
-
-const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+/*
+  Swiss Design update:
+  - Headings use Microgramma (local woff2)
+  - Body uses Space Grotesk from Google Fonts (injected)
+  - Strong left alignment, large negative space, simple grid
+  - Accent color retained (#ffcc00)
+  - Keeps existing loading/hero/content flow from your last version
+*/
 
 export default function App() {
-  // which item is active (integer index)
-  const [activeIndex, setActiveIndex] = useState(0);
-  // fractional progress (0..1) across the team section
+  // loading overlay state
   const [progress, setProgress] = useState(0);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [startTransition, setStartTransition] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const [heroVisible, setHeroVisible] = useState(false);
+  const [showLeftLogo, setShowLeftLogo] = useState(false);
 
-  const teamRef = useRef(null);
-  const rafRef = useRef(null);
+  const heroLogoRef = useRef(null);
 
-  // ensure page loads at top on refresh
+  const TEAM_IMAGES = [
+    "/images/drip.png",
+    "/images/mory.png",
+    "/images/adam.png",
+    "/images/matej.png",
+  ];
+  const TEAM_CAPTIONS = [
+    "DRIP — Lead aerodynamicist",
+    "MORY — Mechanical engineer",
+    "ADAM — Electronics & controls",
+    "MATĚJ — Team lead & strategy",
+  ];
+
+  // ensure reload always lands at top
   useEffect(() => {
-    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    if (history && "scrollRestoration" in history) history.scrollRestoration = "manual";
     window.scrollTo(0, 0);
   }, []);
 
-  // scroll handler: compute progress inside the team section
+  // inject Space Grotesk, preload Microgramma & Workbench fonts
   useEffect(() => {
-    const el = teamRef.current;
-    if (!el) return;
-
-    function onScroll() {
-      // bounding rect relative to document
-      const rect = el.getBoundingClientRect();
-      const docTop = window.scrollY;
-      const elTop = docTop + rect.top; // section top in document coords
-      const elHeight = el.offsetHeight;
-      const vh = window.innerHeight;
-
-      // compute scrollY
-      const scrollY = window.scrollY;
-
-      // fraction through the section where 0 = top entering, 1 = fully scrolled past
-      // we want the pinned period to be from elTop .. elTop + (elHeight - vh)
-      const denom = Math.max(1, elHeight - vh);
-      const raw = (scrollY - elTop) / denom;
-      const frac = clamp(raw, 0, 1);
-
-      // progress 0..1 across the whole pinned period
-      setProgress(frac);
-
-      // determine index: divide into N equal segments
-      const n = TEAM_ITEMS.length;
-      // map frac in [0,1) -> [0, n), final 1 => n-1
-      let idx = Math.min(n - 1, Math.floor(frac * n));
-      if (idx < 0) idx = 0;
-      setActiveIndex(idx);
+    // Space Grotesk from Google Fonts
+    if (!document.getElementById("__npr_spacegrotesk")) {
+      const link = document.createElement("link");
+      link.id = "__npr_spacegrotesk";
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap";
+      document.head.appendChild(link);
     }
 
-    // use RAF-based scroll perf
-    let ticking = false;
-    function handler() {
-      if (ticking) return;
-      ticking = true;
-      rafRef.current = requestAnimationFrame(() => {
-        onScroll();
-        ticking = false;
+    // preload and local-face for Microgramma (assumes file at /fonts/microgramma.woff2)
+    if (!document.getElementById("__npr_microgramma")) {
+      const style = document.createElement("style");
+      style.id = "__npr_microgramma";
+      style.innerHTML = `
+        @font-face {
+          font-family: 'Microgramma';
+          src: url('/fonts/microgramma.woff2') format('woff2');
+          font-weight: 700;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Workbench';
+          src: url('/fonts/workbench.woff2') format('woff2');
+          font-weight: 400 800;
+          font-style: normal;
+          font-display: swap;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // preload images and fonts then progress
+  useEffect(() => {
+    let mounted = true;
+    let loaded = 0;
+    const assets = [
+      "/np_website.svg",
+      "/loading_logo.svg",
+      ...TEAM_IMAGES,
+      "/sponsors/ppas.svg",
+      "/sponsors/winkelhofer.svg",
+    ];
+    const total = 1 + assets.length; // include font preloaded marker
+
+    // simulate font load mark
+    const markLoaded = () => {
+      if (!mounted) return;
+      loaded += 1;
+      const pct = Math.round((loaded / total) * 100);
+      setProgress(pct);
+      if (loaded >= total) {
+        setAssetsLoaded(true);
+        setProgress(100);
+      }
+    };
+
+    // quick font load attempt
+    (async function tryFonts() {
+      try {
+        if (document.fonts && document.fonts.load) {
+          await Promise.all([document.fonts.load("1em Space Grotesk"), document.fonts.load("700 1em Microgramma")]);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        markLoaded();
+      }
+
+      assets.forEach((src) => {
+        const img = new Image();
+        img.onload = () => markLoaded();
+        img.onerror = () => markLoaded();
+        img.src = src;
       });
-    }
+    })();
 
-    window.addEventListener("scroll", handler, { passive: true });
-    window.addEventListener("resize", handler);
-    // run once to initialize
-    handler();
+    const fallback = setInterval(() => {
+      setProgress((p) => Math.min(98, p + Math.ceil(Math.random() * 2)));
+    }, 200);
 
     return () => {
-      window.removeEventListener("scroll", handler);
-      window.removeEventListener("resize", handler);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      mounted = false;
+      clearInterval(fallback);
     };
   }, []);
 
-  // CSS-in-JS styles (keeps everything in one file)
-  // You can extract to CSS files if you prefer.
+  // transition overlay -> hero
+  useEffect(() => {
+    if (!assetsLoaded) return;
+    const delayBeforeTransition = 120;
+    const t = setTimeout(() => {
+      setStartTransition(true);
+      const transitionMs = 700;
+      setTimeout(() => {
+        setHeroVisible(true);
+        setTimeout(() => setOverlayVisible(false), 140);
+      }, transitionMs);
+    }, delayBeforeTransition);
+    return () => clearTimeout(t);
+  }, [assetsLoaded]);
+
+  // disable scrolling while overlay visible
+  useEffect(() => {
+    document.body.style.overflow = overlayVisible ? "hidden" : "auto";
+    return () => (document.body.style.overflow = "auto");
+  }, [overlayVisible]);
+
+  // show left small logo when hero scrolled past
+  useEffect(() => {
+    function checkHeroRect() {
+      const el = heroLogoRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setShowLeftLogo(rect.bottom < 0);
+    }
+    window.addEventListener("scroll", checkHeroRect, { passive: true });
+    window.addEventListener("resize", checkHeroRect);
+    checkHeroRect();
+    return () => {
+      window.removeEventListener("scroll", checkHeroRect);
+      window.removeEventListener("resize", checkHeroRect);
+    };
+  }, [heroVisible, overlayVisible]);
+
+  const canvasWrapperStyle = {
+    position: "relative",
+    zIndex: 2,
+    width: "100%",
+  };
+
   return (
-    <div style={{ background: "#141414", color: "#eee", minHeight: "100vh", fontFamily: "Workbench, Inter, sans-serif" }}>
+    <div style={{ width: "100vw", minHeight: "100vh", background: "#141414", color: "#fff", overflowX: "hidden", fontFamily: "'Space Grotesk', 'Workbench', system-ui, sans-serif" }}>
       <style>{`
-        /* fonts should already be injected elsewhere in your project; these are fallback names */
-        .page { min-height: 100vh; }
-        .hero { height: 90vh; display:flex; align-items:center; justify-content:center; color:#fff; }
-        .hero h1 { color:#ffcc00; font-family: Microgramma, sans-serif; letter-spacing: 0.06em; font-size: clamp(36px, 6vw, 72px); margin:0; }
-        
-        /* TEAM section */
-        .teamSection {
-          /* this height controls how much scroll is used to cycle images:
-             one viewport-per-item gives good mapping */
-          height: ${TEAM_ITEMS.length}00vh; /* e.g. 4 * 100vh */
-          position: relative;
-          overflow: hidden;
-        }
-        /* the inner container is sticky to pin over the viewport while user scrolls through the section */
-        .teamInner {
-          position: sticky;
-          top: 0;
-          height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px;
-          gap: 28px;
+        /* Swiss design: strong grid, left aligned headings, big whitespace */
+        html, body, #root { height: 100%; background: #141414; margin: 0; }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display:none; }
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+
+        :root {
+          --accent: #ffcc00;
+          --bg: #141414;
+          --muted: #cfcfcf;
+          --maxWidth: 1200px;
+          --gutter: 28px;
         }
 
-        .teamLeft {
-          flex: 0 0 220px;
-          max-width: 240px;
-        }
-        .teamLeft h2 { margin:0; color:#ffcc00; font-family: Microgramma, sans-serif; letter-spacing:0.06em; font-size: 28px; }
+        /* Front / Hero styles */
+        .frontPage { height: 100vh; width: 100%; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background: var(--bg); }
+        .heroInner { width: 100%; max-width: var(--maxWidth); padding: 0 var(--gutter); display:grid; grid-template-columns: 1fr 420px; gap: 48px; align-items:center; }
+        .heroLeft { align-self:center; padding-left: 6vw; }
+        .heroRight { display:flex; align-items:center; justify-content:center; }
+        .heroTitle { font-family: 'Microgramma', 'Space Grotesk', sans-serif; color: var(--accent); font-weight:700; font-size:48px; letter-spacing: 0.06em; margin:0 0 12px 0; text-transform: uppercase; text-align:left; }
+        .heroSubtitle { font-family:'Space Grotesk', sans-serif; color: #e6e6e6; font-size:18px; margin:0; line-height:1.35; max-width: 520px; }
 
-        .teamCenter {
-          flex: 1 1 640px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          position: relative;
-          height: 66vh;
-          max-height: 760px;
-        }
-        .imageStack {
-          position: relative;
-          width: min(620px, 56vw);
-          max-width: 720px;
-          height: 100%;
-        }
-        .imageItem {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: opacity 420ms cubic-bezier(.2,.9,.25,1), transform 520ms cubic-bezier(.2,.9,.25,1);
-          opacity: 0;
-          transform: translateY(8px) scale(0.99);
-        }
-        .imageItem.visible {
-          opacity: 1;
-          transform: translateY(0px) scale(1);
-        }
-        .imageItem img { width:100%; height:100%; object-fit: cover; border-radius: 8px; box-shadow: 0 18px 38px rgba(0,0,0,0.65); }
+        .heroLogo { width: min(420px, 44vmin); max-width: 90%; transform-origin:center center; transition: transform 420ms cubic-bezier(.2,.9,.25,1), opacity 420ms ease; display:flex; align-items:center; justify-content:center; }
+        .heroLogo img { width: 100%; height: auto; display:block; filter: drop-shadow(0 12px 36px rgba(0,0,0,0.6)) drop-shadow(0 0 12px rgba(255,204,0,0.06)); }
 
-        .imageCaption {
-          margin-top: 10px;
-          color: #fff;
-          font-family: Microgramma, sans-serif;
-          font-weight: 700;
-          font-size: 14px;
-          text-align: center;
+        /* left small logo fade */
+        .leftLogo { position: fixed; left: 18px; top: 50%; transform: translateY(-50%); z-index: 9998; width: 96px; height: auto; opacity: 0; transition: opacity 360ms ease; pointer-events: none; }
+        .leftLogo.show { opacity: 1; }
+
+        /* Loading overlay */
+        .loadingOverlay { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; z-index:99999; background: var(--bg); pointer-events: all; transform-origin: 50% 50%; }
+        .loadingOverlay.zoomFade { transition: transform 700ms cubic-bezier(.2,.9,.25,1), opacity 700ms ease; transform: scale(2.8); opacity: 0; pointer-events: none; }
+        .loadingNumber { font-family: 'Microgramma', 'Space Grotesk', sans-serif; font-weight: 700; font-size: 88px; color: var(--accent); line-height:1; user-select: none; letter-spacing:0.04em; }
+
+        /* Swiss grid for Team and content */
+        .contentWrapper { max-width: var(--maxWidth); margin: 0 auto; padding: 36px var(--gutter); display: grid; grid-template-columns: 220px 1fr 320px; gap: 32px; align-items:start; }
+        .teamTitle { grid-column: 1 / 2; align-self:start; }
+        .teamTitle h1 { font-family: 'Microgramma'; color: var(--accent); margin: 0 0 6px 0; font-size: 28px; letter-spacing: 0.06em; text-transform: uppercase; }
+        .teamImagesRow { grid-column: 2 / 3; display:flex; gap: 18px; justify-content:center; flex-wrap:wrap; }
+        .teamRight { grid-column: 3 / 4; color: var(--muted); font-family: 'Space Grotesk', sans-serif; line-height:1.45; }
+
+        .imageCard { width: calc(25% - 18px); min-width: 140px; max-width: 220px; text-align:center; }
+        .imageCard img { width:100%; height:auto; display:block; border-radius:6px; object-fit:cover; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
+        .imageCaption { margin-top: 8px; color:#fff; font-family:'Microgramma'; font-size:13px; letter-spacing:0.04em; }
+
+        @media (max-width: 1100px) {
+          .heroInner { grid-template-columns: 1fr; text-align: center; padding: 0 20px; gap: 20px; }
+          .heroLeft { padding-left: 0; order:2; }
+          .heroRight { order:1; }
+          .contentWrapper { grid-template-columns: 1fr; }
+          .teamTitle { grid-column: 1 / -1; text-align:left; margin-bottom: 12px; }
+          .teamImagesRow { justify-content: center; grid-column: 1 / -1; }
+          .teamRight { grid-column: 1 / -1; }
+          .imageCard { width: 48%; }
         }
 
-        .teamRight {
-          flex: 0 0 320px;
-          max-width: 360px;
-          color: #ddd;
+        @media (max-width: 600px) {
+          .loadingNumber { font-size: 56px; }
+          .heroTitle { font-size: 32px; }
         }
-        .teamRight h3 { color:#ffcc00; margin-top: 0; font-family: Microgramma, sans-serif; }
-        .teamRight p { line-height: 1.5; }
-
-        /* responsive stack */
-        @media (max-width: 900px) {
-          .teamInner { flex-direction: column; padding: 20px; gap: 20px; align-items: center; justify-content: flex-start; }
-          .teamLeft { width:100%; text-align:center; order: 0; }
-          .teamCenter { order: 1; width:100%; height: 46vh; max-height: 56vh; }
-          .teamRight { order: 2; width:100%; max-width:none; padding-bottom: 24px; }
-          .imageStack { width: 94%; height:100%; }
-        }
-
-        /* rest content */
-        .rest { padding: 48px 20px; max-width: 1200px; margin: 0 auto; color:#ddd; }
       `}</style>
 
-      {/* Hero (keeps earlier page structure minimal) */}
-      <header className="hero">
-        <h1>NP RACING</h1>
-      </header>
-
-      {/* TEAM SECTION - pin & scroll-driven cycling */}
-      <section ref={teamRef} className="teamSection" aria-label="Team section (scroll to cycle)">
-        <div className="teamInner" role="region" aria-roledescription="pinned team scroller">
-          <div className="teamLeft" aria-hidden>
-            <h2>TEAM</h2>
-          </div>
-
-          <div className="teamCenter" aria-live="polite">
-            <div className="imageStack" aria-hidden={false}>
-              {TEAM_ITEMS.map((it, i) => {
-                const isVisible = i === activeIndex;
-                return (
-                  <div
-                    key={it.img}
-                    className={`imageItem ${isVisible ? "visible" : ""}`}
-                    style={{ zIndex: isVisible ? 5 : 1 }}
-                    aria-hidden={!isVisible}
-                  >
-                    <div style={{ width: "100%", height: "100%" }}>
-                      <img src={it.img} alt={`${it.title} ${it.caption}`} />
-                      <div className="imageCaption">{it.title} — {it.caption}</div>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* FRONT / HERO */}
+      <div className="frontPage" aria-hidden={!overlayVisible && !heroVisible}>
+        <div className="heroInner" style={{ opacity: heroVisible ? 1 : 0, transition: "opacity 420ms ease" }}>
+          <div className="heroLeft">
+            <div style={{ maxWidth: 680 }}>
+              <h1 className="heroTitle">NP RACING</h1>
+              <p className="heroSubtitle">
+                Swiss-inspired visual system — rational grid, bold typography and clear hierarchy. This site showcases the team, schedule and partners.
+              </p>
             </div>
           </div>
 
-          <aside className="teamRight" aria-live="polite">
-            <h3>{TEAM_ITEMS[activeIndex].title}</h3>
-            <p>{TEAM_ITEMS[activeIndex].text}</p>
-          </aside>
+          <div className="heroRight">
+            <div
+              className="heroLogo"
+              ref={heroLogoRef}
+              style={{
+                transform: heroVisible ? "scale(1)" : "scale(0.95)",
+                opacity: heroVisible ? 1 : 0,
+                transitionDelay: heroVisible ? "80ms" : "0ms",
+              }}
+            >
+              <img src="/np_website.svg" alt="NP Website Logo" />
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* After team - normal scrolled content */}
-      <main className="rest">
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma" }}>About Us</h2>
-        <p>We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
-        <p>We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+      {/* left small logo (fade) */}
+      <img src="/loading_logo.svg" alt="small logo" className={`leftLogo ${showLeftLogo ? "show" : ""}`} />
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Schedule</h2>
-        <p>Next up: Poland — Oct 11</p>
+      {/* Loading overlay */}
+      {overlayVisible && (
+        <div className={`loadingOverlay ${startTransition ? "zoomFade" : ""}`} aria-hidden={!overlayVisible}>
+          <div style={{ textAlign: "center" }}>
+            <div className="loadingNumber" aria-live="polite" aria-atomic="true">
+              {progress}
+            </div>
+          </div>
+        </div>
+      )}
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Join Us</h2>
-        <p>Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+      {/* main content below hero */}
+      <div style={canvasWrapperStyle}>
+        <div className="contentWrapper" role="main" aria-label="Main content">
+          <div className="teamTitle" aria-labelledby="team-heading">
+            <h1 id="team-heading">Team</h1>
+          </div>
 
-        <h2 style={{ color: "#ffcc00", fontFamily: "Microgramma", marginTop: 28 }}>Contact</h2>
-        <p>For general inquiry: <a href="mailto:prokopmatej@novyporg.cz" style={{ color: "#ffcc00" }}>prokopmatej@novyporg.cz</a></p>
+          <div className="teamImagesRow" role="list">
+            {TEAM_IMAGES.map((src, i) => (
+              <div className="imageCard" key={src} role="listitem">
+                <img src={src} alt={`team-${i}`} />
+                <div className="imageCaption">{TEAM_CAPTIONS[i]}</div>
+              </div>
+            ))}
+          </div>
 
-        <div style={{ height: 320 }} />
-      </main>
+          <div className="teamRight">
+            <h2 style={{ color: "var(--accent)", fontFamily: "Microgramma", marginTop: 0 }}>About Us</h2>
+            <p>We are the only Czech team and a top contender in the prestigious international STEM racing competition.</p>
+            <p>We combine technical expertise, innovative design, and teamwork to develop high-performance race car models.</p>
+            <p>Founded at Nový PORG, NP Racing unites skills in engineering, manufacturing, and marketing.</p>
+            <p>We collaborate with partners like the Czech Technical University to enhance our expertise.</p>
+          </div>
+        </div>
+
+        {/* REST CONTENT — still Swiss grid feel */}
+        <div style={{ maxWidth: "var(--maxWidth)", margin: "40px auto", padding: "0 var(--gutter)" }}>
+          <h2 style={{ color: "var(--accent)", fontFamily: "Microgramma" }}>Schedule</h2>
+          <p>Next up: Poland — Oct 11</p>
+
+          <h2 style={{ color: "var(--accent)", fontFamily: "Microgramma", marginTop: 24 }}>Join Us</h2>
+          <p>Want to have the chance to compete for a scholarship in a prestigious Formula One-backed competition? Contact us!</p>
+
+          <h2 style={{ color: "var(--accent)", fontFamily: "Microgramma", marginTop: 24 }}>Contact</h2>
+          <p>
+            For general inquiry:{" "}
+            <a style={{ color: "var(--accent)" }} href="mailto:prokopmatej@novyporg.cz">
+              prokopmatej@novyporg.cz
+            </a>
+          </p>
+
+          <div style={{ marginTop: 36 }} className="partners" aria-label="Partners">
+            <img src="/sponsors/ppas.svg" alt="PPAS" style={{ height: 56, marginRight: 18 }} />
+            <img src="/sponsors/winkelhofer.svg" alt="Winkelhofer" style={{ height: 56 }} />
+          </div>
+
+          <div style={{ height: 120 }} />
+        </div>
+      </div>
     </div>
   );
 }

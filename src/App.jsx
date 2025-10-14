@@ -143,10 +143,9 @@ export default function App() {
   const fixedMarkup = (() => {
     const m = meta[currentIndex];
     if (!m || !m.logos || m.logos.length === 0) return null;
-    // Build a wrapper svg using the page's viewBox if available
-    const vb = m.viewBox ? `viewBox=\"${m.viewBox}\"` : "";
-    return `<svg xmlns=\"http://www.w3.org/2000/svg\" ${vb}>${m.logos.join("
-")}</svg>`;
+    // Safer string building (avoid backticks and embedded escaped newlines which caused build-time parsing issues).
+    const vb = m.viewBox ? ' viewBox="' + m.viewBox + '"' : '';
+    return '<svg xmlns="http://www.w3.org/2000/svg"' + vb + '>' + m.logos.join('') + '</svg>';
   })();
 
   // Scroll helpers

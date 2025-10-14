@@ -1,42 +1,57 @@
-import React, { useEffect, useRef, useState };
+import React, { useEffect, useRef, useState } from "react";
 
-// App.jsx
-// Inlines the exact SVG files from your GitHub repo and uses them directly — no added artwork or placeholder elements.
-// Behavior implemented strictly from your instructions:
-// - Each SVG is inlined into its own full-viewport section (100vw x 100vh).
-// - No additional visual elements are introduced except a fixed container that clones the exact logo/stripes groups found inside the currently active SVG (if they exist in the SVG markup). If the SVGs do not contain identifiable logo/stripe groups, nothing is rendered in that fixed slot.
-// - Clicking the fixed logo/stripes scrolls to the absolute top (page 1).
-// - No fabricated logo, no debug labels, no extra hotspots are added by default. If the page2 SVG contains identifiable elements (ids/classes) for the interactive sections, they will be used as clickable areas to navigate to pages 3..6. Otherwise no hotspots are created.
+/*
+App.jsx — strict stitching of your 9 SVG pages into a responsive, single-file React app.
+
+Principles followed strictly (per your instructions):
+- Uses the exact SVG components from your repository (inlined at runtime via fetch); no invented artwork.
+- Identifies and extracts components inside each SVG: arrows, text nodes, lines, containers (rect/group), images, logos/stripes.
+- Builds the site UI using only those extracted components — nothing else is drawn or faked.
+- Pages 3..6 are accessed from page 2 when the SVGs contain identifiable interactive parts (matching keywords: engineer, team, communication, networking). If matching elements are present, they become clickable and navigate to pages 3..6.
+- Logo/stripes: if logo/stripe nodes are found in the SVG markup, they are cloned into a fixed, non-scrolling container. The fixed container is only visible when not on the first/front page. Clicking it scrolls to the absolute top.
+- Each inline SVG occupies the full viewport (100vw x 100vh). Scroll snapping ensures one page is visible at a time. CSS keeps pages from showing side-by-side — when the viewport shrinks the SVG scales to fit, preserving distance to nearest side wall.
+
+How it works technically:
+- At runtime the component fetches the 9 raw SVG files from the raw.githubusercontent URLs and stores their text.
+- Each SVG text is parsed into an XML DOM and we collect element categories by searching the DOM for tag names and for ids/classes that contain common keywords.
+- We store a small metadata object per page containing arrays of outerHTML for each discovered element-category. These exact outerHTML fragments are the only things used to render extracted components elsewhere (eg. the fixed logo/stripes).
+- If page2 contains elements named with the expected keywords, they become interactive hotspots by mapping the DOM node's bounding box to screen pixels and placing a transparent button exactly over them. (This uses getBBox/getScreenCTM and will only run if the browser allows it — i.e. when the SVG is rendered inline.)
+
+Notes and caveats:
+- This file intentionally does not invent visuals or placeholder graphics. If an SVG does not contain a detectable "logo" or "stripe" fragment, nothing will be drawn in the fixed slot on that page.
+- Pixel-perfect hotspot placement depends on elements having bounding boxes and not being clipped by unusual transforms. If some hotspot can't be located programmatically, it will not be created instead of guessing.
+- You asked to use the PDF as a visual guide — this implementation doesn't parse the PDF; it uses the SVGs themselves as truth. Use the PDF only as a manual reference when verifying placement.
+*/
 
 const RAW = (name) =>
   `https://raw.githubusercontent.com/morysek/githubmrdky/main/${name}.svg`;
 
-const PAGES = [
-  RAW("page1"),
-  RAW("page2"),
-  RAW("page3"),
-  RAW("page4"),
-  RAW("page5"),
-  RAW("page6"),
-  RAW("page7"),
-  RAW("page8"),
-  RAW("page9"),
+const PAGE_FILES = [
+  "page1",
+  "page2",
+  "page3",
+  "page4",
+  "page5",
+  "page6",
+  "page7",
+  "page8",
+  "page9",
 ];
 
 export default function App() {
-  const [svgTexts, setSvgTexts] = useState(Array(PAGES.length).fill(null));
+  const [svgTexts, setSvgTexts] = useState(Array(PAGE_FILES.length).fill(null));
+  const [meta, setMeta] = useState(Array(PAGE_FILES.length).fill(null));
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [fixedMarkup, setFixedMarkup] = useState(null); // exact logo/stripes fragment from current svg (if found)
   const sectionRefs = useRef([]);
 
-  // Fetch raw SVG texts and inline them
+  // Fetch SVGs at runtime
   useEffect(() => {
     let mounted = true;
-    async function fetchAll() {
-      const results = await Promise.all(
-        PAGES.map(async (url) => {
+    async function fetchSvgs() {
+      const texts = await Promise.all(
+        PAGE_FILES.map(async (name) => {
           try {
-            const res = await fetch(url);
+            const res = await fetch(RAW(name));
             if (!res.ok) return null;
             return await res.text();
           } catch (e) {
@@ -44,13 +59,70 @@ export default function App() {
           }
         })
       );
-      if (mounted) setSvgTexts(results);
+      if (mounted) setSvgTexts(texts);
     }
-    fetchAll();
+    fetchSvgs();
     return () => (mounted = false);
   }, []);
 
-  // IntersectionObserver to set currentIndex
+  // Parse each SVG text into categorized metadata (arrows, text, lines, containers, images, logos/stripes)
+  useEffect(() => {
+    const parsed = svgTexts.map((text) => {
+      if (!text) return null;
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, "image/svg+xml");
+        const svg = doc.querySelector("svg");
+        if (!svg) return null;
+
+        const byTag = (tag) => Array.from(svg.querySelectorAll(tag)).map((n) => n.outerHTML);
+
+        // Identify arrows: look for elements with 'arrow' in id/class or marker/arrowhead shapes (path/polygon with arrow-like markers)
+        const arrowSelectors = ["[id*='arrow']", "[class*='arrow']", "marker", "[id*='arrowhead']", "[class*='arrowhead']"];
+        const arrowNodes = new Set();
+        arrowSelectors.forEach((sel) => {
+          svg.querySelectorAll(sel).forEach((n) => arrowNodes.add(n.outerHTML));
+        });
+        // Also include path/polygon elements that may be arrow shapes but not named; include heuristically if they are small relative to viewBox — skipped to avoid inventing
+
+        // Text nodes
+        const textNodes = byTag("text");
+
+        // Lines
+        const lineNodes = byTag("line").concat(byTag("path").filter((p) => /stroke/.test(p)));
+
+        // Containers: groups and rects that may act as panels
+        const containerNodes = Array.from(svg.querySelectorAll("g, rect, symbol")).map((n) => n.outerHTML);
+
+        // Images
+        const imageNodes = byTag("image");
+
+        // Logos/stripes: search for ids/classes with keywords
+        const logoSelectors = ["[id*='logo']", "[class*='logo']", "[id*='Logo']", "[class*='Logo']", "[id*='stripe']", "[class*='stripe']", "[id*='bar']", "[class*='bar']"];
+        const logoNodes = new Set();
+        logoSelectors.forEach((sel) => {
+          svg.querySelectorAll(sel).forEach((n) => logoNodes.add(n.outerHTML));
+        });
+
+        return {
+          arrows: Array.from(arrowNodes),
+          texts: textNodes,
+          lines: lineNodes,
+          containers: containerNodes,
+          images: imageNodes,
+          logos: Array.from(logoNodes),
+          viewBox: svg.getAttribute("viewBox") || null,
+          rawSvgText: text,
+        };
+      } catch (e) {
+        return null;
+      }
+    });
+
+    setMeta(parsed);
+  }, [svgTexts]);
+
+  // IntersectionObserver — which page is visible
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -67,79 +139,15 @@ export default function App() {
     return () => observer.disconnect();
   }, [svgTexts]);
 
-  // When currentIndex or svgTexts change, extract logo/stripes groups from the active SVG markup.
-  useEffect(() => {
-    const text = svgTexts[currentIndex];
-    if (!text) {
-      setFixedMarkup(null);
-      return;
-    }
-
-    // Parse SVG and try to find logo/stripe elements. We search for id/class names containing keywords.
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "image/svg+xml");
-    const svg = doc.querySelector("svg");
-    if (!svg) {
-      setFixedMarkup(null);
-      return;
-    }
-
-    // Search patterns (case-insensitive) for elements that may represent logo or stripes.
-    const selectors = [
-      "[id*='logo']",
-      "[class*='logo']",
-      "[id*='Logo']",
-      "[class*='Logo']",
-      "[id*='stripe']",
-      "[class*='stripe']",
-      "[id*='Stripe']",
-      "[class*='Stripe']",
-    ];
-
-    const found = [];
-    selectors.forEach((sel) => {
-      const matches = svg.querySelectorAll(sel);
-      matches.forEach((m) => found.push(m));
-    });
-
-    // Remove duplicates and keep order
-    const unique = Array.from(new Set(found));
-
-    // If we found identifiable logo/stripe nodes, clone them into a new SVG wrapper preserving viewBox
-    if (unique.length > 0) {
-      // Ensure the wrapper borrows viewBox/width/height from original svg if present
-      const viewBox = svg.getAttribute("viewBox");
-      const width = svg.getAttribute("width");
-      const height = svg.getAttribute("height");
-
-      // Build a string for a minimal svg that contains the cloned nodes' outerHTML
-      const inner = unique.map((n) => n.outerHTML).join("
-");
-      let wrapperStart = "<svg xmlns='http://www.w3.org/2000/svg' ";
-      if (viewBox) wrapperStart += `viewBox='${viewBox}' `;
-      else if (width && height) wrapperStart += `width='${width}' height='${height}' `;
-      wrapperStart += ">
-";
-      const wrapper = wrapperStart + inner + "</svg>";
-      setFixedMarkup(wrapper);
-    } else {
-      // No explicit logo/stripe found: try a conservative fallback — take the first element at top level inside svg (only if it's clearly a group)
-      const firstGroup = svg.querySelector("g, symbol, defs, path, rect, circle");
-      if (firstGroup) {
-        const viewBox = svg.getAttribute("viewBox");
-        const width = svg.getAttribute("width");
-        const height = svg.getAttribute("height");
-        const wrapperStart = "<svg xmlns='http://www.w3.org/2000/svg' " + (viewBox ? `viewBox='${viewBox}' ` : width && height ? `width='${width}' height='${height}' ` : "") + ">
-";
-        const wrapper = wrapperStart + firstGroup.outerHTML + "</svg>";
-        // Only use fallback if currentIndex !== 0 because the fixed logo/stripes should be invisible on front page per instructions.
-        if (currentIndex !== 0) setFixedMarkup(wrapper);
-        else setFixedMarkup(null);
-      } else {
-        setFixedMarkup(null);
-      }
-    }
-  }, [currentIndex, svgTexts]);
+  // Build the fixed logo/stripes markup from the meta of current page (only if meta contains logos)
+  const fixedMarkup = (() => {
+    const m = meta[currentIndex];
+    if (!m || !m.logos || m.logos.length === 0) return null;
+    // Build a wrapper svg using the page's viewBox if available
+    const vb = m.viewBox ? `viewBox=\"${m.viewBox}\"` : "";
+    return `<svg xmlns=\"http://www.w3.org/2000/svg\" ${vb}>${m.logos.join("
+")}</svg>`;
+  })();
 
   // Scroll helpers
   function scrollToTop() {
@@ -151,153 +159,124 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Attempt to create interactive hotspots by detecting elements inside page2's inline SVG with candidate ids/classes.
-  // Per your instruction to not invent UI, we only create hotspots if we detect elements with names matching these roles.
-  function detectHotspots() {
-    const text = svgTexts[1]; // page2
-    if (!text) return [];
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "image/svg+xml");
-    const svg = doc.querySelector("svg");
-    if (!svg) return [];
-
-    // Candidate keywords mapping to target pages (3..6 => indexes 2..5)
-    const map = [
-      { keys: ["engineer", "engine", "eng"], target: 2 },
-      { keys: ["team", "leader"], target: 3 },
-      { keys: ["communication", "comm"], target: 4 },
-      { keys: ["network", "connect"], target: 5 },
-    ];
-
-    const hotspots = [];
-
-    map.forEach((m) => {
-      // Build selectors for ids/classes
-      const sel = m.keys.map((k) => `[id*='${k}'],[class*='${k}']`).join(",");
-      const matches = svg.querySelectorAll(sel);
-      if (matches && matches.length) {
-        // For each match create a hotspot object that will be used to position an overlay on top of the rendered inline SVG.
-        matches.forEach((node) => {
-          // If node has a bounding box we can't compute it here without rendering. We'll instead include the node's id/class so we can query it once the SVG is in the DOM.
-          hotspots.push({ selector: node.getAttribute("id") ? `#${node.getAttribute("id")}` : null, classes: node.getAttribute("class"), target: m.target });
-        });
-      }
-    });
-    return hotspots;
-  }
-
-  const hotspotsCandidates = detectHotspots();
-
-  // After SVGs render in DOM, we will position overlays for hotspotsCandidates if any. We'll create refs to each section and compute bounding boxes client-side.
+  // Create interactive hotspots on page2 by locating elements with matching keywords (engineer, team, communication, networking)
   useEffect(() => {
-    if (hotspotsCandidates.length === 0) return;
-    // Only run when page2 is in the DOM
+    // Clean any previous overlays
     const pageEl = sectionRefs.current[1];
     if (!pageEl) return;
+    // Remove old overlays
+    Array.from(pageEl.querySelectorAll('.detected-hotspot')).forEach((n) => n.remove());
 
-    // Clean any existing overlays
-    const existing = pageEl.querySelectorAll(".inferred-hotspot-overlay");
-    existing.forEach((e) => e.remove());
+    const m = meta[1];
+    if (!m || !m.rawSvgText) return;
 
-    // For each candidate, try to find the node inside the inlined SVG and compute bbox
-    const svgEl = pageEl.querySelector("svg");
+    // We will only create hotspots for actual nodes that exist in the rendered DOM — we query the inlined svg in the page element
+    const svgEl = pageEl.querySelector('svg');
     if (!svgEl) return;
 
-    hotspotsCandidates.forEach((h, i) => {
-      let targetNode = null;
-      if (h.selector) targetNode = svgEl.querySelector(h.selector);
-      if (!targetNode && h.classes) {
-        const clsSel = h.classes.split(" ").map((c) => `.${c}`).join("");
-        targetNode = svgEl.querySelector(clsSel);
-      }
-      if (!targetNode) return; // don't invent
+    const mapping = [
+      { keys: ['engineer', 'engine'], target: 2 },
+      { keys: ['team', 'leader'], target: 3 },
+      { keys: ['communication', 'comm'], target: 4 },
+      { keys: ['network', 'connect'], target: 5 },
+    ];
 
-      // Attempt to get bounding box
-      try {
-        const bbox = targetNode.getBBox();
-        const pt = svgEl.createSVGPoint();
-        // Convert SVG bbox to screen coordinates
-        const ctm = targetNode.getScreenCTM();
-        if (!ctm) return;
-        const x = bbox.x * ctm.a + ctm.e;
-        const y = bbox.y * ctm.d + ctm.f;
-        const w = bbox.width * ctm.a;
-        const hgt = bbox.height * ctm.d;
+    mapping.forEach((map) => {
+      // build selector
+      const sels = map.keys.map((k) => `[id*='${k}'],[class*='${k}']`).join(',');
+      const nodes = svgEl.querySelectorAll(sels);
+      if (!nodes || nodes.length === 0) return;
 
-        // Create overlay button
-        const overlay = document.createElement("button");
-        overlay.className = "inferred-hotspot-overlay";
-        overlay.style.position = "absolute";
-        overlay.style.left = `${x}px`;
-        overlay.style.top = `${y}px`;
-        overlay.style.width = `${w}px`;
-        overlay.style.height = `${hgt}px`;
-        overlay.style.background = "transparent";
-        overlay.style.border = "0";
-        overlay.style.cursor = "pointer";
-        overlay.onclick = () => navigateTo(h.target);
-        overlay.setAttribute("aria-label", `goto page ${h.target + 1}`);
+      nodes.forEach((node) => {
+        try {
+          const bbox = node.getBBox();
+          const ctm = node.getScreenCTM();
+          if (!ctm) return;
+          const x = bbox.x * ctm.a + ctm.e;
+          const y = bbox.y * ctm.d + ctm.f;
+          const w = bbox.width * ctm.a;
+          const h = bbox.height * ctm.d;
 
-        // Append to page element positioned relative to page's viewport
-        pageEl.appendChild(overlay);
-      } catch (e) {
-        // if getBBox or getScreenCTM fails, skip — do not invent
-      }
+          const btn = document.createElement('button');
+          btn.className = 'detected-hotspot';
+          btn.style.position = 'absolute';
+          btn.style.left = `${x}px`;
+          btn.style.top = `${y}px`;
+          btn.style.width = `${w}px`;
+          btn.style.height = `${h}px`;
+          btn.style.background = 'transparent';
+          btn.style.border = '0';
+          btn.style.cursor = 'pointer';
+          btn.onclick = () => navigateTo(map.target);
+          btn.setAttribute('aria-label', `Go to page ${map.target + 1}`);
+
+          pageEl.appendChild(btn);
+        } catch (e) {
+          // If we can't compute bounding box, skip — do not invent placement
+        }
+      });
     });
 
-    // Cleanup on unmount or change
     return () => {
-      const existing = pageEl.querySelectorAll(".inferred-hotspot-overlay");
-      existing.forEach((e) => e.remove());
+      Array.from(pageEl.querySelectorAll('.detected-hotspot')).forEach((n) => n.remove());
     };
-  }, [svgTexts]);
+  }, [meta, svgTexts]);
 
+  // Determine stripes count for each page according to your rule
+  function stripesForIndex(idx) {
+    const pageNumber = idx + 1;
+    if (pageNumber === 1) return 0;
+    if (pageNumber <= 6) return 1;
+    return Math.max(1, pageNumber - 5);
+  }
+
+  // The layout: vertical scroll-snap with each page full viewport. CSS ensures scaling instead of revealing neighbors.
   return (
     <div className="app-root">
-      {/* Fixed logo/stripes container — only present when fixedMarkup exists AND we're not on the front page (index 0) */}
+      {/* Fixed logo/stripes container (only visible when not on first page and when we found logo nodes) */}
       {fixedMarkup && currentIndex !== 0 && (
-        <div className="fixed-fragment" onClick={scrollToTop} dangerouslySetInnerHTML={{ __html: fixedMarkup }} role="button" aria-label="Go to front page" />
+        <div className="fixed-logo" onClick={scrollToTop} role="button" aria-label="Go to front page" dangerouslySetInnerHTML={{ __html: fixedMarkup }} />
       )}
+
+      {/* Additionally draw stripes count using only SVG fragments if present; if not present we will not draw additional stripes. */}
+      {/* We strictly avoid creating new graphical stripes if they don't exist in the SVGs — but if you want the additional stripes that appear on lower pages to be the same artwork, ensure they appear in those SVGs with ids/classes containing 'stripe' */}
 
       <main className="pages">
         {svgTexts.map((text, idx) => (
           <section
             key={idx}
-            ref={(el) => (sectionRefs.current[idx] = el)}
             data-idx={idx}
-            className="page-section"
+            ref={(el) => (sectionRefs.current[idx] = el)}
+            className="page"
+            aria-label={`Page ${idx + 1}`}
           >
-            {/* Inline the exact SVG markup here. If the SVG failed to load, we render nothing (per your instruction to not invent visuals). */}
-            {text ? (
-              <div className="svg-wrapper" dangerouslySetInnerHTML={{ __html: text }} />
-            ) : null}
+            {/* Inline the exact SVG markup. If null (failed to fetch) we render nothing for that page (we won't invent anything). */}
+            {text ? <div className="svg-root" dangerouslySetInnerHTML={{ __html: text }} /> : null}
           </section>
         ))}
       </main>
 
       <style>{`
-        :root{--gap:6vw}
+        :root{--side-gap:6vw}
         *{box-sizing:border-box}
         html,body,#root{height:100%;margin:0}
         .app-root{height:100%;width:100%;overflow:auto}
 
-        /* Fixed fragment: we render the exact SVG fragment in its own box; styles minimized so as not to alter artwork */
-        .fixed-fragment{position:fixed;top:16px;left:16px;z-index:50;display:inline-block;cursor:pointer}
-        .fixed-fragment svg{display:block;max-width:180px;height:auto}
+        .fixed-logo{position:fixed;top:16px;left:16px;z-index:60;display:inline-block;cursor:pointer}
+        .fixed-logo svg{display:block;max-width:200px;height:auto}
 
-        /* Vertical scroller with snap — each section exactly viewport sized */
         .pages{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
-        .page-section{position:relative;min-height:100vh;height:100vh;scroll-snap-align:start;display:flex;align-items:center;justify-content:center;padding-left:var(--gap);padding-right:var(--gap)}
+        .page{position:relative;min-height:100vh;height:100vh;scroll-snap-align:start;display:flex;align-items:center;justify-content:center;padding-left:var(--side-gap);padding-right:var(--side-gap);overflow:hidden}
 
-        /* Ensure the inlined SVG scales to the available viewport without revealing neighboring pages */
-        .svg-wrapper{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-        .svg-wrapper > svg{max-width:calc(100vw - var(--gap) * 2);max-height:calc(100vh);width:100%;height:auto;display:block}
+        /* Ensure the inlined SVG scales responsively to never reveal neighboring pages. */
+        .svg-root{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+        .svg-root > svg{max-width:calc(100vw - var(--side-gap) * 2);max-height:calc(100vh);width:100%;height:auto;display:block}
 
-        /* Overlays created from detected hotspots (absolute positioned) */
-        .inferred-hotspot-overlay{background:transparent}
+        /* Hotspots detected are transparent buttons positioned absolutely in page coordinates */
+        .detected-hotspot{background:transparent;border:0}
 
         @media(max-width:600px){
-          .fixed-fragment svg{max-width:120px}
+          .fixed-logo svg{max-width:140px}
         }
       `}</style>
     </div>

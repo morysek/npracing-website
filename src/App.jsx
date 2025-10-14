@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState };
 
 // App.jsx
 // Inlines the exact SVG files from your GitHub repo and uses them directly — no added artwork or placeholder elements.

@@ -29,8 +29,7 @@ const pageText = {
     line1: "Czechia’s only STEM Racing team",
     line2: "Czechia’s only ",
     line3: "STEM Racing ",
-    logoText: "NP
-Racing",
+    logoText: "NP\nRacing",
     scroll: "Scroll",
   },
   page2: {

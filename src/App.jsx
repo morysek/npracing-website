@@ -144,17 +144,51 @@ function Typo({children, size, as: Component = 'div', weight = 700, lineHeight =
 // ----- Page components laid out to match mockup flow -----
 function Page1(){
   return (
-    <section className="page page-1">
+    <section className="page page-1" aria-label="Page 1">
+      {/* Logo top-left */}
       <header className="top-left">
         <LogoSVG />
       </header>
-      <div className="hero">
-        <Typo as="h1" size={80}>{pageText.page1.line1}</Typo>
-        <Typo as="h1" size={100}>{pageText.page1.line3}</Typo>
-        <Typo as="p" size={45}>{pageText.page1.logoText}</Typo>
+
+      {/* Hero area - arranged to match mockup: large stacked headings with tight tracking */}
+      <div className="hero" role="region">
+        <div className="hero-inner">
+          <div className="hero-left">
+            {/* First headline (80) */}
+            <div style={{position:'relative'}}>
+              <Typo as="h1" size={80}>{pageText.page1.line1}</Typo>
+            </div>
+
+            {/* Big headline (100) — tightly spaced under the first */}
+            <div style={{marginTop:6}}>
+              <Typo as="h1" size={100}>{pageText.page1.line3}</Typo>
+            </div>
+
+            {/* Small logo text / label (45) inside a black pill to match mockup contrast */}
+            <div className="hero-label" style={{marginTop:18}}>
+              <div className="black-block-inline">
+                <Typo as="p" size={45}>{pageText.page1.logoText}</Typo>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right side vertical decorative line and black panel (as in mockup) */}
+          <aside className="hero-right">
+            <div className="vertical-line" aria-hidden="true" />
+            <div className="black-card">
+              {/* placeholder for numbers or short label if mockup has it */}
+              <Typo as="p" size={28}>{/* intentionally left blank for now */}</Typo>
+            </div>
+          </aside>
+        </div>
       </div>
+
+      {/* Footer scroll area with arrow */}
       <footer className="page-footer">
-        <ArrowDownPage1 />
+        <div className="arrow-wrap">
+          <ArrowDownPage1 />
+        </div>
         <div className="scroll-label"><Typo as="p" size={28}>{pageText.page1.scroll}</Typo></div>
       </footer>
     </section>
@@ -319,6 +353,47 @@ h1,h2,h3,p{ margin:0; }
 /* Helpers to make lines and containers for pixel-perfect tuning */
 .line{ height:2px; background:#000; margin:16px 0; }
 .container-black{ background:#000; color:#fff; padding:20px; }
+
+/* Page-1 precise layout overrides for pixel tuning (inserted by assistant) */
+.page-1{
+  min-height:100vh;
+  padding:120px 88px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.page-1 .hero-inner{
+  display:flex;
+  gap:48px;
+  align-items:flex-start;
+  max-width:1300px;
+  margin:0 auto;
+}
+.page-1 .hero-left{ flex:1 1 720px; }
+.page-1 .hero-right{ width:260px; display:flex; flex-direction:column; align-items:flex-end; gap:18px; }
+
+/* decorative vertical line on the right of hero */
+.page-1 .vertical-line{ width:4px; height:220px; background:#000; }
+
+/* black card to the right (matches mockup block) */
+.page-1 .black-card{ background:#000; color:#fff; width:220px; padding:28px; display:flex; align-items:center; justify-content:center; }
+
+/* inline black label for the logo-text under the headline */
+.black-block-inline{ display:inline-block; background:#000; color:#fff; padding:10px 18px; }
+
+/* precise footer arrow placement */
+.page-1 .page-footer{ display:flex; gap:12px; align-items:center; justify-content:center; padding-bottom:56px; }
+.page-1 .arrow-wrap{ transform:translateY(0); }
+
+/* Tight tracking override for headline elements to match Canva -26 */
+.page-1 h1, .page-1 p{ letter-spacing: -0.26em; line-height:0.84; }
+
+/* Utility: ensure the hero text scales cleanly on smaller screens */
+@media (max-width: 1000px){
+  .page-1 .hero-inner{ flex-direction:column; align-items:flex-start; }
+  .page-1 .hero-right{ width:100%; align-items:flex-start; }
+  .page-1 .black-card{ width:100%; }
+}
 
 /* End of App.css */
 

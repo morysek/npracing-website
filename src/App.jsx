@@ -114,9 +114,7 @@ checkered flag.`,
   page9: {
     scheduleTitle: "Schedule",
     timer: "hh:mm:ss",
-    nextUp: "Next up:
-United
-Kingdom",
+    nextUp: "Next up:\\nUnited\\nKingdom",
     date: "February 6-7",
     contactNumber: "4",
     contactTitle: "Contact5",

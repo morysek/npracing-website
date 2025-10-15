@@ -1,29 +1,43 @@
-// React single-file scaffold (App.jsx) + accompanying CSS and README
-// THIS FILE WAS UPDATED: I read your uploaded PDF and placed the textual content from it into the page components.
-// Replace the SVG PLACEHOLDERS below with your full <svg>...</svg> blocks where indicated.
+import React from "react";
+import "./App.css";
 
-import React from 'react';
-import './App.css';
-
-// ----- SVG PLACEHOLDERS (replace these DIVs with your full SVG markup) -----
+/* ===== SVG PLACEHOLDERS =====
+   Nahraďte obsah <div className="svg-placeholder">...</div> přesným <svg>...</svg> blokem.
+   Např. v LogoSVG vložte celý SVG markup pro logo.
+*/
 export const LogoSVG = () => (
-  <div className="svg-placeholder" data-name="LogoSVG">{/* PLACEHOLDER: PASTE Logo SVG HERE */}</div>
-);
-export const ArrowDownPage1 = () => (
-  <div className="svg-placeholder" data-name="ArrowDownPage1">{/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}</div>
-);
-export const ArrowDownSmall = ({name='ArrowDownSmall'}) => (
-  <div className="svg-placeholder" data-name={name}>{/* PLACEHOLDER: PASTE Sipka doprava dolu (2-6,8) SVG HERE */}</div>
-);
-export const ArrowLeftDown = () => (
-  <div className="svg-placeholder" data-name="ArrowLeftDown">{/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}</div>
-);
-export const ArrowRightBig = () => (
-  <div className="svg-placeholder" data-name="ArrowRightBig">{/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}</div>
+  <div className="svg-placeholder" data-name="LogoSVG">
+    {/* PLACEHOLDER: PASTE Logo SVG HERE */}
+  </div>
 );
 
-// ----- Text content pulled from your uploaded PDF (kept verbatim) -----
-// Source: uploaded pdfguide.pdf. See file citation in chat. fileciteturn0file0
+export const ArrowDownPage1 = () => (
+  <div className="svg-placeholder" data-name="ArrowDownPage1">
+    {/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}
+  </div>
+);
+
+export const ArrowDownSmall = ({ name = "ArrowDownSmall" }) => (
+  <div className="svg-placeholder" data-name={name}>
+    {/* PLACEHOLDER: PASTE Sipka doprava dolu (stranky 2-6,8) SVG HERE */}
+  </div>
+);
+
+export const ArrowLeftDown = () => (
+  <div className="svg-placeholder" data-name="ArrowLeftDown">
+    {/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}
+  </div>
+);
+
+export const ArrowRightBig = () => (
+  <div className="svg-placeholder" data-name="ArrowRightBig">
+    {/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}
+  </div>
+);
+
+/* ===== Texty (převzato z PDF) =====
+   Víceliniové bloky používají template literals (`...`) - to je bezpečné.
+*/
 const pageText = {
   page1: {
     line1: "Czechia’s only STEM Racing team",
@@ -34,12 +48,12 @@ const pageText = {
   },
   page2: {
     heading: "The Team1",
-    roles: ["Engineer","Team leader","Communication","Networking"],
+    roles: ["Engineer", "Team leader", "Communication", "Networking"],
   },
   page3: {
     heading: "The Team1",
     role: "Engineer",
-    body: `\"Engineers bear great responsibility, as they design
+    body: `"Engineers bear great responsibility, as they design
 the most complicated and important part of the
 STEM Racing project. Here, at NP Racing, this
 responsibility rests on one person - Lukáš. Being
@@ -48,42 +62,42 @@ a unique set of skills. You not only have to be very
 knowledgeable in the field aerodynamics and CAD
 Design, but you also have to be very handy. Their
 duty is to make the perfect car and ensure it
-doesn’t have any flaws.\"`
+doesn’t have any flaws."`,
   },
   page4: {
     heading: "The Team1",
     role: "Team leader",
-    body: `\"A good team leader is essential, when it comes to
+    body: `"A good team leader is essential, when it comes to
 creating something special. Not only do they have
 to be hardworking, smart and organised, but they
 also have to have the instinct to make the correct
 decision. That is where Matěj comes in. Not only he
 has all the skills needed, but he also doesn’t
-hesitate to help where needed.\"`
+hesitate to help where needed."`,
   },
   page5: {
     heading: "The Team1",
     role: "Communication",
-    body: `\"It is very important to always have an overview
+    body: `"It is very important to always have an overview
 about money. Eventhough having the right
 knowledge and determination plays a big role in a
 succesfull project, nothing can be done without
 money. Our finance administrator, Lukáš, dedicated
 himself to acquiring resources needed. He reached
 out to many companies and evetually secured a
-major sponsorship.\"`
+major sponsorship."`,
   },
   page6: {
     heading: "The Team1",
     role: "Networking",
-    body: `\"Marketing is fundamentally the effort to get known.
+    body: `"Marketing is fundamentally the effort to get known.
 It is very important to have good marketing, as it
 can greatly influence our success. Adam is in
 charge of this department and he’s doing
 everything in his power to make us known. He
 makes entertaining content for our social media,
 contributes to the graphic design of our team and
-tries to build a solid brand identity.\"`
+tries to build a solid brand identity."`,
   },
   page7: {
     heading: "The Car 2",
@@ -114,168 +128,228 @@ checkered flag.`,
   page9: {
     scheduleTitle: "Schedule",
     timer: "hh:mm:ss",
-    nextUp: "Next up:\\nUnited\\nKingdom",
+    nextUp: `Next up:
+United
+Kingdom`,
     date: "February 6-7",
     contactNumber: "4",
     contactTitle: "Contact5",
     contactEmail: "prokopmatej@novyporg.cz",
     address: "Pod Krčským Lesem 25, Praha 4",
-  }
+  },
 };
 
-// ----- Typo helper with your Canva parameters -----
-function Typo({children, size, as: Component = 'div', weight = 700, lineHeight = 0.84, tracking = -26}) {
+/* ===== Typo helper (aplikuje vaše Canva parametry) =====
+   - Helvetica Bold by měl být dostupný přes /fonts/helvetica.woff2
+   - tracking: Canva -26 -> letterSpacing -0.26em (lze doladit v CSS)
+*/
+function Typo({
+  children,
+  size,
+  as: Component = "div",
+  weight = 700,
+  lineHeight = 0.84,
+  tracking = -26,
+}) {
   const style = {
-    fontFamily: 'HelveticaBold, Helvetica, Arial, sans-serif',
+    fontFamily: "HelveticaBold, Helvetica, Arial, sans-serif",
     fontWeight: weight,
     lineHeight: lineHeight,
-    // Convert Canva -26 tracking to em: using -0.26em as a close conversion (adjust in CSS if needed)
-    letterSpacing: `${(tracking / 100)}em`,
+    letterSpacing: `${tracking / 100}em`,
     fontSize: `${size}px`,
     margin: 0,
-    whiteSpace: 'pre-line',
+    whiteSpace: "pre-line",
   };
   return <Component style={style}>{children}</Component>;
 }
 
-// ----- Page components laid out to match mockup flow -----
-function Page1(){
+/* ===== Page components ===== */
+function Page1() {
   return (
     <section className="page page-1" aria-label="Page 1">
-      {/* Logo top-left */}
       <header className="top-left">
         <LogoSVG />
       </header>
 
-      {/* Hero area - arranged to match mockup: large stacked headings with tight tracking */}
       <div className="hero" role="region">
         <div className="hero-inner">
           <div className="hero-left">
-            {/* First headline (80) */}
-            <div style={{position:'relative'}}>
-              <Typo as="h1" size={80}>{pageText.page1.line1}</Typo>
+            <div style={{ position: "relative" }}>
+              <Typo as="h1" size={80}>
+                {pageText.page1.line1}
+              </Typo>
             </div>
 
-            {/* Big headline (100) — tightly spaced under the first */}
-            <div style={{marginTop:6}}>
-              <Typo as="h1" size={100}>{pageText.page1.line3}</Typo>
+            <div style={{ marginTop: 6 }}>
+              <Typo as="h1" size={100}>
+                {pageText.page1.line3}
+              </Typo>
             </div>
 
-            {/* Small logo text / label (45) inside a black pill to match mockup contrast */}
-            <div className="hero-label" style={{marginTop:18}}>
+            <div className="hero-label" style={{ marginTop: 18 }}>
               <div className="black-block-inline">
-                <Typo as="p" size={45}>{pageText.page1.logoText}</Typo>
+                <Typo as="p" size={45}>
+                  {pageText.page1.logoText}
+                </Typo>
               </div>
             </div>
-
           </div>
 
-          {/* Right side vertical decorative line and black panel (as in mockup) */}
           <aside className="hero-right">
             <div className="vertical-line" aria-hidden="true" />
             <div className="black-card">
-              {/* placeholder for numbers or short label if mockup has it */}
-              <Typo as="p" size={28}>{/* intentionally left blank for now */}</Typo>
+              <Typo as="p" size={28}></Typo>
             </div>
           </aside>
         </div>
       </div>
 
-      {/* Footer scroll area with arrow */}
       <footer className="page-footer">
         <div className="arrow-wrap">
           <ArrowDownPage1 />
         </div>
-        <div className="scroll-label"><Typo as="p" size={28}>{pageText.page1.scroll}</Typo></div>
+        <div className="scroll-label">
+          <Typo as="p" size={28}>
+            {pageText.page1.scroll}
+          </Typo>
+        </div>
       </footer>
     </section>
   );
 }
 
-function Page2(){
+function Page2() {
   return (
     <section className="page page-2">
       <div className="left-col">
-        <Typo as="h1" size={83}>{pageText.page2.heading}</Typo>
+        <Typo as="h1" size={83}>
+          {pageText.page2.heading}
+        </Typo>
       </div>
       <div className="right-col roles">
-        {pageText.page2.roles.map((r,i)=> (
-          <Typo as="p" size={60} key={i}>{r}</Typo>
+        {pageText.page2.roles.map((r, i) => (
+          <Typo as="p" size={60} key={i}>
+            {r}
+          </Typo>
         ))}
       </div>
-      <div className="nav-arrow"><ArrowDownSmall name="arrow-2"/></div>
+      <div className="nav-arrow">
+        <ArrowDownSmall name="arrow-2" />
+      </div>
     </section>
   );
 }
 
-function TeamProfile({data}){
+function TeamProfile({ data }) {
   return (
     <section className="page page-team">
       <div className="left-col">
-        <Typo as="h1" size={83}>{data.heading}</Typo>
+        <Typo as="h1" size={83}>
+          {data.heading}
+        </Typo>
       </div>
       <div className="right-col">
-        <Typo as="h3" size={28}>{data.role}</Typo>
-        <Typo as="p" size={28}>{data.body}</Typo>
+        <Typo as="h3" size={28}>
+          {data.role}
+        </Typo>
+        <Typo as="p" size={28}>
+          {data.body}
+        </Typo>
       </div>
-      <div className="nav-arrow"><ArrowDownSmall/></div>
+      <div className="nav-arrow">
+        <ArrowDownSmall />
+      </div>
     </section>
   );
 }
 
-function Page7(){
+function Page7() {
   return (
     <section className="page page-7">
       <div className="left-col">
-        <Typo as="h1" size={83}>{pageText.page7.heading}</Typo>
+        <Typo as="h1" size={83}>
+          {pageText.page7.heading}
+        </Typo>
       </div>
       <div className="right-col car-text">
-        <Typo as="p" size={26}>{pageText.page7.body}</Typo>
+        <Typo as="p" size={26}>
+          {pageText.page7.body}
+        </Typo>
       </div>
-      <div className="nav-arrow"><ArrowLeftDown/></div>
+      <div className="nav-arrow">
+        <ArrowLeftDown />
+      </div>
     </section>
   );
 }
 
-function Page8(){
+function Page8() {
   return (
     <section className="page page-8 partners">
       <div className="partners-left">
-        <Typo as="h1" size={50}>{pageText.page8.headingMain}</Typo>
-        <Typo as="p" size={25}>{pageText.page8.headingNumber}</Typo>
+        <Typo as="h1" size={50}>
+          {pageText.page8.headingMain}
+        </Typo>
+        <Typo as="p" size={25}>
+          {pageText.page8.headingNumber}
+        </Typo>
       </div>
       <div className="partners-right">
-        <Typo as="p" size={28}>{pageText.page8.sub1}</Typo>
-        <Typo as="p" size={28}>{pageText.page8.sub2}</Typo>
-        <Typo as="p" size={28}>{pageText.page8.sub3}</Typo>
+        <Typo as="p" size={28}>
+          {pageText.page8.sub1}
+        </Typo>
+        <Typo as="p" size={28}>
+          {pageText.page8.sub2}
+        </Typo>
+        <Typo as="p" size={28}>
+          {pageText.page8.sub3}
+        </Typo>
       </div>
-      <div className="nav-arrow"><ArrowDownSmall name="arrow-8"/></div>
+      <div className="nav-arrow">
+        <ArrowDownSmall name="arrow-8" />
+      </div>
     </section>
   );
 }
 
-function Page9(){
+function Page9() {
   return (
     <section className="page page-9 schedule">
       <div className="left-col">
-        <Typo as="h1" size={70}>{pageText.page9.scheduleTitle}</Typo>
-        <Typo as="p" size={20}>{pageText.page9.timer}</Typo>
+        <Typo as="h1" size={70}>
+          {pageText.page9.scheduleTitle}
+        </Typo>
+        <Typo as="p" size={20}>
+          {pageText.page9.timer}
+        </Typo>
       </div>
       <div className="center-col">
-        <Typo as="h1" size={90}>{pageText.page9.nextUp}</Typo>
-        <Typo as="p" size={40}>{pageText.page9.date}</Typo>
+        <Typo as="h1" size={90}>
+          {pageText.page9.nextUp}
+        </Typo>
+        <Typo as="p" size={40}>
+          {pageText.page9.date}
+        </Typo>
       </div>
       <div className="right-col contact">
-        <Typo as="h2" size={30}>{pageText.page9.contactTitle}</Typo>
-        <Typo as="p" size={28}>{pageText.page9.contactEmail}</Typo>
-        <Typo as="p" size={28}>{pageText.page9.address}</Typo>
+        <Typo as="h2" size={30}>
+          {pageText.page9.contactTitle}
+        </Typo>
+        <Typo as="p" size={28}>
+          {pageText.page9.contactEmail}
+        </Typo>
+        <Typo as="p" size={28}>
+          {pageText.page9.address}
+        </Typo>
       </div>
-      <div className="nav-arrow"><ArrowRightBig/></div>
+      <div className="nav-arrow">
+        <ArrowRightBig />
+      </div>
     </section>
   );
 }
 
-export default function App(){
+export default function App() {
   return (
     <div className="app-root">
       <Page1 />
@@ -290,347 +364,3 @@ export default function App(){
     </div>
   );
 }
-
-/* ===== App.css (place this in the same folder as App.jsx) =====
-   This CSS attempts to match the mockup structure: black blocks, lines and spacing.
-   It loads Helvetica from /fonts/helvetica.woff2 which you stated exists in public/fonts/. */
-
-/* Put this CSS content into src/App.css (or keep it inline if you prefer) */
-
-/* App.css content: */
-
-:root{
-  --canva-tracking: -0.26em; /* adjust if you want different conversion */
-}
-
-@font-face{
-  font-family: 'HelveticaBold';
-  src: url('/fonts/helvetica.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-*{ box-sizing: border-box; }
-html,body,#root{ height:100%; margin:0; }
-.app-root{ font-family: 'HelveticaBold', Helvetica, Arial, sans-serif; color:#000; }
-
-.page{ display:flex; padding:96px 88px; min-height:820px; gap:24px; align-items:flex-start; }
-
-/* Shared columns */
-.left-col{ flex:1; }
-.right-col{ flex:1; }
-.center-col{ flex:1; }
-.partners-left{ flex:1; }
-.partners-right{ flex:1; }
-
-/* Hero on page 1: stacked headings */
-.page-1{ background: #fff; position:relative; }
-.page-1 .hero{ display:flex; flex-direction:column; gap:8px; }
-.page-1 .top-left{ position:absolute; left:88px; top:32px; }
-
-/* black containers and dividing lines (approx from mockup) */
-.page-2, .page-team, .page-7, .page-8, .page-9{ background:#fff; }
-
-/* Example of a black block to the right column used for e.g. partners / numbers */
-.black-block{ background:#000; color:#fff; padding:24px; }
-
-/* Arrows placeholders styling */
-.svg-placeholder{ display:inline-block; border:1px dashed rgba(0,0,0,0.12); padding:8px; min-width:48px; min-height:48px; }
-
-/* Footer area where arrows live */
-.page-footer{ display:flex; gap:12px; align-items:center; justify-content:center; margin-top:24px; }
-
-/* Fine tune typography for sizes declared by you */
-h1,h2,h3,p{ margin:0; }
-
-/* For responsiveness */
-@media (max-width: 1100px){ .page{ flex-direction:column; padding:48px; } }
-
-/* Helpers to make lines and containers for pixel-perfect tuning */
-.line{ height:2px; background:#000; margin:16px 0; }
-.container-black{ background:#000; color:#fff; padding:20px; }
-
-/* Page-1 precise layout overrides for pixel tuning (inserted by assistant) */
-.page-1{
-  min-height:100vh;
-  padding:120px 88px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-.page-1 .hero-inner{
-  display:flex;
-  gap:48px;
-  align-items:flex-start;
-  max-width:1300px;
-  margin:0 auto;
-}
-.page-1 .hero-left{ flex:1 1 720px; }
-.page-1 .hero-right{ width:260px; display:flex; flex-direction:column; align-items:flex-end; gap:18px; }
-
-/* decorative vertical line on the right of hero */
-.page-1 .vertical-line{ width:4px; height:220px; background:#000; }
-
-/* black card to the right (matches mockup block) */
-.page-1 .black-card{ background:#000; color:#fff; width:220px; padding:28px; display:flex; align-items:center; justify-content:center; }
-
-/* inline black label for the logo-text under the headline */
-.black-block-inline{ display:inline-block; background:#000; color:#fff; padding:10px 18px; }
-
-/* precise footer arrow placement */
-.page-1 .page-footer{ display:flex; gap:12px; align-items:center; justify-content:center; padding-bottom:56px; }
-.page-1 .arrow-wrap{ transform:translateY(0); }
-
-/* Tight tracking override for headline elements to match Canva -26 */
-.page-1 h1, .page-1 p{ letter-spacing: -0.26em; line-height:0.84; }
-
-/* Utility: ensure the hero text scales cleanly on smaller screens */
-@media (max-width: 1000px){
-  .page-1 .hero-inner{ flex-direction:column; align-items:flex-start; }
-  .page-1 .hero-right{ width:100%; align-items:flex-start; }
-  .page-1 .black-card{ width:100%; }
-}
-
-/* End of App.css */
-
-/* ===== README snippet =====
-1) Save this file as src/App.jsx and create src/App.css with the content above.
-2) Make sure your Helvetica font file is in public/fonts/helvetica.woff2.
-3) Replace each SVG PLACEHOLDER DIV with the exact <svg>...</svg> block you provided earlier.
-4) For pixel-perfect alignment, open each PNG from your GitHub repo and tune padding, font-size and --canva-tracking in App.css.
-
-I used the exact text from your uploaded PDF and populated the components accordingly. File source: pdfguide.pdf. fileciteturn0file0
-*/// React single-file scaffold (App.jsx) + accompanying CSS and README
-// PASTE the full <svg>...</svg> blocks into the placeholders noted below.
-
-/* ===== App.jsx ===== */
-import React from 'react';
-import './App.css';
-
-// ----- SVG PLACEHOLDERS -----
-// Replace the string contents of each const with the FULL <svg>...</svg> markup you provided.
-// Example: const LogoSVG = () => (<>{/* paste <svg ...>...</svg> here */}</>);
-
-export const LogoSVG = () => (
-  <div className="svg-placeholder" data-name="LogoSVG">{/* PLACEHOLDER: PASTE Logo SVG HERE */}</div>
-);
-
-export const ArrowDownPage1 = () => (
-  <div className="svg-placeholder" data-name="ArrowDownPage1">{/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}</div>
-);
-
-export const ArrowDownSmall = ({name='ArrowDownSmall'}) => (
-  <div className="svg-placeholder" data-name={name}>{/* PLACEHOLDER: PASTE Sipka doprava dolu (2-6,8) SVG HERE */}</div>
-);
-
-export const ArrowLeftDown = () => (
-  <div className="svg-placeholder" data-name="ArrowLeftDown">{/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}</div>
-);
-
-export const ArrowRightBig = () => (
-  <div className="svg-placeholder" data-name="ArrowRightBig">{/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}</div>
-);
-
-// ----- Utility: Text block that respects the Canva typographic rules you listed -----
-function Typo({children, size, as: Component = 'div', weight = 700, lineHeight = 0.84, tracking = -26}) {
-  // tracking in Canva is "-26" — we're exposing it as CSS variable --tracking which you can tune.
-  // In CSS we convert to px/em later; for now we just set inline style using CSS custom properties.
-  const style = {
-    fontFamily: 'Helvetica, Arial, sans-serif',
-    fontWeight: weight,
-    lineHeight: lineHeight,
-    // we'll use a conversion: Canva -26 -> -0.26em by default; adjust in App.css if you want exact px
-    letterSpacing: `${(tracking / 100)}em`,
-    fontSize: `${size}px`,
-    margin: 0,
-  };
-  return <Component style={style}>{children}</Component>;
-}
-
-// ----- Pages according to your size specs -----
-function Page1() {
-  return (
-    <section className="page page-1">
-      <header className="page-header">
-        <LogoSVG />
-      </header>
-
-      <main className="page-main">
-        <Typo as="h1" size={100}>NADPIS 100</Typo>
-        <Typo as="h2" size={80}>Sekundární 80</Typo>
-        <Typo as="p" size={45}>Menší text 45</Typo>
-      </main>
-
-      <footer className="page-footer">
-        <ArrowDownPage1 />
-      </footer>
-    </section>
-  );
-}
-
-function Page2() {
-  return (
-    <section className="page page-2">
-      <main>
-        <Typo as="h1" size={83}>Nadpis (83)</Typo>
-        <Typo as="p" size={60}>Podnadpis (60)</Typo>
-      </main>
-      <aside className="nav-arrow"><ArrowDownSmall name="arrow-2" /></aside>
-    </section>
-  );
-}
-
-function Page3to6({index}){
-  return (
-    <section className={`page page-3to6 p-${index}`}>
-      <Typo as="h2" size={28}>Sekce {index}</Typo>
-      <div className="nav-arrow"><ArrowDownSmall name={`arrow-${index}`} /></div>
-    </section>
-  );
-}
-
-function Page7(){
-  return (
-    <section className="page page-7">
-      <Typo as="h2" size={28}>Sekce 7</Typo>
-      <div className="car-info">
-        <Typo as="p" size={26}>O autě — text velikost 26</Typo>
-      </div>
-      <div className="nav-arrow"><ArrowLeftDown /></div>
-    </section>
-  );
-}
-
-function Page8(){
-  return (
-    <section className="page page-8">
-      <Typo as="h1" size={50}>Velký 50</Typo>
-      <Typo as="p" size={25}>Menší 25</Typo>
-      <div className="nav-arrow"><ArrowDownSmall name="arrow-8" /></div>
-    </section>
-  );
-}
-
-function Page9(){
-  return (
-    <section className="page page-9">
-      <Typo as="h1" size={70}>Hlavní 70</Typo>
-      <Typo as="p" size={20}>Malý 20</Typo>
-      <Typo as="h2" size={90}>Velký 90</Typo>
-      <Typo as="p" size={40}>Střední 40</Typo>
-      <Typo as="p" size={30}>Doplňující 30</Typo>
-      <div className="nav-arrow"><ArrowRightBig /></div>
-    </section>
-  );
-}
-
-export default function App(){
-  return (
-    <div className="app-root">
-      {/* The layout below is a simple vertical stack of the 9 pages to match the PNG mockup flow. */}
-      <Page1 />
-      <Page2 />
-      <Page3to6 index={3} />
-      <Page3to6 index={4} />
-      <Page3to6 index={5} />
-      <Page3to6 index={6} />
-      <Page7 />
-      <Page8 />
-      <Page9 />
-    </div>
-  );
-}
-
-/* ===== App.css =====
-
-.app-root {
-  background: #fff;
-  color: #000;
-  font-family: Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.page {
-  padding: 80px 64px;
-  min-height: 820px; /* adjust to match PNG viewport */
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.page-header { display:flex; align-items:center; }
-.page-main { flex:1; display:flex; flex-direction:column; gap:16px; }
-.page-footer { display:flex; justify-content:center; padding-top:32px }
-
-/* Placeholder styling to make it obvious where to paste SVGs */
-.svg-placeholder{
-  width: fit-content;
-  display:inline-block;
-  border: 1px dashed rgba(0,0,0,0.12);
-  padding: 12px;
-  min-width:48px; min-height:48px;
-}
-
-/* Utility to make headlines feel like Canva's tight tracking. */
-h1,h2,p{ margin:0; }
-
-/* Responsive helpers — you will tune pixel-perfect in your CSS adjustments */
-@media (max-width: 1024px){
-  .page{ padding: 40px; }
-}
-
-/* ===== README (instructions) =====
-1) Ve svém projektu vložte tento soubor jako src/App.jsx a přidejte src/App.css podle výše.
-2) NA MÍSTA označená komentářem "PLACEHOLDER: PASTE ... SVG HERE" vložte přesně celý <svg>...</svg> blok, který jste mi poskytl.
-   - LogoSVG  -> Logo na stránce 1 (vložte celý XML svg blok)
-   - ArrowDownPage1 -> Sipka dolu na strance 1
-   - ArrowDownSmall -> Sipka doprava dolu pro stranky 2-6 a 8
-   - ArrowLeftDown -> Sipka doleva dolu (strana 7)
-   - ArrowRightBig -> Sipka doprava (strana 9)
-3) Font: použijte Helvetica Bold (pokud nemáte, použijte systémovou Helvetica/Arial a poté v Canva exportu zkontrolujte). V CSS je nastaveno font-weight:700.
-4) Typografická pravidla: Canva tracking "-26" jsem ve funkci Typo převedl na letter-spacing: -0.26em. Pokud chcete přesně -26px nebo jiný převod, upravte to v App.css nebo přímo v komponentě Typo.
-5) PNG reference: v repozitáři GitHubu máte obrázky 1-9.png; použijte je lokálně pro přesné porovnání a úpravy.
-
-Tip: pro pixel-perfect ladění otevřete paralelně PNG a upravujte paddingy, velikosti písma a letter-spacing v App.css.
-
-*/
-
-
-/* AUTO-APPEND: TEXT EXTRACTION & ASSET-PLACEMENT INSTRUCTIONS */
-
-/* I attempted to read the mockups (PNG/SVG) from the GitHub repository you mentioned: https://github.com/morysek/githubmrdky. The repository listing was reachable but this environment could not fetch the raw SVG/PNG programmatically. */
-
-/* Please paste the exact textual content of pages 1–9 (or upload the PNGs). Paste full <svg>...</svg> blocks into the SVG placeholders in the file. */
-
-/* PAGE TEXT PLACEHOLDERS: replace these with verbatim page text from your mockups */
-/* PAGE 1 */
-/* [PASTE PAGE 1 TEXT HERE] */
-
-/* PAGE 2 */
-/* [PASTE PAGE 2 TEXT HERE] */
-
-/* PAGE 3 */
-/* [PASTE PAGE 3 TEXT HERE] */
-
-/* PAGE 4 */
-/* [PASTE PAGE 4 TEXT HERE] */
-
-/* PAGE 5 */
-/* [PASTE PAGE 5 TEXT HERE] */
-
-/* PAGE 6 */
-/* [PASTE PAGE 6 TEXT HERE] */
-
-/* PAGE 7 */
-/* [PASTE PAGE 7 TEXT HERE] */
-
-/* PAGE 8 */
-/* [PASTE PAGE 8 TEXT HERE] */
-
-/* PAGE 9 */
-/* [PASTE PAGE 9 TEXT HERE] */
-
-/* If you upload the PNGs 1-9.png here I will OCR them and insert the text into the components immediately. */

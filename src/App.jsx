@@ -1,283 +1,564 @@
-import React, { useEffect, useRef, useState } from "react";
+// React single-file scaffold (App.jsx) + accompanying CSS and README
+// THIS FILE WAS UPDATED: I read your uploaded PDF and placed the textual content from it into the page components.
+// Replace the SVG PLACEHOLDERS below with your full <svg>...</svg> blocks where indicated.
 
-/*
-App.jsx — strict stitching of your 9 SVG pages into a responsive, single-file React app.
+import React from 'react';
+import './App.css';
 
-Principles followed strictly (per your instructions):
-- Uses the exact SVG components from your repository (inlined at runtime via fetch); no invented artwork.
-- Identifies and extracts components inside each SVG: arrows, text nodes, lines, containers (rect/group), images, logos/stripes.
-- Builds the site UI using only those extracted components — nothing else is drawn or faked.
-- Pages 3..6 are accessed from page 2 when the SVGs contain identifiable interactive parts (matching keywords: engineer, team, communication, networking). If matching elements are present, they become clickable and navigate to pages 3..6.
-- Logo/stripes: if logo/stripe nodes are found in the SVG markup, they are cloned into a fixed, non-scrolling container. The fixed container is only visible when not on the first/front page. Clicking it scrolls to the absolute top.
-- Each inline SVG occupies the full viewport (100vw x 100vh). Scroll snapping ensures one page is visible at a time. CSS keeps pages from showing side-by-side — when the viewport shrinks the SVG scales to fit, preserving distance to nearest side wall.
+// ----- SVG PLACEHOLDERS (replace these DIVs with your full SVG markup) -----
+export const LogoSVG = () => (
+  <div className="svg-placeholder" data-name="LogoSVG">{/* PLACEHOLDER: PASTE Logo SVG HERE */}</div>
+);
+export const ArrowDownPage1 = () => (
+  <div className="svg-placeholder" data-name="ArrowDownPage1">{/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}</div>
+);
+export const ArrowDownSmall = ({name='ArrowDownSmall'}) => (
+  <div className="svg-placeholder" data-name={name}>{/* PLACEHOLDER: PASTE Sipka doprava dolu (2-6,8) SVG HERE */}</div>
+);
+export const ArrowLeftDown = () => (
+  <div className="svg-placeholder" data-name="ArrowLeftDown">{/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}</div>
+);
+export const ArrowRightBig = () => (
+  <div className="svg-placeholder" data-name="ArrowRightBig">{/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}</div>
+);
 
-How it works technically:
-- At runtime the component fetches the 9 raw SVG files from the raw.githubusercontent URLs and stores their text.
-- Each SVG text is parsed into an XML DOM and we collect element categories by searching the DOM for tag names and for ids/classes that contain common keywords.
-- We store a small metadata object per page containing arrays of outerHTML for each discovered element-category. These exact outerHTML fragments are the only things used to render extracted components elsewhere (eg. the fixed logo/stripes).
-- If page2 contains elements named with the expected keywords, they become interactive hotspots by mapping the DOM node's bounding box to screen pixels and placing a transparent button exactly over them. (This uses getBBox/getScreenCTM and will only run if the browser allows it — i.e. when the SVG is rendered inline.)
-
-Notes and caveats:
-- This file intentionally does not invent visuals or placeholder graphics. If an SVG does not contain a detectable "logo" or "stripe" fragment, nothing will be drawn in the fixed slot on that page.
-- Pixel-perfect hotspot placement depends on elements having bounding boxes and not being clipped by unusual transforms. If some hotspot can't be located programmatically, it will not be created instead of guessing.
-- You asked to use the PDF as a visual guide — this implementation doesn't parse the PDF; it uses the SVGs themselves as truth. Use the PDF only as a manual reference when verifying placement.
-*/
-
-const RAW = (name) =>
-  `https://raw.githubusercontent.com/morysek/githubmrdky/main/${name}.svg`;
-
-const PAGE_FILES = [
-  "page1",
-  "page2",
-  "page3",
-  "page4",
-  "page5",
-  "page6",
-  "page7",
-  "page8",
-  "page9",
-];
-
-export default function App() {
-  const [svgTexts, setSvgTexts] = useState(Array(PAGE_FILES.length).fill(null));
-  const [meta, setMeta] = useState(Array(PAGE_FILES.length).fill(null));
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const sectionRefs = useRef([]);
-
-  // Fetch SVGs at runtime
-  useEffect(() => {
-    let mounted = true;
-    async function fetchSvgs() {
-      const texts = await Promise.all(
-        PAGE_FILES.map(async (name) => {
-          try {
-            const res = await fetch(RAW(name));
-            if (!res.ok) return null;
-            return await res.text();
-          } catch (e) {
-            return null;
-          }
-        })
-      );
-      if (mounted) setSvgTexts(texts);
-    }
-    fetchSvgs();
-    return () => (mounted = false);
-  }, []);
-
-  // Parse each SVG text into categorized metadata (arrows, text, lines, containers, images, logos/stripes)
-  useEffect(() => {
-    const parsed = svgTexts.map((text) => {
-      if (!text) return null;
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "image/svg+xml");
-        const svg = doc.querySelector("svg");
-        if (!svg) return null;
-
-        const byTag = (tag) => Array.from(svg.querySelectorAll(tag)).map((n) => n.outerHTML);
-
-        // Identify arrows: look for elements with 'arrow' in id/class or marker/arrowhead shapes (path/polygon with arrow-like markers)
-        const arrowSelectors = ["[id*='arrow']", "[class*='arrow']", "marker", "[id*='arrowhead']", "[class*='arrowhead']"];
-        const arrowNodes = new Set();
-        arrowSelectors.forEach((sel) => {
-          svg.querySelectorAll(sel).forEach((n) => arrowNodes.add(n.outerHTML));
-        });
-        // Also include path/polygon elements that may be arrow shapes but not named; include heuristically if they are small relative to viewBox — skipped to avoid inventing
-
-        // Text nodes
-        const textNodes = byTag("text");
-
-        // Lines
-        const lineNodes = byTag("line").concat(byTag("path").filter((p) => /stroke/.test(p)));
-
-        // Containers: groups and rects that may act as panels
-        const containerNodes = Array.from(svg.querySelectorAll("g, rect, symbol")).map((n) => n.outerHTML);
-
-        // Images
-        const imageNodes = byTag("image");
-
-        // Logos/stripes: search for ids/classes with keywords
-        const logoSelectors = ["[id*='logo']", "[class*='logo']", "[id*='Logo']", "[class*='Logo']", "[id*='stripe']", "[class*='stripe']", "[id*='bar']", "[class*='bar']"];
-        const logoNodes = new Set();
-        logoSelectors.forEach((sel) => {
-          svg.querySelectorAll(sel).forEach((n) => logoNodes.add(n.outerHTML));
-        });
-
-        return {
-          arrows: Array.from(arrowNodes),
-          texts: textNodes,
-          lines: lineNodes,
-          containers: containerNodes,
-          images: imageNodes,
-          logos: Array.from(logoNodes),
-          viewBox: svg.getAttribute("viewBox") || null,
-          rawSvgText: text,
-        };
-      } catch (e) {
-        return null;
-      }
-    });
-
-    setMeta(parsed);
-  }, [svgTexts]);
-
-  // IntersectionObserver — which page is visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = Number(entry.target.getAttribute("data-idx"));
-            setCurrentIndex(idx);
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
-    sectionRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [svgTexts]);
-
-  // Build the fixed logo/stripes markup from the meta of current page (only if meta contains logos)
-  const fixedMarkup = (() => {
-    const m = meta[currentIndex];
-    if (!m || !m.logos || m.logos.length === 0) return null;
-    // Safer string building (avoid backticks and embedded escaped newlines which caused build-time parsing issues).
-    const vb = m.viewBox ? ' viewBox="' + m.viewBox + '"' : '';
-    return '<svg xmlns="http://www.w3.org/2000/svg"' + vb + '>' + m.logos.join('') + '</svg>';
-  })();
-
-  // Scroll helpers
-  function scrollToTop() {
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+// ----- Text content pulled from your uploaded PDF (kept verbatim) -----
+// Source: uploaded pdfguide.pdf. See file citation in chat. fileciteturn0file0
+const pageText = {
+  page1: {
+    line1: "Czechia’s only STEM Racing team",
+    line2: "Czechia’s only ",
+    line3: "STEM Racing ",
+    logoText: "NP
+Racing",
+    scroll: "Scroll",
+  },
+  page2: {
+    heading: "The Team1",
+    roles: ["Engineer","Team leader","Communication","Networking"],
+  },
+  page3: {
+    heading: "The Team1",
+    role: "Engineer",
+    body: `\"Engineers bear great responsibility, as they design
+the most complicated and important part of the
+STEM Racing project. Here, at NP Racing, this
+responsibility rests on one person - Lukáš. Being
+an engineer is very hard, since you have to posses
+a unique set of skills. You not only have to be very
+knowledgeable in the field aerodynamics and CAD
+Design, but you also have to be very handy. Their
+duty is to make the perfect car and ensure it
+doesn’t have any flaws.\"`
+  },
+  page4: {
+    heading: "The Team1",
+    role: "Team leader",
+    body: `\"A good team leader is essential, when it comes to
+creating something special. Not only do they have
+to be hardworking, smart and organised, but they
+also have to have the instinct to make the correct
+decision. That is where Matěj comes in. Not only he
+has all the skills needed, but he also doesn’t
+hesitate to help where needed.\"`
+  },
+  page5: {
+    heading: "The Team1",
+    role: "Communication",
+    body: `\"It is very important to always have an overview
+about money. Eventhough having the right
+knowledge and determination plays a big role in a
+succesfull project, nothing can be done without
+money. Our finance administrator, Lukáš, dedicated
+himself to acquiring resources needed. He reached
+out to many companies and evetually secured a
+major sponsorship.\"`
+  },
+  page6: {
+    heading: "The Team1",
+    role: "Networking",
+    body: `\"Marketing is fundamentally the effort to get known.
+It is very important to have good marketing, as it
+can greatly influence our success. Adam is in
+charge of this department and he’s doing
+everything in his power to make us known. He
+makes entertaining content for our social media,
+contributes to the graphic design of our team and
+tries to build a solid brand identity.\"`
+  },
+  page7: {
+    heading: "The Car 2",
+    body: `The STEM Racing Professional Class
+Car is a precision-engineered
+machine where science meets speed.
+Every component is optimized
+through data-driven design—
+aerodynamic contours sculpted by
+computational fluid dynamics. Built
+to demonstrate the fusion of
+engineering disciplines—mechanical,
+and computational—it’s not just a
+car; it’s a rolling laboratory. Each lap
+is an experiment, a test of physics,
+teamwork, and innovation. This is
+STEM in motion—where theory hits
+the track and innovation takes the
+checkered flag.`,
+  },
+  page8: {
+    headingMain: "Gold",
+    headingNumber: "Partners3",
+    sub1: "Silver",
+    sub2: "Main partners",
+    sub3: "Secondary partners",
+  },
+  page9: {
+    scheduleTitle: "Schedule",
+    timer: "hh:mm:ss",
+    nextUp: "Next up:
+United
+Kingdom",
+    date: "February 6-7",
+    contactNumber: "4",
+    contactTitle: "Contact5",
+    contactEmail: "prokopmatej@novyporg.cz",
+    address: "Pod Krčským Lesem 25, Praha 4",
   }
+};
 
-  function navigateTo(idx) {
-    const el = sectionRefs.current[idx];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+// ----- Typo helper with your Canva parameters -----
+function Typo({children, size, as: Component = 'div', weight = 700, lineHeight = 0.84, tracking = -26}) {
+  const style = {
+    fontFamily: 'HelveticaBold, Helvetica, Arial, sans-serif',
+    fontWeight: weight,
+    lineHeight: lineHeight,
+    // Convert Canva -26 tracking to em: using -0.26em as a close conversion (adjust in CSS if needed)
+    letterSpacing: `${(tracking / 100)}em`,
+    fontSize: `${size}px`,
+    margin: 0,
+    whiteSpace: 'pre-line',
+  };
+  return <Component style={style}>{children}</Component>;
+}
 
-  // Create interactive hotspots on page2 by locating elements with matching keywords (engineer, team, communication, networking)
-  useEffect(() => {
-    // Clean any previous overlays
-    const pageEl = sectionRefs.current[1];
-    if (!pageEl) return;
-    // Remove old overlays
-    Array.from(pageEl.querySelectorAll('.detected-hotspot')).forEach((n) => n.remove());
+// ----- Page components laid out to match mockup flow -----
+function Page1(){
+  return (
+    <section className="page page-1">
+      <header className="top-left">
+        <LogoSVG />
+      </header>
+      <div className="hero">
+        <Typo as="h1" size={80}>{pageText.page1.line1}</Typo>
+        <Typo as="h1" size={100}>{pageText.page1.line3}</Typo>
+        <Typo as="p" size={45}>{pageText.page1.logoText}</Typo>
+      </div>
+      <footer className="page-footer">
+        <ArrowDownPage1 />
+        <div className="scroll-label"><Typo as="p" size={28}>{pageText.page1.scroll}</Typo></div>
+      </footer>
+    </section>
+  );
+}
 
-    const m = meta[1];
-    if (!m || !m.rawSvgText) return;
+function Page2(){
+  return (
+    <section className="page page-2">
+      <div className="left-col">
+        <Typo as="h1" size={83}>{pageText.page2.heading}</Typo>
+      </div>
+      <div className="right-col roles">
+        {pageText.page2.roles.map((r,i)=> (
+          <Typo as="p" size={60} key={i}>{r}</Typo>
+        ))}
+      </div>
+      <div className="nav-arrow"><ArrowDownSmall name="arrow-2"/></div>
+    </section>
+  );
+}
 
-    // We will only create hotspots for actual nodes that exist in the rendered DOM — we query the inlined svg in the page element
-    const svgEl = pageEl.querySelector('svg');
-    if (!svgEl) return;
+function TeamProfile({data}){
+  return (
+    <section className="page page-team">
+      <div className="left-col">
+        <Typo as="h1" size={83}>{data.heading}</Typo>
+      </div>
+      <div className="right-col">
+        <Typo as="h3" size={28}>{data.role}</Typo>
+        <Typo as="p" size={28}>{data.body}</Typo>
+      </div>
+      <div className="nav-arrow"><ArrowDownSmall/></div>
+    </section>
+  );
+}
 
-    const mapping = [
-      { keys: ['engineer', 'engine'], target: 2 },
-      { keys: ['team', 'leader'], target: 3 },
-      { keys: ['communication', 'comm'], target: 4 },
-      { keys: ['network', 'connect'], target: 5 },
-    ];
+function Page7(){
+  return (
+    <section className="page page-7">
+      <div className="left-col">
+        <Typo as="h1" size={83}>{pageText.page7.heading}</Typo>
+      </div>
+      <div className="right-col car-text">
+        <Typo as="p" size={26}>{pageText.page7.body}</Typo>
+      </div>
+      <div className="nav-arrow"><ArrowLeftDown/></div>
+    </section>
+  );
+}
 
-    mapping.forEach((map) => {
-      // build selector
-      const sels = map.keys.map((k) => `[id*='${k}'],[class*='${k}']`).join(',');
-      const nodes = svgEl.querySelectorAll(sels);
-      if (!nodes || nodes.length === 0) return;
+function Page8(){
+  return (
+    <section className="page page-8 partners">
+      <div className="partners-left">
+        <Typo as="h1" size={50}>{pageText.page8.headingMain}</Typo>
+        <Typo as="p" size={25}>{pageText.page8.headingNumber}</Typo>
+      </div>
+      <div className="partners-right">
+        <Typo as="p" size={28}>{pageText.page8.sub1}</Typo>
+        <Typo as="p" size={28}>{pageText.page8.sub2}</Typo>
+        <Typo as="p" size={28}>{pageText.page8.sub3}</Typo>
+      </div>
+      <div className="nav-arrow"><ArrowDownSmall name="arrow-8"/></div>
+    </section>
+  );
+}
 
-      nodes.forEach((node) => {
-        try {
-          const bbox = node.getBBox();
-          const ctm = node.getScreenCTM();
-          if (!ctm) return;
-          const x = bbox.x * ctm.a + ctm.e;
-          const y = bbox.y * ctm.d + ctm.f;
-          const w = bbox.width * ctm.a;
-          const h = bbox.height * ctm.d;
+function Page9(){
+  return (
+    <section className="page page-9 schedule">
+      <div className="left-col">
+        <Typo as="h1" size={70}>{pageText.page9.scheduleTitle}</Typo>
+        <Typo as="p" size={20}>{pageText.page9.timer}</Typo>
+      </div>
+      <div className="center-col">
+        <Typo as="h1" size={90}>{pageText.page9.nextUp}</Typo>
+        <Typo as="p" size={40}>{pageText.page9.date}</Typo>
+      </div>
+      <div className="right-col contact">
+        <Typo as="h2" size={30}>{pageText.page9.contactTitle}</Typo>
+        <Typo as="p" size={28}>{pageText.page9.contactEmail}</Typo>
+        <Typo as="p" size={28}>{pageText.page9.address}</Typo>
+      </div>
+      <div className="nav-arrow"><ArrowRightBig/></div>
+    </section>
+  );
+}
 
-          const btn = document.createElement('button');
-          btn.className = 'detected-hotspot';
-          btn.style.position = 'absolute';
-          btn.style.left = `${x}px`;
-          btn.style.top = `${y}px`;
-          btn.style.width = `${w}px`;
-          btn.style.height = `${h}px`;
-          btn.style.background = 'transparent';
-          btn.style.border = '0';
-          btn.style.cursor = 'pointer';
-          btn.onclick = () => navigateTo(map.target);
-          btn.setAttribute('aria-label', `Go to page ${map.target + 1}`);
-
-          pageEl.appendChild(btn);
-        } catch (e) {
-          // If we can't compute bounding box, skip — do not invent placement
-        }
-      });
-    });
-
-    return () => {
-      Array.from(pageEl.querySelectorAll('.detected-hotspot')).forEach((n) => n.remove());
-    };
-  }, [meta, svgTexts]);
-
-  // Determine stripes count for each page according to your rule
-  function stripesForIndex(idx) {
-    const pageNumber = idx + 1;
-    if (pageNumber === 1) return 0;
-    if (pageNumber <= 6) return 1;
-    return Math.max(1, pageNumber - 5);
-  }
-
-  // The layout: vertical scroll-snap with each page full viewport. CSS ensures scaling instead of revealing neighbors.
+export default function App(){
   return (
     <div className="app-root">
-      {/* Fixed logo/stripes container (only visible when not on first page and when we found logo nodes) */}
-      {fixedMarkup && currentIndex !== 0 && (
-        <div className="fixed-logo" onClick={scrollToTop} role="button" aria-label="Go to front page" dangerouslySetInnerHTML={{ __html: fixedMarkup }} />
-      )}
-
-      {/* Additionally draw stripes count using only SVG fragments if present; if not present we will not draw additional stripes. */}
-      {/* We strictly avoid creating new graphical stripes if they don't exist in the SVGs — but if you want the additional stripes that appear on lower pages to be the same artwork, ensure they appear in those SVGs with ids/classes containing 'stripe' */}
-
-      <main className="pages">
-        {svgTexts.map((text, idx) => (
-          <section
-            key={idx}
-            data-idx={idx}
-            ref={(el) => (sectionRefs.current[idx] = el)}
-            className="page"
-            aria-label={`Page ${idx + 1}`}
-          >
-            {/* Inline the exact SVG markup. If null (failed to fetch) we render nothing for that page (we won't invent anything). */}
-            {text ? <div className="svg-root" dangerouslySetInnerHTML={{ __html: text }} /> : null}
-          </section>
-        ))}
-      </main>
-
-      <style>{`
-        :root{--side-gap:6vw}
-        *{box-sizing:border-box}
-        html,body,#root{height:100%;margin:0}
-        .app-root{height:100%;width:100%;overflow:auto}
-
-        .fixed-logo{position:fixed;top:16px;left:16px;z-index:60;display:inline-block;cursor:pointer}
-        .fixed-logo svg{display:block;max-width:200px;height:auto}
-
-        .pages{height:100vh;overflow-y:auto;scroll-snap-type:y mandatory}
-        .page{position:relative;min-height:100vh;height:100vh;scroll-snap-align:start;display:flex;align-items:center;justify-content:center;padding-left:var(--side-gap);padding-right:var(--side-gap);overflow:hidden}
-
-        /* Ensure the inlined SVG scales responsively to never reveal neighboring pages. */
-        .svg-root{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-        .svg-root > svg{max-width:calc(100vw - var(--side-gap) * 2);max-height:calc(100vh);width:100%;height:auto;display:block}
-
-        /* Hotspots detected are transparent buttons positioned absolutely in page coordinates */
-        .detected-hotspot{background:transparent;border:0}
-
-        @media(max-width:600px){
-          .fixed-logo svg{max-width:140px}
-        }
-      `}</style>
+      <Page1 />
+      <Page2 />
+      <TeamProfile data={pageText.page3} />
+      <TeamProfile data={pageText.page4} />
+      <TeamProfile data={pageText.page5} />
+      <TeamProfile data={pageText.page6} />
+      <Page7 />
+      <Page8 />
+      <Page9 />
     </div>
   );
 }
+
+/* ===== App.css (place this in the same folder as App.jsx) =====
+   This CSS attempts to match the mockup structure: black blocks, lines and spacing.
+   It loads Helvetica from /fonts/helvetica.woff2 which you stated exists in public/fonts/. */
+
+/* Put this CSS content into src/App.css (or keep it inline if you prefer) */
+
+/* App.css content: */
+
+:root{
+  --canva-tracking: -0.26em; /* adjust if you want different conversion */
+}
+
+@font-face{
+  font-family: 'HelveticaBold';
+  src: url('/fonts/helvetica.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+*{ box-sizing: border-box; }
+html,body,#root{ height:100%; margin:0; }
+.app-root{ font-family: 'HelveticaBold', Helvetica, Arial, sans-serif; color:#000; }
+
+.page{ display:flex; padding:96px 88px; min-height:820px; gap:24px; align-items:flex-start; }
+
+/* Shared columns */
+.left-col{ flex:1; }
+.right-col{ flex:1; }
+.center-col{ flex:1; }
+.partners-left{ flex:1; }
+.partners-right{ flex:1; }
+
+/* Hero on page 1: stacked headings */
+.page-1{ background: #fff; position:relative; }
+.page-1 .hero{ display:flex; flex-direction:column; gap:8px; }
+.page-1 .top-left{ position:absolute; left:88px; top:32px; }
+
+/* black containers and dividing lines (approx from mockup) */
+.page-2, .page-team, .page-7, .page-8, .page-9{ background:#fff; }
+
+/* Example of a black block to the right column used for e.g. partners / numbers */
+.black-block{ background:#000; color:#fff; padding:24px; }
+
+/* Arrows placeholders styling */
+.svg-placeholder{ display:inline-block; border:1px dashed rgba(0,0,0,0.12); padding:8px; min-width:48px; min-height:48px; }
+
+/* Footer area where arrows live */
+.page-footer{ display:flex; gap:12px; align-items:center; justify-content:center; margin-top:24px; }
+
+/* Fine tune typography for sizes declared by you */
+h1,h2,h3,p{ margin:0; }
+
+/* For responsiveness */
+@media (max-width: 1100px){ .page{ flex-direction:column; padding:48px; } }
+
+/* Helpers to make lines and containers for pixel-perfect tuning */
+.line{ height:2px; background:#000; margin:16px 0; }
+.container-black{ background:#000; color:#fff; padding:20px; }
+
+/* End of App.css */
+
+/* ===== README snippet =====
+1) Save this file as src/App.jsx and create src/App.css with the content above.
+2) Make sure your Helvetica font file is in public/fonts/helvetica.woff2.
+3) Replace each SVG PLACEHOLDER DIV with the exact <svg>...</svg> block you provided earlier.
+4) For pixel-perfect alignment, open each PNG from your GitHub repo and tune padding, font-size and --canva-tracking in App.css.
+
+I used the exact text from your uploaded PDF and populated the components accordingly. File source: pdfguide.pdf. fileciteturn0file0
+*/// React single-file scaffold (App.jsx) + accompanying CSS and README
+// PASTE the full <svg>...</svg> blocks into the placeholders noted below.
+
+/* ===== App.jsx ===== */
+import React from 'react';
+import './App.css';
+
+// ----- SVG PLACEHOLDERS -----
+// Replace the string contents of each const with the FULL <svg>...</svg> markup you provided.
+// Example: const LogoSVG = () => (<>{/* paste <svg ...>...</svg> here */}</>);
+
+export const LogoSVG = () => (
+  <div className="svg-placeholder" data-name="LogoSVG">{/* PLACEHOLDER: PASTE Logo SVG HERE */}</div>
+);
+
+export const ArrowDownPage1 = () => (
+  <div className="svg-placeholder" data-name="ArrowDownPage1">{/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}</div>
+);
+
+export const ArrowDownSmall = ({name='ArrowDownSmall'}) => (
+  <div className="svg-placeholder" data-name={name}>{/* PLACEHOLDER: PASTE Sipka doprava dolu (2-6,8) SVG HERE */}</div>
+);
+
+export const ArrowLeftDown = () => (
+  <div className="svg-placeholder" data-name="ArrowLeftDown">{/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}</div>
+);
+
+export const ArrowRightBig = () => (
+  <div className="svg-placeholder" data-name="ArrowRightBig">{/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}</div>
+);
+
+// ----- Utility: Text block that respects the Canva typographic rules you listed -----
+function Typo({children, size, as: Component = 'div', weight = 700, lineHeight = 0.84, tracking = -26}) {
+  // tracking in Canva is "-26" — we're exposing it as CSS variable --tracking which you can tune.
+  // In CSS we convert to px/em later; for now we just set inline style using CSS custom properties.
+  const style = {
+    fontFamily: 'Helvetica, Arial, sans-serif',
+    fontWeight: weight,
+    lineHeight: lineHeight,
+    // we'll use a conversion: Canva -26 -> -0.26em by default; adjust in App.css if you want exact px
+    letterSpacing: `${(tracking / 100)}em`,
+    fontSize: `${size}px`,
+    margin: 0,
+  };
+  return <Component style={style}>{children}</Component>;
+}
+
+// ----- Pages according to your size specs -----
+function Page1() {
+  return (
+    <section className="page page-1">
+      <header className="page-header">
+        <LogoSVG />
+      </header>
+
+      <main className="page-main">
+        <Typo as="h1" size={100}>NADPIS 100</Typo>
+        <Typo as="h2" size={80}>Sekundární 80</Typo>
+        <Typo as="p" size={45}>Menší text 45</Typo>
+      </main>
+
+      <footer className="page-footer">
+        <ArrowDownPage1 />
+      </footer>
+    </section>
+  );
+}
+
+function Page2() {
+  return (
+    <section className="page page-2">
+      <main>
+        <Typo as="h1" size={83}>Nadpis (83)</Typo>
+        <Typo as="p" size={60}>Podnadpis (60)</Typo>
+      </main>
+      <aside className="nav-arrow"><ArrowDownSmall name="arrow-2" /></aside>
+    </section>
+  );
+}
+
+function Page3to6({index}){
+  return (
+    <section className={`page page-3to6 p-${index}`}>
+      <Typo as="h2" size={28}>Sekce {index}</Typo>
+      <div className="nav-arrow"><ArrowDownSmall name={`arrow-${index}`} /></div>
+    </section>
+  );
+}
+
+function Page7(){
+  return (
+    <section className="page page-7">
+      <Typo as="h2" size={28}>Sekce 7</Typo>
+      <div className="car-info">
+        <Typo as="p" size={26}>O autě — text velikost 26</Typo>
+      </div>
+      <div className="nav-arrow"><ArrowLeftDown /></div>
+    </section>
+  );
+}
+
+function Page8(){
+  return (
+    <section className="page page-8">
+      <Typo as="h1" size={50}>Velký 50</Typo>
+      <Typo as="p" size={25}>Menší 25</Typo>
+      <div className="nav-arrow"><ArrowDownSmall name="arrow-8" /></div>
+    </section>
+  );
+}
+
+function Page9(){
+  return (
+    <section className="page page-9">
+      <Typo as="h1" size={70}>Hlavní 70</Typo>
+      <Typo as="p" size={20}>Malý 20</Typo>
+      <Typo as="h2" size={90}>Velký 90</Typo>
+      <Typo as="p" size={40}>Střední 40</Typo>
+      <Typo as="p" size={30}>Doplňující 30</Typo>
+      <div className="nav-arrow"><ArrowRightBig /></div>
+    </section>
+  );
+}
+
+export default function App(){
+  return (
+    <div className="app-root">
+      {/* The layout below is a simple vertical stack of the 9 pages to match the PNG mockup flow. */}
+      <Page1 />
+      <Page2 />
+      <Page3to6 index={3} />
+      <Page3to6 index={4} />
+      <Page3to6 index={5} />
+      <Page3to6 index={6} />
+      <Page7 />
+      <Page8 />
+      <Page9 />
+    </div>
+  );
+}
+
+/* ===== App.css =====
+
+.app-root {
+  background: #fff;
+  color: #000;
+  font-family: Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.page {
+  padding: 80px 64px;
+  min-height: 820px; /* adjust to match PNG viewport */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header { display:flex; align-items:center; }
+.page-main { flex:1; display:flex; flex-direction:column; gap:16px; }
+.page-footer { display:flex; justify-content:center; padding-top:32px }
+
+/* Placeholder styling to make it obvious where to paste SVGs */
+.svg-placeholder{
+  width: fit-content;
+  display:inline-block;
+  border: 1px dashed rgba(0,0,0,0.12);
+  padding: 12px;
+  min-width:48px; min-height:48px;
+}
+
+/* Utility to make headlines feel like Canva's tight tracking. */
+h1,h2,p{ margin:0; }
+
+/* Responsive helpers — you will tune pixel-perfect in your CSS adjustments */
+@media (max-width: 1024px){
+  .page{ padding: 40px; }
+}
+
+/* ===== README (instructions) =====
+1) Ve svém projektu vložte tento soubor jako src/App.jsx a přidejte src/App.css podle výše.
+2) NA MÍSTA označená komentářem "PLACEHOLDER: PASTE ... SVG HERE" vložte přesně celý <svg>...</svg> blok, který jste mi poskytl.
+   - LogoSVG  -> Logo na stránce 1 (vložte celý XML svg blok)
+   - ArrowDownPage1 -> Sipka dolu na strance 1
+   - ArrowDownSmall -> Sipka doprava dolu pro stranky 2-6 a 8
+   - ArrowLeftDown -> Sipka doleva dolu (strana 7)
+   - ArrowRightBig -> Sipka doprava (strana 9)
+3) Font: použijte Helvetica Bold (pokud nemáte, použijte systémovou Helvetica/Arial a poté v Canva exportu zkontrolujte). V CSS je nastaveno font-weight:700.
+4) Typografická pravidla: Canva tracking "-26" jsem ve funkci Typo převedl na letter-spacing: -0.26em. Pokud chcete přesně -26px nebo jiný převod, upravte to v App.css nebo přímo v komponentě Typo.
+5) PNG reference: v repozitáři GitHubu máte obrázky 1-9.png; použijte je lokálně pro přesné porovnání a úpravy.
+
+Tip: pro pixel-perfect ladění otevřete paralelně PNG a upravujte paddingy, velikosti písma a letter-spacing v App.css.
+
+*/
+
+
+/* AUTO-APPEND: TEXT EXTRACTION & ASSET-PLACEMENT INSTRUCTIONS */
+
+/* I attempted to read the mockups (PNG/SVG) from the GitHub repository you mentioned: https://github.com/morysek/githubmrdky. The repository listing was reachable but this environment could not fetch the raw SVG/PNG programmatically. */
+
+/* Please paste the exact textual content of pages 1–9 (or upload the PNGs). Paste full <svg>...</svg> blocks into the SVG placeholders in the file. */
+
+/* PAGE TEXT PLACEHOLDERS: replace these with verbatim page text from your mockups */
+/* PAGE 1 */
+/* [PASTE PAGE 1 TEXT HERE] */
+
+/* PAGE 2 */
+/* [PASTE PAGE 2 TEXT HERE] */
+
+/* PAGE 3 */
+/* [PASTE PAGE 3 TEXT HERE] */
+
+/* PAGE 4 */
+/* [PASTE PAGE 4 TEXT HERE] */
+
+/* PAGE 5 */
+/* [PASTE PAGE 5 TEXT HERE] */
+
+/* PAGE 6 */
+/* [PASTE PAGE 6 TEXT HERE] */
+
+/* PAGE 7 */
+/* [PASTE PAGE 7 TEXT HERE] */
+
+/* PAGE 8 */
+/* [PASTE PAGE 8 TEXT HERE] */
+
+/* PAGE 9 */
+/* [PASTE PAGE 9 TEXT HERE] */
+
+/* If you upload the PNGs 1-9.png here I will OCR them and insert the text into the components immediately. */

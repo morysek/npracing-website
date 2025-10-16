@@ -13,31 +13,90 @@ import './App.css';
    - ArrowLeftDown: arrow for page7
    - ArrowRightBig: arrow for page9
 */
+/* SVG placeholder components - vlož do src/App.jsx místo starých placeholderů */
+
 export const LogoSVG = () => (
-  <div className="svg-placeholder" data-name="LogoSVG" aria-hidden>
-    {/* PLACEHOLDER: PASTE Logo SVG HERE */}
-  </div>
+  // originální: width="124.48388mm" height="57.819725mm" viewBox="0 0 124.48388 57.819725"
+  <svg
+    className="svg-placeholder svg-logo"
+    width="124.48388mm"
+    height="57.819725mm"
+    viewBox="0 0 124.48388 57.819725"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Logo placeholder"
+  >
+    <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#000" strokeDasharray="6 4" />
+    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="6" fontFamily="Helvetica, Arial">
+      LOGO SVG (PLACEHOLDER)
+    </text>
+  </svg>
 );
+
 export const ArrowDownPage1 = () => (
-  <div className="svg-placeholder" data-name="ArrowDownPage1" aria-hidden>
-    {/* PLACEHOLDER: PASTE Sipka dolu (stranka 1) SVG HERE */}
-  </div>
+  // originální: width="62.144043mm" height="61.882187mm" viewBox="0 0 62.144043 61.882187"
+  <svg
+    className="svg-placeholder svg-arrow-down-big"
+    width="62.144043mm"
+    height="61.882187mm"
+    viewBox="0 0 62.144043 61.882187"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Arrow down page 1 placeholder"
+  >
+    <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#000" strokeDasharray="4 3" />
+    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="6">ARROW DOWN (P1)</text>
+  </svg>
 );
-export const ArrowDownSmall = ({name='ArrowDownSmall'}) => (
-  <div className="svg-placeholder" data-name={name} aria-hidden>
-    {/* PLACEHOLDER: PASTE Sipka doprava dolu (stranky 2-6,8) SVG HERE */}
-  </div>
+
+export const ArrowDownSmall = ({ name = "ArrowDownSmall" }) => (
+  // originální (pro stranky 2-6,8): width="28.441078mm" height="28.441803mm" viewBox="0 0 28.441078 28.441803"
+  <svg
+    className="svg-placeholder svg-arrow-small"
+    width="28.441078mm"
+    height="28.441803mm"
+    viewBox="0 0 28.441078 28.441803"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label={`${name} placeholder`}
+  >
+    <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#000" strokeDasharray="3 2" />
+    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="4">ARROW</text>
+  </svg>
 );
+
 export const ArrowLeftDown = () => (
-  <div className="svg-placeholder" data-name="ArrowLeftDown" aria-hidden>
-    {/* PLACEHOLDER: PASTE Sipka doleva dolu (stranka 7) SVG HERE */}
-  </div>
+  // originální: width="28.441772mm" height="28.440491mm" viewBox="0 0 28.441772 28.440491"
+  <svg
+    className="svg-placeholder svg-arrow-left-down"
+    width="28.441772mm"
+    height="28.440491mm"
+    viewBox="0 0 28.441772 28.440491"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Arrow left-down placeholder"
+  >
+    <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#000" strokeDasharray="3 2" />
+    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="4">ARROW L↙</text>
+  </svg>
 );
+
 export const ArrowRightBig = () => (
-  <div className="svg-placeholder" data-name="ArrowRightBig" aria-hidden>
-    {/* PLACEHOLDER: PASTE Sipka doprava (stranka 9) SVG HERE */}
-  </div>
+  // originální: width="55.00708mm" height="55.30072mm" viewBox="0 0 55.00708 55.30072"
+  <svg
+    className="svg-placeholder svg-arrow-right-big"
+    width="55.00708mm"
+    height="55.30072mm"
+    viewBox="0 0 55.00708 55.30072"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Arrow right placeholder"
+  >
+    <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#000" strokeDasharray="6 4" />
+    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="6">ARROW → (P9)</text>
+  </svg>
 );
+
 
 /* ===== Text content (from uploaded PDF) ===== */
 const pageText = {

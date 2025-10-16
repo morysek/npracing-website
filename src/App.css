@@ -1,12 +1,12 @@
 :root{
-  --accent: #ffcc00;   /* žlutá akcentní barva */
-  --dark: #141414;     /* tmavá barva pro černé panely */
+  --accent: #ffcc00;
+  --dark: #141414;
   --canva-tracking: -0.26em;
   --canva-lineheight: 0.84;
   --font-main: 'HelveticaBold', Helvetica, Arial, sans-serif;
 }
 
-/* font-face: používáme tvůj soubor v public/fonts/helvetica.woff2 (NEKOPÍROVAT/NEMODIFIKOVAT) */
+/* --- Font (do not change file) --- */
 @font-face {
   font-family: 'HelveticaBold';
   src: url('/fonts/helvetica.woff2') format('woff2');
@@ -15,16 +15,33 @@
   font-display: swap;
 }
 
-/* base */
+/* --- Reset --- */
 *{ box-sizing: border-box; }
 html,body,#root{ height:100%; margin:0; padding:0; }
-body{ font-family: var(--font-main); color:#000; background:#fff; }
+body{ font-family: var(--font-main); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-/* app root and pages */
-.app-root{ width:100%; min-height:100vh; background:#fff; }
-.page{ display:flex; gap:24px; padding:96px 88px; align-items:flex-start; min-height:820px; position:relative; }
+/* --- App root & pages full-screen behaviour --- */
+.app-root { width:100%; min-height:100vh; background:#fff; color:#000; }
 
-/* typography default (Canva) */
+/* Make each page take fullscreen and center its hero area vertically */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* center content vertically like the PNG hero */
+  gap: 24px;
+  padding: 6vh 6vw; /* responsive padding */
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Make sure hero sections expand to viewport width limits */
+.hero-inner { max-width: 1400px; margin: 0 auto; display:flex; gap:48px; align-items:flex-start; width:100%; }
+
+/* Columns - responsive */
+.left-col, .right-col, .center-col { flex:1; }
+
+/* --- Typography defaults (Canva parameters) --- */
 .page h1, .page h2, .page h3, .page p {
   line-height: var(--canva-lineheight);
   letter-spacing: var(--canva-tracking);
@@ -33,103 +50,118 @@ body{ font-family: var(--font-main); color:#000; background:#fff; }
   white-space: pre-line;
 }
 
-/* svg placeholders: keep class names so replacing by real svg is trivial */
-.svg-placeholder { display:block; vertical-align:middle; max-width:none; height:auto; }
+/* Override inline font-size (from Typo helper) using specific selectors so we can scale with viewport */
+/* Page 1 headings: first h1 is ~80, second h1 is ~100 in the mockup — use clamp to scale */
+.page-1 .hero-left h1:first-of-type {
+  font-size: clamp(48px, 6.2vw, 80px) !important;
+}
+.page-1 .hero-left h1:nth-of-type(2) {
+  font-size: clamp(56px, 8.2vw, 100px) !important;
+}
+.page-1 .hero-left p { font-size: clamp(28px, 2.4vw, 45px) !important; }
+
+/* Page 2 main heading and large right roles */
+.page-2 h1 { font-size: clamp(48px, 6.5vw, 83px) !important; }
+.page-2 .roles p { font-size: clamp(36px, 4.5vw, 60px) !important; }
+
+/* Pages 3-6 are variants of page 2; profile titles/body */
+.page-team h1 { font-size: clamp(40px, 5.6vw, 83px) !important; }
+.page-team .profile-label p { font-size: clamp(18px, 2.2vw, 40px) !important; } /* the small label/number */
+.page-team .profile-body p { font-size: clamp(18px, 1.8vw, 28px) !important; }
+
+/* Page 7 car text scaling */
+.page-7 .car-text-inner p { font-size: clamp(18px, 1.9vw, 26px) !important; }
+
+/* Page 8 headings */
+.page-8 h1 { font-size: clamp(36px, 5.6vw, 50px) !important; }
+.page-8 p { font-size: clamp(18px, 1.8vw, 25px) !important; }
+
+/* Page 9 sizes */
+.page-9 .schedule-left h1 { font-size: clamp(44px, 6.4vw, 70px) !important; }
+.page-9 .schedule-center h1 { font-size: clamp(64px, 12vw, 90px) !important; }
+.page-9 .center-col p { font-size: clamp(20px, 2.8vw, 40px) !important; }
+.page-9 .right-col p { font-size: clamp(18px, 2.2vw, 28px) !important; }
+
+/* --- SVG placeholder sizing (keep these classes so replacement is trivial) */
+.svg-placeholder { display:block; max-width:none; height:auto; vertical-align:middle; }
 .svg-logo { width: 124.48388mm; height: 57.819725mm; }
 .svg-arrow-down-big { width: 62.144043mm; height: 61.882187mm; }
 .svg-arrow-small { width: 28.441078mm; height: 28.441803mm; }
 .svg-arrow-left-down { width: 28.441772mm; height: 28.440491mm; }
 .svg-arrow-right-big { width: 55.00708mm; height: 55.30072mm; }
 
-/* black panels and accent usage */
+/* --- separators (lines) --- */
+/* Horizontal rules — default thickness matches mockup; use .hairline for 1px variants */
+.horizontal-rule {
+  background: var(--dark);
+  height: 4px;
+  width: 100%;
+  margin: 18px 0;
+}
+.horizontal-rule.hairline { height: 1px; }
+
+/* Vertical rule for page-1 hero */
+.vertical-rule {
+  background: var(--dark);
+  width: 4px;
+  border-radius: 1px;
+  align-self: stretch;
+}
+.page-1 .hero-right .vertical-rule { height: 220px; }
+
+/* --- black panels (dark background) --- */
 .black-panel, .black-card {
   background: var(--dark);
   color: #fff;
   padding: 28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-sizing: border-box;
-}
-
-/* small inline black label */
-.black-block-inline { display:inline-block; background:var(--dark); color:#fff; padding:10px 18px; }
-
-/* horizontal/vertical rules */
-.horizontal-rule { background: var(--dark); height:4px; width:100%; margin:18px 0; }
-.vertical-rule { background: var(--dark); width:4px; border-radius:1px; align-self:stretch; }
-
-/* page-1 specifics */
-.page-1 { min-height:100vh; padding:120px 88px; display:flex; flex-direction:column; justify-content:space-between; }
-.page-1 .hero-inner { display:flex; gap:48px; max-width:1300px; margin:0 auto; align-items:flex-start; width:100%; }
-.page-1 .hero-left { flex:1 1 720px; display:flex; flex-direction:column; gap:8px; }
-.page-1 .hero-right { width:260px; display:flex; flex-direction:column; gap:18px; align-items:flex-end; }
-.page-1 .black-card { width:220px; padding:28px; background:var(--dark); }
-
-/* accent usage example: apply to small decorative elements */
-.accent-box { background: var(--accent); color: var(--dark); padding:6px 10px; border-radius:2px; }
-
-/* roles block (page-2) - clickable items */
-.role-button {
-  display:block;
-  background: transparent;
-  border: none;
-  padding: 6px 0;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-}
-.role-button:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* overlay (detail) */
-.overlay {
-  position: fixed;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.6);
-  z-index: 999;
-  padding: 32px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* sizing of particular panels */
+.page-1 .black-card { width: 220px; }
+.page-8 .black-panel { width: 320px; }
+.page-9 .black-panel { width: 260px; }
+
+/* inline black label */
+.black-block-inline { display:inline-block; background:var(--dark); color:#fff; padding:10px 18px; }
+
+/* --- accent usage for UI cues --- */
+.accent { color: var(--accent); }
+.role-button:focus { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+/* --- overlay for pages 3-6 details --- */
+.overlay {
+  position: fixed; inset: 0;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(0,0,0,0.6); z-index:999;
+  padding: 4vh 4vw;
 }
 .overlay-card {
-  background: #fff;
-  color: #000;
-  max-width: 980px;
-  width: 100%;
-  padding: 28px;
-  border-radius: 6px;
-  position: relative;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-}
-.overlay-close {
-  position:absolute;
-  right:12px;
-  top:12px;
-  background:transparent;
-  border:none;
-  font-size:20px;
-  cursor:pointer;
+  width: min(980px, 96%); background:#fff; padding:28px; border-radius:6px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  color:#000;
 }
 
-/* team profile, page-team */
-.page-team { display:flex; gap:24px; padding:96px 88px; align-items:flex-start; }
-.page-team .left-col { flex:0.4; }
-.page-team .right-col { flex:0.6; }
+/* --- ensure hero spacing looks like full-screen mockup --- */
+.page-1 .hero-inner { align-items:flex-start; }
+.page-1 .hero-left { display:flex; flex-direction:column; gap:8px; }
 
-/* page-7, page-8, page-9 tweaks */
-.page-7 .car-text-inner { max-width: 680px; }
-.page-8 .black-panel { width:320px; padding:28px; }
-.page-9 .black-panel { width:260px; padding:24px; }
-
-/* responsive */
-@media (max-width:1100px) {
-  .page { flex-direction:column; padding:48px; }
-  .page-1 .hero-inner { flex-direction:column; align-items:flex-start; }
+/* --- responsiveness: collapse into stacked flow on small screens --- */
+@media (max-width: 1000px) {
+  .page { padding: 6vh 6vw; }
+  .hero-inner { flex-direction: column; gap: 24px; align-items:flex-start; }
   .page-1 .hero-right { width:100%; align-items:flex-start; }
-  .black-panel, .black-card { width:100%; }
+  .page-1 .black-card, .black-panel { width:100%; }
+  .horizontal-rule.w-60 { width:100%; }
 }
 
-/* drobné utility */
-.center { display:flex; align-items:center; justify-content:center; }
-.stack { display:flex; flex-direction:column; gap:12px; }
+/* small mobile tweaks */
+@media (max-width: 600px) {
+  .page { padding: 4vh 4vw; }
+  .page-1 .hero-right .vertical-rule { height: 140px; }
+  .page-1 .hero-left h1:first-of-type { font-size: clamp(36px, 9.5vw, 64px) !important; }
+  .page-1 .hero-left h1:nth-of-type(2) { font-size: clamp(40px, 12vw, 80px) !important; }
+}

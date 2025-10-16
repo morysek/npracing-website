@@ -1,34 +1,12 @@
-/* ==========================================================================
-   src/App.css
-   Kompletní CSS pro projekt (page 1-9). Upravovat hodnoty pro pixel-perfect
-   doladění podle PNG/PDF mockupu.
-   ========================================================================== */
-
-/* ---------- Proměnné ---------- */
 :root{
-  --canva-tracking: -0.26em;   /* výchozí převod Canva -26 -> -0.26em; doladit podle potřeby */
+  --accent: #ffcc00;   /* žlutá akcentní barva */
+  --dark: #141414;     /* tmavá barva pro černé panely */
+  --canva-tracking: -0.26em;
   --canva-lineheight: 0.84;
-  --font-family-main: 'HelveticaBold', Helvetica, Arial, sans-serif;
-
-  /* základní rozměry (lze přepnout na px, pokud preferuješ) */
-  --logo-width: 124.48388mm;
-  --logo-height: 57.819725mm;
-
-  --arrow-down-big-width: 62.144043mm;
-  --arrow-down-big-height: 61.882187mm;
-
-  --arrow-small-width: 28.441078mm;
-  --arrow-small-height: 28.441803mm;
-
-  --arrow-left-width: 28.441772mm;
-  --arrow-left-height: 28.440491mm;
-
-  --arrow-right-big-width: 55.00708mm;
-  --arrow-right-big-height: 55.30072mm;
+  --font-main: 'HelveticaBold', Helvetica, Arial, sans-serif;
 }
 
-/* ---------- Font-face ---------- */
-/* Ujisti se, že public/fonts/helvetica.woff2 existuje */
+/* font-face: používáme tvůj soubor v public/fonts/helvetica.woff2 (NEKOPÍROVAT/NEMODIFIKOVAT) */
 @font-face {
   font-family: 'HelveticaBold';
   src: url('/fonts/helvetica.woff2') format('woff2');
@@ -37,174 +15,36 @@
   font-display: swap;
 }
 
-/* ---------- Reset / base ---------- */
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; padding: 0; }
-body {
-  font-family: var(--font-family-main);
-  color: #000;
-  background: #fff;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* base */
+*{ box-sizing: border-box; }
+html,body,#root{ height:100%; margin:0; padding:0; }
+body{ font-family: var(--font-main); color:#000; background:#fff; }
 
-/* ---------- App root & page layout ---------- */
-.app-root {
-  width: 100%;
-  min-height: 100vh;
-  background: #fff;
-  color: #000;
-}
+/* app root and pages */
+.app-root{ width:100%; min-height:100vh; background:#fff; }
+.page{ display:flex; gap:24px; padding:96px 88px; align-items:flex-start; min-height:820px; position:relative; }
 
-/* Každá stránka */
-.page {
-  display: flex;
-  gap: 24px;
-  padding: 96px 88px;
-  align-items: flex-start;
-  min-height: 820px;
-  box-sizing: border-box;
-  position: relative;
-}
-
-/* Sloupce - re-usable */
-.left-col { flex: 1; }
-.right-col { flex: 1; }
-.center-col { flex: 1; }
-
-/* Vyšší kontrastní bloky */
-.black-block, .black-panel {
-  background: #000;
-  color: #fff;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-/* Inline černý štítek (např. pod hlavním nadpisem) */
-.black-block-inline {
-  display: inline-block;
-  background: #000;
-  color: #fff;
-  padding: 10px 18px;
-  box-sizing: border-box;
-}
-
-/* ---------- SVG placeholdery (validní inline SVG) ---------- */
-/* Tyto třídy odpovídají rozměrům původních SVG — když vložíš reálné SVG, zachovej className */
-.svg-placeholder {
-  display: block;
-  vertical-align: middle;
-  box-sizing: border-box;
-  max-width: none;
-  height: auto;
-}
-
-/* konkrétní velikosti dle původních SVG (mm) */
-.svg-logo { width: var(--logo-width); height: var(--logo-height); }
-.svg-arrow-down-big { width: var(--arrow-down-big-width); height: var(--arrow-down-big-height); }
-.svg-arrow-small { width: var(--arrow-small-width); height: var(--arrow-small-height); }
-.svg-arrow-left-down { width: var(--arrow-left-width); height: var(--arrow-left-height); }
-.svg-arrow-right-big { width: var(--arrow-right-big-width); height: var(--arrow-right-big-height); }
-
-/* Pokud chceš pro ladění přepnout na px, nahraď mm hodnoty konkrétními px (viz komentáře v App.jsx) */
-
-/* ---------- Typografie (Canva pravidla) ---------- */
-/* Výchozí tracking/line-height pro všechny nadpisy a odstavce v rámci .page.
-   Pokud potřebuješ per-element ladění, uprav hodnoty inline nebo přidej selektory. */
+/* typography default (Canva) */
 .page h1, .page h2, .page h3, .page p {
   line-height: var(--canva-lineheight);
   letter-spacing: var(--canva-tracking);
   margin: 0;
   font-weight: 700;
-  white-space: pre-line; /* aby se \n v stringu správně renderoval */
+  white-space: pre-line;
 }
 
-/* Doporučené velikosti - ponecháno konzistentní s tím, co jsi zaslal.
-   Reálné velikosti nastavujeme přes inline Typo helper (size prop). */
+/* svg placeholders: keep class names so replacing by real svg is trivial */
+.svg-placeholder { display:block; vertical-align:middle; max-width:none; height:auto; }
+.svg-logo { width: 124.48388mm; height: 57.819725mm; }
+.svg-arrow-down-big { width: 62.144043mm; height: 61.882187mm; }
+.svg-arrow-small { width: 28.441078mm; height: 28.441803mm; }
+.svg-arrow-left-down { width: 28.441772mm; height: 28.440491mm; }
+.svg-arrow-right-big { width: 55.00708mm; height: 55.30072mm; }
 
-/* ---------- Čáry (rules) ---------- */
-/* Horizontální pravidlo: výchozí tloušťka 4px (upravit dle mockupu) */
-.horizontal-rule {
-  display: block;
-  background: #000;
-  height: 4px;
-  width: 100%;
-  margin: 18px 0;
-  box-shadow: none;
-}
-
-/* utility délky */
-.horizontal-rule.w-60 { width: 60%; }
-.horizontal-rule.w-50 { width: 50%; }
-.horizontal-rule.w-40 { width: 40%; }
-
-/* Vertikální pravidlo */
-.vertical-rule {
-  display: block;
-  background: #000;
-  width: 4px;         /* tloušťka čáry */
-  border-radius: 1px;
-  box-sizing: border-box;
-  margin: 0;
-  align-self: stretch;
-}
-
-/* Page-1 konkrétní vertikální pravidlo (výška podle mockupu) */
-.page-1 .hero-right .vertical-rule {
-  height: 220px;
-  width: 4px;
-}
-
-/* Jemnější linky (hairlines) */
-.hairline { height: 1px; }
-
-/* ---------- Page 1 - hero layout a černé panely ---------- */
-.page-1 {
-  min-height: 100vh;
-  padding: 120px 88px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-/* Kontejner hero */
-.page-1 .hero {
-  width: 100%;
-}
-.page-1 .hero-inner {
-  display: flex;
-  gap: 48px;
-  align-items: flex-start;
-  max-width: 1300px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* levý/prostřední obsah hirové oblasti */
-.page-1 .hero-left {
-  flex: 1 1 720px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* pravý panel - čára + black-card */
-.page-1 .hero-right {
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  align-items: flex-end;
-}
-
-/* black card (pravý panel) */
-.page-1 .black-card {
-  background: #000;
+/* black panels and accent usage */
+.black-panel, .black-card {
+  background: var(--dark);
   color: #fff;
-  width: 220px;
   padding: 28px;
   display:flex;
   align-items:center;
@@ -212,124 +52,84 @@ body {
   box-sizing: border-box;
 }
 
-/* footer - šipka a scroll label */
-.page-1 .page-footer {
+/* small inline black label */
+.black-block-inline { display:inline-block; background:var(--dark); color:#fff; padding:10px 18px; }
+
+/* horizontal/vertical rules */
+.horizontal-rule { background: var(--dark); height:4px; width:100%; margin:18px 0; }
+.vertical-rule { background: var(--dark); width:4px; border-radius:1px; align-self:stretch; }
+
+/* page-1 specifics */
+.page-1 { min-height:100vh; padding:120px 88px; display:flex; flex-direction:column; justify-content:space-between; }
+.page-1 .hero-inner { display:flex; gap:48px; max-width:1300px; margin:0 auto; align-items:flex-start; width:100%; }
+.page-1 .hero-left { flex:1 1 720px; display:flex; flex-direction:column; gap:8px; }
+.page-1 .hero-right { width:260px; display:flex; flex-direction:column; gap:18px; align-items:flex-end; }
+.page-1 .black-card { width:220px; padding:28px; background:var(--dark); }
+
+/* accent usage example: apply to small decorative elements */
+.accent-box { background: var(--accent); color: var(--dark); padding:6px 10px; border-radius:2px; }
+
+/* roles block (page-2) - clickable items */
+.role-button {
+  display:block;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.role-button:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* overlay (detail) */
+.overlay {
+  position: fixed;
+  inset: 0;
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: center;
-  padding-bottom: 56px;
-}
-
-/* nadpisy ve page-1 jsou většinou velmi těsné a velké */
-.page-1 h1, .page-1 p {
-  letter-spacing: var(--canva-tracking);
-  line-height: var(--canva-lineheight);
-}
-
-/* ---------- Page 2 ---------- */
-.page-2 {
-  display: flex;
-  gap: 24px;
-  padding: 96px 88px;
-  align-items: flex-start;
-}
-.page-2 .left-col {
-  flex: 0.6;
-}
-.page-2 .right-col {
-  flex: 0.4;
-}
-
-/* Roles vpravo v černém bloku (velké písmo) */
-.page-2 .roles .black-panel {
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
   padding: 32px;
+}
+.overlay-card {
+  background: #fff;
+  color: #000;
+  max-width: 980px;
   width: 100%;
-  min-height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-direction: column;
-  gap: 18px;
+  padding: 28px;
+  border-radius: 6px;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+.overlay-close {
+  position:absolute;
+  right:12px;
+  top:12px;
+  background:transparent;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
 }
 
-/* ---------- Team profile (pages 3-6) ---------- */
-.page-team {
-  display: flex;
-  gap: 24px;
-  padding: 96px 88px;
-  align-items: flex-start;
-}
-.page-team .left-col {
-  flex: 0.4;
-}
-.page-team .right-col {
-  flex: 0.6;
-}
+/* team profile, page-team */
+.page-team { display:flex; gap:24px; padding:96px 88px; align-items:flex-start; }
+.page-team .left-col { flex:0.4; }
+.page-team .right-col { flex:0.6; }
 
-/* profilové labely */
-.profile-top { display:flex; flex-direction:column; gap:8px; }
-.profile-label { display:block; }
-.profile-line { width:100%; }
-
-/* tělo profilu */
-.profile-body { margin-top: 18px; }
-
-/* ---------- Page 7 (car) ---------- */
-.page-7 { display:flex; gap:24px; padding:96px 88px; align-items:flex-start; }
-.page-7 .left-col { flex:0.4; }
-.page-7 .right-col { flex:0.6; }
+/* page-7, page-8, page-9 tweaks */
 .page-7 .car-text-inner { max-width: 680px; }
-
-/* ---------- Page 8 (partners) ---------- */
-.page-8 { display:flex; gap:24px; padding:96px 88px; align-items:flex-start; }
-.page-8 .partners-left { flex: 0.5; }
-.page-8 .partners-right { flex: 0.5; display:flex; align-items:flex-start; justify-content:flex-end; }
-
-/* větší black panel napravo */
-.page-8 .black-panel { width: 320px; padding:28px; }
-
-/* ---------- Page 9 (schedule / contact) ---------- */
-.page-9 { display:flex; gap:24px; padding:96px 88px; align-items:flex-start; }
-.page-9 .schedule-left { flex:0.4; }
-.page-9 .schedule-center { flex:0.4; display:flex; flex-direction:column; align-items:center; }
-.page-9 .right-col { flex:0.2; }
-
-/* contact panel vpravo jako black panel */
+.page-8 .black-panel { width:320px; padding:28px; }
 .page-9 .black-panel { width:260px; padding:24px; }
 
-/* ---------- Utility třídy ---------- */
+/* responsive */
+@media (max-width:1100px) {
+  .page { flex-direction:column; padding:48px; }
+  .page-1 .hero-inner { flex-direction:column; align-items:flex-start; }
+  .page-1 .hero-right { width:100%; align-items:flex-start; }
+  .black-panel, .black-card { width:100%; }
+}
+
+/* drobné utility */
 .center { display:flex; align-items:center; justify-content:center; }
 .stack { display:flex; flex-direction:column; gap:12px; }
-
-/* ---------- Responsivita ---------- */
-@media (max-width: 1100px) {
-  .page { flex-direction: column; padding: 48px; }
-  .page .left-col, .page .right-col, .page .center-col { width: 100%; flex: none; }
-  .page-1 .hero-inner { flex-direction: column; align-items: flex-start; }
-  .page-1 .hero-right { width: 100%; align-items: flex-start; }
-  .page-1 .black-card, .black-panel { width: 100%; }
-  .horizontal-rule.w-60 { width: 100%; }
-}
-
-/* menší breakpointy pro mobil */
-@media (max-width: 600px) {
-  .page { padding: 28px; gap: 14px; }
-  .page-1 .hero-inner { gap: 20px; }
-  .page-1 .hero-right .vertical-rule { height: 140px; }
-  .svg-logo, .svg-arrow-down-big, .svg-arrow-small, .svg-arrow-left-down, .svg-arrow-right-big {
-    width: 100%;
-    height: auto;
-  }
-}
-
-/* ---------- Doladění pro pixel-perfect ----------
-   - Pokud chceš extrémní přesnost, uprav hodnoty:
-     * --canva-tracking
-     * .page-1 .hero-right .vertical-rule { height: ... }
-     * .page-1 .black-card { width: ...; padding: ... }
-     * .horizontal-rule { height: 2px nebo 4px podle mockupu }
-   - Tyto změny dělej po porovnání s PNG v 1:1 (zjisti šířku PNG v px).
-*/
-
-/* KONEC souboru */

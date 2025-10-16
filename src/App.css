@@ -105,7 +105,7 @@ h1,h2,h3,p{ margin:0; }
 
 /* menší tracking/line-height pro ostatní části (lze dále ladit) */
 .page h1, .page h2, .page p{
-  line-height: 0.84;
+  line-height: 1;
   letter-spacing: -0.26em;
 }
 

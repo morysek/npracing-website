@@ -25,7 +25,7 @@ Czechia's only<br />STEM Racing<br />team
 </div>
 
 
-<div className="text text--two">
+<div className="text text--three">
 Scroll
 </div>
 </div>

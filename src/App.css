@@ -1,6 +1,6 @@
 :root{
 /* 1/15th of the site — using vmin to keep it proportional */
---border: calc(100vmin / 20);
+--border: calc(100vmin / 23);
 --bg-yellow: #ffcc00;
 --bg-dark: #141414;
 --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
@@ -57,8 +57,8 @@ color: var(--bg-dark); /* text is dark for contrast */
 background: var(--bg-yellow); /* all divs yellow */
 font-family: var(--font);
 white-space: pre-line; /* allow line breaks with <br/> or newlines */
-letter-spacing: 0.5; /* requested letter spacing */
-line-height: 0.83; /* requested line spacing */
+letter-spacing: 0.4; /* requested letter spacing */
+line-height: 0.85; /* requested line spacing */
 }
 
 

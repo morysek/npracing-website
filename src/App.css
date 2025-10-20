@@ -79,29 +79,4 @@ top: 2%;
 right: 2%;
 font-size: 115px;
 text-align: right;
-line-height: 0.75;
-}
-
-
-/* Second text: bottom-left inside inner, size 190, left-aligned */
-.text--two{
-bottom: 2%;
-left: 2%;
-font-size: 190px;
-text-align: left;
-}
-
-
-/* Third text: we'll align this to the top-left of placeholder one via CSS */
-.text--three{
-/* position at the top-left corner of placeholder 1 */
-top: calc(100% - var(--ph1-h));
-left: calc(100% - var(--ph1-w));
-transform: translate(0, 0);
-font-size: 60px;
-text-align: left;
-}
-
-
-/* Placeholder 1: bottom-right */
 }

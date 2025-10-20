@@ -1,6 +1,6 @@
 :root{
 /* 1/15th of the site — using vmin to keep it proportional */
---border: calc(100vmin / 15);
+--border: calc(100vmin / 18);
 --bg-yellow: #ffcc00;
 --bg-dark: #141414;
 --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;

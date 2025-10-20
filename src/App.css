@@ -1,1 +1,109 @@
-root{ /* 1/15th of the site — using vmin to keep it proportional */ --border: calc(100vmin / 30); --bg-yellow: #ffcc00; --bg-dark: #141414; --font: 'HelveticaCustom', Helvetica, Arial, sans-serif; } @font-face{ font-family: 'HelveticaCustom'; src: url('/fonts/helvetica.woff2') format('woff2'); font-weight: normal; font-style: normal; font-display: swap; } /* Basic resets */ *{ box-sizing: border-box; } html,body,#root{ height:100%; margin:0; } body{ background: var(--bg-yellow); /* page background */ font-family: var(--font); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; } .App{ } /* Make all divs background #ffcc00 as requested */ .page{ position: relative; min-height: 100vh; /* each page fills viewport height */ background: var(--bg-yellow); overflow: visible; } /* inner is inset to create a border but contains ALL content now */ .inner{ position: absolute; top: var(--border); left: var(--border); right: var(--border); bottom: var(--border); background: var(--bg-yellow); /* now yellow as requested */ } /* Text windows placed inside (in the inner box) */ .text{ position: absolute; color: var(--bg-dark); /* text is dark for contrast */ background: var(--bg-yellow); /* all divs yellow */ font-family: var(--font); white-space: pre-line; /* allow line breaks with <br/> or newlines */ letter-spacing: -0.03em; /* requested letter spacing */ line-height: 0.83; /* requested line spacing */ } /* First text: top-right inside inner, size 80, right-aligned */ .text--one{ top: 2%; right: 2%; font-size: 115px; text-align: right; line-height: 0.75; } /* Second text: bottom-left inside inner, size 100, left-aligned */ .text--two{ bottom: 2%; left: 2%; font-size: 190px; text-align: left; } /* Third text: centered vertically on the right inside inner */ .text--three{ top: 50%; right: 2%; transform: translateY(-50%); font-size: 60px; text-align: right; } /* Ensure responsive scaling */ @media (max-width: 900px){ .text--one{ font-size: clamp(40px, 6vw, 80px); } .text--two{ font-size: clamp(48px, 8.5vw, 100px); } .text--three{ font-size: clamp(32px, 5.5vw, 60px); } }
+:root{
+/* 1/30th of the site — using vmin to keep it proportional */
+--border: calc(100vmin / 30);
+--bg-yellow: #ffcc00;
+--bg-dark: #141414;
+--font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
+}
+
+
+
+
+@font-face{
+font-family: 'HelveticaCustom';
+src: url('/fonts/helvetica.woff2') format('woff2');
+font-weight: normal;
+font-style: normal;
+font-display: swap;
+}
+
+
+
+
+/* Basic resets */
+*{ box-sizing: border-box; }
+html,body,#root{ height:100%; margin:0; }
+body{
+background: var(--bg-yellow); /* page background */
+font-family: var(--font);
+-webkit-font-smoothing:antialiased;
+-moz-osx-font-smoothing:grayscale;
+}
+
+
+
+
+.App{ }
+
+
+
+
+/* Make all divs background #ffcc00 as requested */
+.page{
+position: relative;
+min-height: 100vh; /* each page fills viewport height */
+background: var(--bg-yellow);
+overflow: visible;
+}
+
+
+
+
+/* inner is inset to create a border but contains ALL content now */
+.inner{
+position: absolute;
+top: var(--border);
+left: var(--border);
+right: var(--border);
+bottom: var(--border);
+background: var(--bg-yellow); /* now yellow as requested */
+}
+
+
+
+
+/* Text windows placed inside (in the inner box) */
+.text{
+position: absolute;
+color: var(--bg-dark); /* text is dark for contrast */
+background: var(--bg-yellow); /* all divs yellow */
+font-family: var(--font);
+white-space: pre-line; /* allow line breaks with <br/> or newlines */
+letter-spacing: -0.03em; /* requested letter spacing */
+line-height: 0.83; /* requested line spacing */
+}
+
+
+
+
+/* First text: top-right inside inner, size 80, right-aligned */
+.text--one{
+top: 2%;
+right: 2%;
+font-size: 115px;
+text-align: right;
+line-height: 0.75;
+}
+
+
+
+
+/* Second text: bottom-left inside inner, size 100, left-aligned */
+.text--two{
+bottom: 2%;
+left: 2%;
+font-size: 190px;
+text-align: left;
+}
+
+
+
+
+/* Third text: centered vertically on the right inside inner */
+.text--three{
+top: 50%;
+right: 2%;
+transform: translateY(-50%);
+font-size: 60px;
+text-align: right;
+}

@@ -1,298 +1,89 @@
-/* ==========================================================================
-   src/App.css
-   Full stylesheet for the app. Uses Helvetica from public/fonts/helvetica.woff2.
-   Colors: accent (#ffcc00) and dark (#141414).
-   ========================================================================== */
-
 :root{
-  --accent: #ffcc00;
-  --dark: #141414;
-  --canva-tracking: -0.26em;
-  --canva-lineheight: 0.84;
-  --font-main: 'HelveticaBold', Helvetica, Arial, sans-serif;
+  /* 1/15th of the site — using vmin to keep it proportional */
+  --border: calc(100vmin / 15);
+  --bg-yellow: #ffcc00;
+  --bg-dark: #141414;
+  --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
 }
 
-/* font-face: keep your local Helvetica file (do not modify file) */
-@font-face {
-  font-family: 'HelveticaBold';
+@font-face{
+  font-family: 'HelveticaCustom';
   src: url('/fonts/helvetica.woff2') format('woff2');
-  font-weight: 700;
+  font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-/* reset & base */
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; padding: 0; }
-body {
-  font-family: var(--font-main);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #000;
-  background: #fff;
+/* Basic resets */
+*{ box-sizing: border-box; }
+html,body,#root{ height:100%; margin:0; }
+body{
+  background: var(--bg-yellow); /* page background */
+  font-family: var(--font);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-/* app root */
-.app-root { width: 100%; min-height: 100vh; background: #fff; color: #000; }
+.App{ }
 
-/* page base: each page occupies at least full viewport */
-.page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 24px;
-  padding: 6vh 6vw;
+.page{
   position: relative;
-  box-sizing: border-box;
+  min-height: 100vh; /* each page fills viewport height */
+  background: var(--bg-yellow); /* yellow border shows around inner box */
+  overflow: visible; /* allow text windows to sit in the border */
 }
 
-/* basic typography behavior (Canva params) */
-.page h1, .page h2, .page h3, .page p {
-  line-height: var(--canva-lineheight);
-  letter-spacing: var(--canva-tracking);
-  margin: 0;
-  font-weight: 700;
-  white-space: pre-line;
+/* Inner content box — this creates a border of size --border on all sides */
+.inner{
+  position: absolute;
+  top: var(--border);
+  left: var(--border);
+  right: var(--border);
+  bottom: var(--border);
+  background: var(--bg-dark);
 }
 
-/* SVG placeholders */
-.svg-placeholder { display: block; vertical-align: middle; max-width: none; height: auto; }
-.svg-logo { width: 124.48388mm; height: 57.819725mm; }
-.svg-arrow-down-big { width: 62.144043mm; height: 61.882187mm; }
-.svg-arrow-small { width: 28.441078mm; height: 28.441803mm; }
-.svg-arrow-left-down { width: 28.441772mm; height: 28.440491mm; }
-.svg-arrow-right-big { width: 55.00708mm; height: 55.30072mm; }
-
-/* black panels and accent usage */
-.black-panel, .black-card {
-  background: var(--dark);
-  color: #fff;
-  padding: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
+/* Text windows placed outside (in the border area) */
+.text{
+  position: absolute;
+  color: var(--bg-dark); /* contrast against yellow border */
+  font-family: var(--font);
+  white-space: pre-line; /* allow line breaks with <br/> or newlines */
 }
 
-/* small inline black label */
-.black-block-inline {
-  display: inline-block;
-  background: var(--dark);
-  color: #fff;
-  padding: 10px 18px;
-  box-sizing: border-box;
+/* First text: top-right, size 80, line-height 0.76, right-aligned */
+.text--one{
+  top: calc(var(--border) * 0.15);
+  right: calc(var(--border) * 0.15);
+  font-size: 80px;
+  line-height: 0.76; /* "rowing" interpreted as line-height */
+  text-align: right;
 }
 
-/* horizontal/vertical rules */
-.horizontal-rule {
-  display: block;
-  background: var(--dark);
-  height: 4px;
-  width: 100%;
-  margin: 18px 0;
-}
-.horizontal-rule.hairline { height: 1px; }
-
-.vertical-rule {
-  display: block;
-  background: var(--dark);
-  width: 4px;
-  border-radius: 1px;
-  align-self: stretch;
+/* Second text: bottom-left, size 100, same line-height, left-aligned */
+.text--two{
+  bottom: calc(var(--border) * 0.15);
+  left: calc(var(--border) * 0.15);
+  font-size: 100px;
+  line-height: 0.76;
+  text-align: left;
 }
 
-/* =========================
-   Page 1: CSS-constructed lines & black containers (replicates uploaded page 1)
-   ========================= */
-
-/* tuning variables for page1 */
-:root {
-  --p1-vertical-height: 230px;
-  --p1-vertical-width: 4px;
-  --p1-black-width: 220px;
-  --p1-black-padding: 28px;
-  --p1-horizontal-thickness: 4px;
-  --p1-horizontal-width: 60%;
-  --p1-content-max: 1400px;
-  --p1-pad-vertical: 120px;
+/* Third text: centered vertically on the right */
+.text--three{
+  top: 50%;
+  right: calc(var(--border) * 0.15);
+  transform: translateY(-50%);
+  /* no explicit content provided; sizing kept modest so it doesn't add new text */
+  font-size: 60px;
+  line-height: 0.76;
+  text-align: right;
 }
 
-/* page-1 container */
-.page-1 {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
-  padding: 0;
-  background: #fff;
+/* Ensure there are no accidental scroll locks */
+@media (max-width: 900px){
+  /* scale down big fonts a bit on smaller screens */
+  .text--one{ font-size: clamp(40px, 6vw, 80px); }
+  .text--two{ font-size: clamp(48px, 8.5vw, 100px); }
+  .text--three{ font-size: clamp(32px, 5.5vw, 60px); }
 }
-
-/* content wrapper sits above CSS shapes */
-.page1-content {
-  position: relative;
-  z-index: 2;
-  max-width: var(--p1-content-max);
-  margin: 0 auto;
-  padding: var(--p1-pad-vertical) 88px;
-  box-sizing: border-box;
-}
-
-/* hero grid */
-.hero { width: 100%; }
-.hero-inner {
-  display: flex;
-  gap: 48px;
-  align-items: flex-start;
-  width: 100%;
-}
-
-/* left column */
-.hero-left {
-  flex: 1 1 720px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* page-1 font sizing (CSS controls sizes; !important to override any inline helpers) */
-.p1-h1-1 { font-size: 80px !important; line-height: 0.84 !important; letter-spacing: -0.26em !important; }
-.p1-h1-2 { font-size: 100px !important; line-height: 0.84 !important; letter-spacing: -0.26em !important; margin-top: 6px; }
-.p1-label { font-size: 45px !important; line-height: 0.84 !important; letter-spacing: -0.26em !important; }
-
-/* horizontal decorative rule under the hero text */
-.p1-sep-wrap { margin-top: 24px; }
-.p1-horizontal-rule {
-  width: var(--p1-horizontal-width);
-  height: var(--p1-horizontal-thickness);
-  background: var(--dark);
-  display: block;
-  box-sizing: border-box;
-}
-
-/* right column - vertical rail + black card */
-.hero-right { width: var(--p1-black-width); display: flex; justify-content: flex-end; align-items: flex-start; }
-.hero-right-inner { display: flex; flex-direction: column; align-items: flex-end; gap: 18px; }
-
-.p1-vertical-rule {
-  width: var(--p1-vertical-width);
-  height: var(--p1-vertical-height);
-  background: var(--dark);
-  border-radius: 1px;
-  box-sizing: border-box;
-  display: block;
-}
-
-.p1-black-card {
-  width: var(--p1-black-width);
-  padding: var(--p1-black-padding);
-  background: var(--dark);
-  color: #fff;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* footer */
-.page-footer {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-  padding-bottom: 40px;
-  margin-top: 24px;
-}
-.p1-scroll { font-size: 28px !important; letter-spacing: -0.26em; line-height: 0.84; }
-
-/* keep inline label above shapes */
-.black-block-inline { position: relative; z-index: 3; background: var(--dark); color: #fff; padding: 10px 18px; }
-
-/* =========================
-   Page 2 / Team / Pages 3-6 / Page 7-9 basics
-   ========================= */
-
-.page-2 {
-  display: flex;
-  gap: 24px;
-  padding: 96px 88px;
-  align-items: flex-start;
-}
-.page-2 .left-col { flex: 0.6; }
-.page-2 .right-col { flex: 0.4; }
-
-.page-2 .roles .black-panel {
-  padding: 32px;
-  width: 100%;
-  min-height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.page-team { display: flex; gap: 24px; padding: 96px 88px; align-items: flex-start; }
-.page-team .left-col { flex: 0.4; }
-.page-team .right-col { flex: 0.6; }
-
-.profile-top { display: flex; flex-direction: column; gap: 8px; }
-.profile-label { display: block; }
-.profile-line { width: 100%; }
-.profile-body { margin-top: 18px; }
-
-.page-7 { display: flex; gap: 24px; padding: 96px 88px; align-items: flex-start; }
-.page-7 .left-col { flex: 0.4; }
-.page-7 .right-col { flex: 0.6; }
-.page-7 .car-text-inner { max-width: 680px; }
-
-.page-8 { display: flex; gap: 24px; padding: 96px 88px; align-items: flex-start; }
-.page-8 .partners-left { flex: 0.5; }
-.page-8 .partners-right { flex: 0.5; display: flex; align-items: flex-start; justify-content: flex-end; }
-.page-8 .black-panel { width: 320px; padding: 28px; }
-
-.page-9 { display: flex; gap: 24px; padding: 96px 88px; align-items: flex-start; }
-.page-9 .schedule-left { flex: 0.4; }
-.page-9 .schedule-center { flex: 0.4; display: flex; flex-direction: column; align-items: center; }
-.page-9 .right-col { flex: 0.2; }
-
-/* small screens - responsive */
-@media (max-width: 1100px) {
-  .page { flex-direction: column; padding: 48px; }
-  .page .left-col, .page .right-col, .page .center-col { width: 100%; flex: none; }
-  .page-1 .hero-inner { flex-direction: column; align-items: flex-start; }
-  .page-1 .hero-right { width: 100%; align-items: flex-start; }
-  .page-1 .black-card, .black-panel { width: 100%; }
-  .horizontal-rule.w-60 { width: 100%; }
-}
-
-/* mobile tweaks */
-@media (max-width: 600px) {
-  .page { padding: 28px; gap: 14px; }
-  .page-1 .hero-inner { gap: 20px; }
-  .page-1 .p1-vertical-rule { height: 140px; }
-  .svg-logo, .svg-arrow-down-big, .svg-arrow-small, .svg-arrow-left-down, .svg-arrow-right-big {
-    width: 100%;
-    height: auto;
-  }
-}
-
-/* utilities */
-.center { display: flex; align-items: center; justify-content: center; }
-.stack { display: flex; flex-direction: column; gap: 12px; }
-.role-button { display: block; background: transparent; border: none; padding: 6px 0; cursor: pointer; text-align: left; width: 100%; }
-.role-button:focus { outline: 3px solid var(--accent); outline-offset: 4px; }
-
-/* overlay */
-.overlay {
-  position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.6); z-index: 999;
-  padding: 4vh 4vw;
-}
-.overlay-card {
-  width: min(980px, 96%); background: #fff; padding: 28px; border-radius: 6px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-  color: #000;
-}
-.overlay-close { position: absolute; right: 12px; top: 12px; background: transparent; border: none; font-size: 20px; cursor: pointer; }
-
-/* end */

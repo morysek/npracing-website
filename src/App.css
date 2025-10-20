@@ -57,8 +57,8 @@ color: var(--bg-dark); /* text is dark for contrast */
 background: var(--bg-yellow); /* all divs yellow */
 font-family: var(--font);
 white-space: pre-line; /* allow line breaks with <br/> or newlines */
-letter-spacing: 0.01; /* requested letter spacing */
-line-height: 0.8; /* requested line spacing */
+letter-spacing: -0.1; /* requested letter spacing */
+line-height: 0.83; /* requested line spacing */
 }
 
 

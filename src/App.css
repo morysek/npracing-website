@@ -26,63 +26,62 @@ body{
 
 .App{ }
 
+/* Make all divs background #ffcc00 as requested */
 .page{
   position: relative;
   min-height: 100vh; /* each page fills viewport height */
-  background: var(--bg-yellow); /* yellow border shows around inner box */
-  overflow: visible; /* allow text windows to sit in the border */
+  background: var(--bg-yellow);
+  overflow: visible;
 }
 
-/* Inner content box — this creates a border of size --border on all sides */
+/* inner is inset to create a border but contains ALL content now */
 .inner{
   position: absolute;
   top: var(--border);
   left: var(--border);
   right: var(--border);
   bottom: var(--border);
-  background: var(--bg-dark);
+  background: var(--bg-yellow); /* now yellow as requested */
 }
 
-/* Text windows placed outside (in the border area) */
+/* Text windows placed inside (in the inner box) */
 .text{
   position: absolute;
-  color: var(--bg-dark); /* contrast against yellow border */
+  color: var(--bg-dark); /* text is dark for contrast */
+  background: var(--bg-yellow); /* all divs yellow */
   font-family: var(--font);
   white-space: pre-line; /* allow line breaks with <br/> or newlines */
+  letter-spacing: -10px; /* requested letter spacing */
+  line-height: 0.9; /* requested line spacing */
 }
 
-/* First text: top-right, size 80, line-height 0.76, right-aligned */
+/* First text: top-right inside inner, size 80, right-aligned */
 .text--one{
-  top: calc(var(--border) * 0.15);
-  right: calc(var(--border) * 0.15);
+  top: 2%;
+  right: 2%;
   font-size: 80px;
-  line-height: 0.76; /* "rowing" interpreted as line-height */
   text-align: right;
 }
 
-/* Second text: bottom-left, size 100, same line-height, left-aligned */
+/* Second text: bottom-left inside inner, size 100, left-aligned */
 .text--two{
-  bottom: calc(var(--border) * 0.15);
-  left: calc(var(--border) * 0.15);
+  bottom: 2%;
+  left: 2%;
   font-size: 100px;
-  line-height: 0.76;
   text-align: left;
 }
 
-/* Third text: centered vertically on the right */
+/* Third text: centered vertically on the right inside inner */
 .text--three{
   top: 50%;
-  right: calc(var(--border) * 0.15);
+  right: 2%;
   transform: translateY(-50%);
-  /* no explicit content provided; sizing kept modest so it doesn't add new text */
   font-size: 60px;
-  line-height: 0.76;
   text-align: right;
 }
 
-/* Ensure there are no accidental scroll locks */
+/* Ensure responsive scaling */
 @media (max-width: 900px){
-  /* scale down big fonts a bit on smaller screens */
   .text--one{ font-size: clamp(40px, 6vw, 80px); }
   .text--two{ font-size: clamp(48px, 8.5vw, 100px); }
   .text--three{ font-size: clamp(32px, 5.5vw, 60px); }

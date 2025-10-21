@@ -81,16 +81,11 @@ body{
   text-align: right;
 }
 
-.divider {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;                 /* vertically halfway inside .inner */
-  height: 2px;              /* requested thickness */
-  background: var(--bg-dark);/* dark line for contrast */
-  transform: translateY(-50%); /* perfectly center the 2px line */
-  z-index: 10;
-  pointer-events: none;     /* doesn't intercept mouse events */
+.line {
+  background: var(--bg-dark); /* dark 2px line */
+  height: 4px;                /* thickness */
+  width: 100%;                /* spans full .inner width via left/right 0 in JS */
+  pointer-events: none;
 }
 
 /* Ensure responsive scaling */

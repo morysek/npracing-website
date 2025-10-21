@@ -1,6 +1,6 @@
 :root{
   /* 1/15th of the site — using vmin to keep it proportional */
-  --border: calc(100vmin / 20);
+  --border: calc(100vmin / 18);
   --bg-yellow: #ffcc00;
   --bg-dark: #141414;
   --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
@@ -72,20 +72,42 @@ body{
   text-align: left;
 }
 
-/* Third text: centered vertically on the right inside inner */
-.text--three{
-  top: 50%;
-  right: 2%;
-  transform: translateY(-50%);
-  font-size: 4vw;
-  text-align: right;
-}
 
 .line {
   background: var(--bg-dark); /* dark 2px line */
   height: 20px;                /* thickness */
   width: 100%;                /* spans full .inner width via left/right 0 in JS */
   pointer-events: none;
+}
+
+/* top-left image: keeps aspect ratio, 6vw tall */
+.placeholder--one {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 6vw;
+  width: auto;
+  display: block;
+  object-fit: contain; /* useful if it's an <img>; harmless on SVG */
+}
+
+/* bottom-right image: keeps aspect ratio, 7vw tall */
+.placeholder--two {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 7vw;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* ensure text--three can be absolutely positioned from bottom-left */
+.text--three {
+  /* JS will set left/bottom; clear any conflicting rules */
+  top: auto !important;
+  right: auto !important;
+  transform: none !important;
 }
 
 /* Ensure responsive scaling */

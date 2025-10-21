@@ -81,6 +81,18 @@ body{
   text-align: right;
 }
 
+.divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;                 /* vertically halfway inside .inner */
+  height: 2px;              /* requested thickness */
+  background: var(--bg-dark);/* dark line for contrast */
+  transform: translateY(-50%); /* perfectly center the 2px line */
+  z-index: 10;
+  pointer-events: none;     /* doesn't intercept mouse events */
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

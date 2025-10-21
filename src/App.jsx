@@ -20,7 +20,7 @@ export default function App() {
             <div className="divider" aria-hidden />
 
             <div className="text text--two">
-              Czechia's only<br />STEM Racing<br />Team
+              Czechia's only<br />STEM Racing<br />team
             </div>
 
             <div className="text text--three" aria-hidden>

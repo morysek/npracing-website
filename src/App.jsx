@@ -95,7 +95,7 @@ export default function App() {
       line.style.left = '0';
       line.style.right = '0';
       line.style.top = `${centerY}px`;
-      line.style.height = '2px';
+      line.style.height = '4px';
       line.style.transform = 'none';
       line.style.zIndex = '10';
       line.style.pointerEvents = 'none';

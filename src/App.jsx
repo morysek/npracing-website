@@ -17,6 +17,7 @@ export default function App() {
             <div className="text text--one" aria-hidden>
               NP<br />Racing
             </div>
+            <div className="divider" aria-hidden />
 
             <div className="text text--two">
               Czechia's only<br />STEM Racing<br />Team

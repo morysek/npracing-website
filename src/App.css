@@ -1,73 +1,89 @@
 :root{
-/* 1/30th of the site — using vmin to keep it proportional */
---border: calc(100vmin / 30);
---bg-yellow: #ffcc00;
---bg-dark: #141414;
---font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
+  /* 1/15th of the site — using vmin to keep it proportional */
+  --border: calc(100vmin / 15);
+  --bg-yellow: #ffcc00;
+  --bg-dark: #141414;
+  --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
 }
-
-
-
 
 @font-face{
-font-family: 'HelveticaCustom';
-src: url('/fonts/helvetica.woff2') format('woff2');
-font-weight: normal;
-font-style: normal;
-font-display: swap;
+  font-family: 'HelveticaCustom';
+  src: url('/fonts/helvetica.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
-
-
-
 
 /* Basic resets */
 *{ box-sizing: border-box; }
 html,body,#root{ height:100%; margin:0; }
 body{
-background: var(--bg-yellow); /* page background */
-font-family: var(--font);
--webkit-font-smoothing:antialiased;
--moz-osx-font-smoothing:grayscale;
+  background: var(--bg-yellow); /* page background */
+  font-family: var(--font);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
-
-
-
 
 .App{ }
 
-
-
-
-/* Make all divs background #ffcc00 as requested */
 .page{
-position: relative;
-min-height: 100vh; /* each page fills viewport height */
-background: var(--bg-yellow);
-overflow: visible;
+  position: relative;
+  min-height: 100vh; /* each page fills viewport height */
+  background: var(--bg-yellow); /* yellow border shows around inner box */
+  overflow: visible; /* allow text windows to sit in the border */
 }
 
-
-
-
-/* inner is inset to create a border but contains ALL content now */
+/* Inner content box — this creates a border of size --border on all sides */
 .inner{
-position: absolute;
-top: var(--border);
-left: var(--border);
-right: var(--border);
-bottom: var(--border);
-background: var(--bg-yellow); /* now yellow as requested */
+  position: absolute;
+  top: var(--border);
+  left: var(--border);
+  right: var(--border);
+  bottom: var(--border);
+  background: var(--bg-dark);
 }
 
-
-
-
-/* Text windows placed inside (in the inner box) */
+/* Text windows placed outside (in the border area) */
 .text{
-position: absolute;
-color: var(--bg-dark); /* text is dark for contrast */
-background: var(--bg-yellow); /* all divs yellow */
-font-family: var(--font);
-white-space: pre-line; /* allow line breaks with <br/> or newlines */
-letter-spacing: -0.03em; /* requested letter spacing */
+  position: absolute;
+  color: var(--bg-dark); /* contrast against yellow border */
+  font-family: var(--font);
+  white-space: pre-line; /* allow line breaks with <br/> or newlines */
+}
+
+/* First text: top-right, size 80, line-height 0.76, right-aligned */
+.text--one{
+  top: calc(var(--border) * 0.15);
+  right: calc(var(--border) * 0.15);
+  font-size: 80px;
+  line-height: 0.76; /* "rowing" interpreted as line-height */
+  text-align: right;
+}
+
+/* Second text: bottom-left, size 100, same line-height, left-aligned */
+.text--two{
+  bottom: calc(var(--border) * 0.15);
+  left: calc(var(--border) * 0.15);
+  font-size: 100px;
+  line-height: 0.76;
+  text-align: left;
+}
+
+/* Third text: centered vertically on the right */
+.text--three{
+  top: 50%;
+  right: calc(var(--border) * 0.15);
+  transform: translateY(-50%);
+  /* no explicit content provided; sizing kept modest so it doesn't add new text */
+  font-size: 60px;
+  line-height: 0.76;
+  text-align: right;
+}
+
+/* Ensure there are no accidental scroll locks */
+@media (max-width: 900px){
+  /* scale down big fonts a bit on smaller screens */
+  .text--one{ font-size: clamp(40px, 6vw, 80px); }
+  .text--two{ font-size: clamp(48px, 8.5vw, 100px); }
+  .text--three{ font-size: clamp(32px, 5.5vw, 60px); }
 }

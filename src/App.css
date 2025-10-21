@@ -59,7 +59,7 @@ body{
 .text--one{
   top: 2%;
   right: 2%;
-  font-size: 8vw;
+  font-size: 6vw;
   text-align: right;
   line-height: 0.8em;
 }
@@ -68,7 +68,7 @@ body{
 .text--two{
   bottom: 2%;
   left: 2%;
-  font-size: 10vw;
+  font-size: 8vw;
   text-align: left;
 }
 

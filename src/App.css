@@ -51,16 +51,17 @@ body{
   background: var(--bg-yellow); /* all divs yellow */
   font-family: var(--font);
   white-space: pre-line; /* allow line breaks with <br/> or newlines */
-  letter-spacing: -10px; /* requested letter spacing */
-  line-height: 0.9; /* requested line spacing */
+  letter-spacing: -0.1em; /* requested letter spacing */
+  line-height: 0.85; /* requested line spacing */
 }
 
 /* First text: top-right inside inner, size 80, right-aligned */
 .text--one{
   top: 2%;
   right: 2%;
-  font-size: 80px;
+  font-size: 1100px;
   text-align: right;
+  line-height: 0.8;
 }
 
 /* Second text: bottom-left inside inner, size 100, left-aligned */

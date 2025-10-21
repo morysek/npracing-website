@@ -1,6 +1,6 @@
 :root{
   /* 1/15th of the site — using vmin to keep it proportional */
-  --border: calc(100vmin / 30);
+  --border: calc(100vmin / 25);
   --bg-yellow: #ffcc00;
   --bg-dark: #141414;
   --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
@@ -57,8 +57,8 @@ body{
 
 /* First text: top-right inside inner, size 80, right-aligned */
 .text--one{
-  top: 2%;
-  right: 2%;
+  top: 0;
+  right: 0;
   font-size: 6vw;
   text-align: right;
   line-height: 0.8em;
@@ -66,8 +66,8 @@ body{
 
 /* Second text: bottom-left inside inner, size 100, left-aligned */
 .text--two{
-  bottom: 2%;
-  left: 2%;
+  bottom: 0;
+  left: 0;
   font-size: 8vw;
   text-align: left;
 }

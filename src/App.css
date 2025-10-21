@@ -75,7 +75,7 @@ body{
 
 .line {
   background: var(--bg-dark); /* dark 2px line */
-  height: 20px;                /* thickness */
+  height: 100px;                /* thickness */
   width: 100%;                /* spans full .inner width via left/right 0 in JS */
   pointer-events: none;
 }

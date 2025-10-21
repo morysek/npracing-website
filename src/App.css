@@ -83,7 +83,7 @@ body{
 
 .line {
   background: var(--bg-dark); /* dark 2px line */
-  height: 4px;                /* thickness */
+  height: 8px;                /* thickness */
   width: 100%;                /* spans full .inner width via left/right 0 in JS */
   pointer-events: none;
 }

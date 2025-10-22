@@ -182,6 +182,66 @@ React.useEffect(() => {
   };
 }, []);
 
+React.useEffect(() => {
+  const GAP_PX = 8; // small gap between text2 and text3
+
+  const isMobileDevice = () => {
+    // Touch-capable, coarse pointer, or common mobile UA tokens
+    const touch = typeof navigator !== 'undefined' && ('maxTouchPoints' in navigator ? navigator.maxTouchPoints > 0 : 'ontouchstart' in window);
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+    return Boolean(touch || coarse || uaMobile);
+  };
+
+  const updateDevicePositions = () => {
+    const onDevice = isMobileDevice();
+
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const text2 = inner && inner.querySelector('.text--two');
+      const text3 = page.querySelector('.text--three');
+      if (!inner || !text2 || !text3) return;
+
+      const innerR = inner.getBoundingClientRect();
+      const t2R = text2.getBoundingClientRect();
+      const t3R = text3.getBoundingClientRect();
+
+      const t3TopRel = t3R.top - innerR.top;
+      const t2Height = t2R.height;
+      const t2TopRel = t2R.top - innerR.top;
+
+      // if text2 would overlap text3, move it up so its BOTTOM sits above text3.top - GAP
+      if (t2TopRel + t2Height > t3TopRel - GAP_PX) {
+        const desiredTop = Math.max(0, t3TopRel - GAP_PX - t2Height);
+        text2.style.position = 'absolute';
+        text2.style.top = `${desiredTop}px`;
+        text2.style.bottom = 'auto';
+      } else {
+        // already above; keep natural bottom anchor
+        text2.style.position = 'absolute';
+        text2.style.top = '';
+        text2.style.bottom = '2%';
+      }
+    });
+  };
+
+  // run initially and on relevant events
+  updateDevicePositions();
+  const tick = setTimeout(updateDevicePositions, 60); // catch late layout
+  window.addEventListener('resize', updateDevicePositions);
+  window.addEventListener('orientationchange', updateDevicePositions);
+
+  const ro = new ResizeObserver(updateDevicePositions);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+
+  return () => {
+    clearTimeout(tick);
+    window.removeEventListener('resize', updateDevicePositions);
+    window.removeEventListener('orientationchange', updateDevicePositions);
+    ro.disconnect();
+  };
+}, []);
+
   return (
     <div className="App">
       {pages.map((_, i) => (

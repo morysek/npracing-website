@@ -111,7 +111,7 @@ React.useEffect(() => {
             </div>
 
             <div className="text text--three" aria-hidden>
-              {/* intentionally left blank */}
+              Scroll
             </div>
             <img src="/public/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
           </div>

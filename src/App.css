@@ -99,11 +99,11 @@ body{
   top: 60vh;                  /* starts at 60% of the viewport height */
   left: 0;                    /* span full page width (outer .page) */
   right: 0;
-  width: 100%;                /* span across the page */
+  width: 40vw;                /* span across the page */
   height: auto;               /* preserve aspect ratio */
   display: block;
   object-fit: contain;
-  z-index: 1;
+  z-index: 99;
   pointer-events: none;
 }
 

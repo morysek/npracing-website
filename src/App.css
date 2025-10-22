@@ -1,6 +1,6 @@
 :root{
   /* 1/15th of the site — using vmin to keep it proportional */
-  --border: calc(100vmin / 18);
+  --border: calc(100vmin / 15);
   --bg-yellow: #ffcc00;
   --bg-dark: #141414;
   --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
@@ -105,7 +105,7 @@ body{
 /* ensure text--three can be absolutely positioned from bottom-left */
 .text--three {
   position: absolute; /* JS overrides exact left/top */
-  font-size: 10vw;    /* constant size */
+  font-size: 5vw;    /* constant size */
   line-height: 0.9;
   color: var(--bg-dark);
   background: var(--bg-yellow);

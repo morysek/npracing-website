@@ -259,7 +259,7 @@ React.useEffect(() => {
               Czechia's only<br />STEM Racing<br />team
             </div>
           </div>
-          <img src="/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
+          <img src="/schody.svg" alt="" className="img--two" aria-hidden />
           <div className="text text--three" aria-hidden>
               Scroll
           </div>

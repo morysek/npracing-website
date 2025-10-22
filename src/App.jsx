@@ -183,7 +183,7 @@ React.useEffect(() => {
 }, []);
 
 React.useEffect(() => {
-  const GAP_PX = 8; // small gap between text2 and text3
+  const GAP_PX = 48; // small gap between text2 and text3
 
   const isMobileDevice = () => {
     // Touch-capable, coarse pointer, or common mobile UA tokens

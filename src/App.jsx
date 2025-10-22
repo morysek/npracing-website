@@ -13,14 +13,17 @@ React.useEffect(() => {
     document.querySelectorAll('.page').forEach((page) => {
       const img2 = page.querySelector('.placeholder--two, .img--two, .svg--two');
       const text3 = page.querySelector('.text--three');
-      if (!img2 || !text3 || !page) return;
+      if (!img2 || !text3) return;
 
       const pageR = page.getBoundingClientRect();
       const img2R  = img2.getBoundingClientRect();
+      const textR  = text3.getBoundingClientRect();
 
-      // Align text--three's top-left to img--two's top-left (relative to page)
+      // left: align left edges
       const leftRel = Math.max(0, img2R.left - pageR.left);
-      const topRel  = Math.max(0, img2R.top  - pageR.top);
+
+      // top: position so text's BOTTOM aligns with img2's TOP
+      const topRel  = Math.max(0, img2R.top - pageR.top - textR.height);
 
       Object.assign(text3.style, {
         position: 'absolute',
@@ -34,14 +37,14 @@ React.useEffect(() => {
   };
 
   update();
-  const tick = setTimeout(update, 60); // cover late image layout
+  const tick = setTimeout(update, 60); // catch late layout changes
   window.addEventListener('resize', update);
   window.addEventListener('load', update);
 
   const ro = new ResizeObserver(update);
   document.querySelectorAll('.page').forEach((el) => ro.observe(el));
 
-  // listen for img load if using <img class="img--two">
+  // attach image load listeners for <img class="img--two">
   document.querySelectorAll('.page').forEach((page) => {
     const img = page.querySelector('.img--two');
     if (img && img.tagName.toLowerCase() === 'img') img.addEventListener('load', update);

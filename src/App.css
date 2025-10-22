@@ -105,7 +105,7 @@ body{
 /* ensure text--three can be absolutely positioned from bottom-left */
 .text--three {
   position: absolute; /* JS overrides exact left/top */
-  font-size: 5vh;    /* constant size */
+  font-size: 10vw;    /* constant size */
   line-height: 0.9;
   color: var(--bg-dark);
   background: var(--bg-yellow);

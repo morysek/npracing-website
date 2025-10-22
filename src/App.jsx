@@ -117,48 +117,6 @@ export default function App() {
   };
 }, []);
 
-
-React.useEffect(() => {
-  const update = () => {
-    document.querySelectorAll('.page').forEach((page) => {
-      const inner = page.querySelector('.inner');
-      if (!inner) return;
-      const img2 = inner.querySelector('.img--two'); // bottom-right image
-      const text3 = inner.querySelector('.text--three');
-      if (!img2 || !text3) return;
-
-      const innerR = inner.getBoundingClientRect();
-      const img2R = img2.getBoundingClientRect();
-
-      // top-left of img2 relative to inner:
-      const leftRel = img2R.left - innerR.left;
-      const topRel = img2R.top - innerR.top;
-
-      // set text3's bottom-left to match img2 top-left:
-      const bottomPx = Math.max(0, innerR.height - topRel);
-
-      Object.assign(text3.style, {
-        left: `${leftRel}px`,
-        bottom: `${bottomPx}px`,
-        top: 'auto',
-        right: 'auto',
-        transform: 'none',
-      });
-    });
-  };
-
-  // run once and on resize / inner changes
-  update();
-  window.addEventListener('resize', update);
-  const ro = new ResizeObserver(update);
-  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
-
-  return () => {
-    window.removeEventListener('resize', update);
-    ro.disconnect();
-  };
-}, []);
-
   React.useEffect(() => {
   const updateAllLines = () => {
     document.querySelectorAll('.page').forEach((page) => {

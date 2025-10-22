@@ -23,8 +23,8 @@ React.useEffect(() => {
       const leftRel = Math.max(0, img2R.left - pageR.left);
 
       // top: position so text's BOTTOM aligns with img2's TOP
-      const topRel  = Math.max(0, img2R.top - pageR.top - textR.height);
-
+      const topRel = Math.max(0, img2R.top - pageR.top - textR.height - 16);
+      
       Object.assign(text3.style, {
         position: 'absolute',
         left: `${leftRel}px`,

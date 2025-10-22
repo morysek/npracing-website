@@ -109,12 +109,11 @@ React.useEffect(() => {
             <div className="text text--two">
               Czechia's only<br />STEM Racing<br />team
             </div>
-
-            <div className="text text--three" aria-hidden>
-              Scroll
-            </div>
           </div>
           <img src="/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
+          <div className="text text--three" aria-hidden>
+              Scroll
+          </div>
         </section>
       ))}
     </div>

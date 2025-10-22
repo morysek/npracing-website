@@ -8,6 +8,42 @@ export default function App() {
   const pages = Array.from({ length: 5 });
 
   React.useEffect(() => {
+  const update = () => {
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const img2 = inner && inner.querySelector('.placeholder--two, .img--two, .svg--two');
+      const text3 = page.querySelector('.text--three'); // outer .page element
+      if (!img2 || !text3 || !page) return;
+
+      const pageR = page.getBoundingClientRect();
+      const img2R  = img2.getBoundingClientRect();
+      const textR  = text3.getBoundingClientRect();
+
+      // left relative to page (align left edges)
+      const leftRel = Math.max(0, img2R.left - pageR.left);
+
+      // place text above the image: top = img2.top - page.top - textHeight
+      const topRel = Math.max(0, img2R.top - pageR.top - textR.height);
+
+      Object.assign(text3.style, {
+        position: 'absolute',
+        left: `${leftRel}px`,
+        top: `${topRel}px`,
+        transform: 'none',
+        zIndex: '9999',
+        pointerEvents: 'none',
+      });
+    });
+  };
+
+  update();
+  window.addEventListener('resize', update);
+  const ro = new ResizeObserver(update);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+  return () => { window.removeEventListener('resize', update); ro.disconnect(); };
+}, []);
+
+  React.useEffect(() => {
   const updateImageOneSizes = () => {
     document.querySelectorAll('.page').forEach((page) => {
       const inner = page.querySelector('.inner');

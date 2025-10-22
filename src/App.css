@@ -92,14 +92,19 @@ body{
 }
 
 /* bottom-right image: keeps aspect ratio, 7vw tall */
-.img--two {
+.img--two,
+.placeholder--two,
+.svg--two {
   position: absolute;
-  bottom: 0;
+  top: 60vh;                  /* starts at 60% of the viewport height */
+  left: 0;                    /* span full page width (outer .page) */
   right: 0;
-  height: 40vh;
-  width: auto;
+  width: 100%;                /* span across the page */
+  height: auto;               /* preserve aspect ratio */
   display: block;
   object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* ensure text--three can be absolutely positioned from bottom-left */

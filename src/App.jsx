@@ -125,6 +125,7 @@ export default function App() {
           {/* Inner box contains ALL content now */}
           <div className="inner">
             {/* Text windows placed inside the inner box */}
+            <img src="/public/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
             <div className="text text--one" aria-hidden>
               NP<br />Racing
             </div>
@@ -137,6 +138,7 @@ export default function App() {
             <div className="text text--three" aria-hidden>
               {/* intentionally left blank */}
             </div>
+            <img src="/public/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
           </div>
         </section>
       ))}

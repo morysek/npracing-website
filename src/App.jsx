@@ -7,6 +7,81 @@ export default function App() {
   // create 5 identical pages for testing
   const pages = Array.from({ length: 5 });
 
+  React.useEffect(() => {
+  const updateImageOneSizes = () => {
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      if (!inner) return;
+      const text1 = inner.querySelector('.text--one');
+      const img1 = inner.querySelector('.placeholder--one') || inner.querySelector('.img--one') || inner.querySelector('.svg--one');
+      if (!text1 || !img1) return;
+
+      // measured height of text--one (px)
+      const tRect = text1.getBoundingClientRect();
+      const targetHeightPx = tRect.height * 1.2; // 120%
+
+      // Helper: set height & width while preserving aspect ratio
+      const setSizeForImgElement = (el, heightPx) => {
+        // <img> (HTMLImageElement)
+        if (el.tagName.toLowerCase() === 'img') {
+          el.style.height = `${heightPx}px`;
+          el.style.width = 'auto';
+          el.style.objectFit = 'contain';
+          return;
+        }
+
+        // <svg> (SVGElement) - compute aspect ratio from viewBox or bbox
+        if (el instanceof SVGElement) {
+          let ar = 1; // width / height
+          const vb = el.getAttribute('viewBox');
+          if (vb) {
+            const parts = vb.trim().split(/\s+/).map(Number);
+            if (parts.length === 4 && parts.every(n => !Number.isNaN(n) && isFinite(n))) {
+              const [, , vbW, vbH] = parts;
+              if (vbH > 0) ar = vbW / vbH;
+            }
+          } else {
+            // fallback to bbox (may throw in some SVGs; guard it)
+            try {
+              const bb = el.getBBox();
+              if (bb.height > 0) ar = bb.width / bb.height;
+            } catch (e) { /* ignore */ }
+          }
+          el.style.height = `${heightPx}px`;
+          el.style.width = `${heightPx * ar}px`;
+          return;
+        }
+
+        // Generic element fallback
+        el.style.height = `${heightPx}px`;
+        el.style.width = 'auto';
+      };
+
+      // apply position anchors (top-left)
+      img1.style.position = 'absolute';
+      img1.style.top = '0';
+      img1.style.left = '0';
+
+      // set size
+      setSizeForImgElement(img1, targetHeightPx);
+    });
+  };
+
+  // initial layout
+  updateImageOneSizes();
+
+  // re-calc on resize and when inner content changes
+  window.addEventListener('resize', updateImageOneSizes);
+  const ro = new ResizeObserver(updateImageOneSizes);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+
+  return () => {
+    window.removeEventListener('resize', updateImageOneSizes);
+    ro.disconnect();
+  };
+}, []);
+
+
 React.useEffect(() => {
   const update = () => {
     document.querySelectorAll('.page').forEach((page) => {

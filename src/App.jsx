@@ -7,23 +7,20 @@ export default function App() {
   // create 5 identical pages for testing
   const pages = Array.from({ length: 5 });
 
-  React.useEffect(() => {
+// Replace the old positioning useEffect with this
+React.useEffect(() => {
   const update = () => {
     document.querySelectorAll('.page').forEach((page) => {
-      const inner = page.querySelector('.inner');
-      const img2 = inner && inner.querySelector('.placeholder--two, .img--two, .svg--two');
-      const text3 = page.querySelector('.text--three'); // outer .page element
+      const img2 = page.querySelector('.placeholder--two, .img--two, .svg--two');
+      const text3 = page.querySelector('.text--three');
       if (!img2 || !text3 || !page) return;
 
       const pageR = page.getBoundingClientRect();
       const img2R  = img2.getBoundingClientRect();
-      const textR  = text3.getBoundingClientRect();
 
-      // left relative to page (align left edges)
+      // Align text--three's top-left to img--two's top-left (relative to page)
       const leftRel = Math.max(0, img2R.left - pageR.left);
-
-      // place text above the image: top = img2.top - page.top - textHeight
-      const topRel = Math.max(0, img2R.top - pageR.top - textR.height);
+      const topRel  = Math.max(0, img2R.top  - pageR.top);
 
       Object.assign(text3.style, {
         position: 'absolute',
@@ -37,11 +34,31 @@ export default function App() {
   };
 
   update();
+  const tick = setTimeout(update, 60); // cover late image layout
   window.addEventListener('resize', update);
+  window.addEventListener('load', update);
+
   const ro = new ResizeObserver(update);
-  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
-  return () => { window.removeEventListener('resize', update); ro.disconnect(); };
+  document.querySelectorAll('.page').forEach((el) => ro.observe(el));
+
+  // listen for img load if using <img class="img--two">
+  document.querySelectorAll('.page').forEach((page) => {
+    const img = page.querySelector('.img--two');
+    if (img && img.tagName.toLowerCase() === 'img') img.addEventListener('load', update);
+  });
+
+  return () => {
+    clearTimeout(tick);
+    window.removeEventListener('resize', update);
+    window.removeEventListener('load', update);
+    ro.disconnect();
+    document.querySelectorAll('.page').forEach((page) => {
+      const img = page.querySelector('.img--two');
+      if (img && img.tagName.toLowerCase() === 'img') img.removeEventListener('load', update);
+    });
+  };
 }, []);
+
 
   React.useEffect(() => {
   const updateImageOneSizes = () => {

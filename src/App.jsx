@@ -242,6 +242,45 @@ React.useEffect(() => {
   };
 }, []);
 
+  React.useEffect(() => {
+  const updateIntermediateSpace = () => {
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const svg = page.querySelector('.placeholder--two, .img--two, .svg--two');
+      if (!inner || !svg) {
+        // restore any previously set padding if svg/inner missing
+        page.style.paddingBottom = '';
+        return;
+      }
+
+      const innerR = inner.getBoundingClientRect();
+      const svgR = svg.getBoundingClientRect();
+
+      // how many pixels the svg extends below the inner bottom
+      const gapPx = Math.max(0, svgR.bottom - innerR.bottom);
+
+      // ensure the next page starts after that intermediate space:
+      // apply as padding-bottom on the page (so section height includes the intermediate space)
+      page.style.paddingBottom = `${gapPx}px`;
+    });
+  };
+
+  updateIntermediateSpace();
+  const t = setTimeout(updateIntermediateSpace, 60); // catch late image load layout
+  window.addEventListener('resize', updateIntermediateSpace);
+  window.addEventListener('load', updateIntermediateSpace);
+
+  const ro = new ResizeObserver(updateIntermediateSpace);
+  document.querySelectorAll('.page').forEach((el) => ro.observe(el));
+
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updateIntermediateSpace);
+    window.removeEventListener('load', updateIntermediateSpace);
+    ro.disconnect();
+  };
+}, []);
+
   return (
     <div className="App">
       {pages.map((_, i) => (

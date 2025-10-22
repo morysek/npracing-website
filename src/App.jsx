@@ -113,8 +113,8 @@ React.useEffect(() => {
             <div className="text text--three" aria-hidden>
               Scroll
             </div>
-            <img src="/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
           </div>
+          <img src="/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
         </section>
       ))}
     </div>

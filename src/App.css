@@ -85,8 +85,8 @@ body{
   position: absolute;
   top: 0;
   left: 0;
-  height: 18vw;
-  width: auto;         /* preserve aspect ratio */
+  width: 12vw;
+  height: auto;         /* preserve aspect ratio */
   display: block;
   object-fit: contain; /* works for <img> */
 }
@@ -96,7 +96,7 @@ body{
   position: absolute;
   bottom: 0;
   right: 0;
-  height: 12vw;
+  height: 18vh;
   width: auto;
   display: block;
   object-fit: contain;

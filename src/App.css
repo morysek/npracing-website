@@ -104,10 +104,16 @@ body{
 
 /* ensure text--three can be absolutely positioned from bottom-left */
 .text--three {
-  position: absolute; /* JS will set left & bottom */
+  position: absolute; /* JS overrides exact left/top */
+  font-size: 5vh;    /* constant size */
+  line-height: 0.9;
+  letter-spacing: -10px;
+  color: var(--bg-dark);
+  background: var(--bg-yellow);
   transform: none !important;
-  top: auto !important;
-  right: auto !important;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: pre-line;
 }
 
 /* Ensure responsive scaling */

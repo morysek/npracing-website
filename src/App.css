@@ -81,18 +81,18 @@ body{
 }
 
 /* top-left image: keeps aspect ratio, 6vw tall */
-.placeholder--one {
+.img--one {
   position: absolute;
   top: 0;
   left: 0;
   height: 6vw;
-  width: auto;
+  width: auto;         /* preserve aspect ratio */
   display: block;
-  object-fit: contain; /* useful if it's an <img>; harmless on SVG */
+  object-fit: contain; /* works for <img> */
 }
 
 /* bottom-right image: keeps aspect ratio, 7vw tall */
-.placeholder--two {
+.img--two {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -104,10 +104,10 @@ body{
 
 /* ensure text--three can be absolutely positioned from bottom-left */
 .text--three {
-  /* JS will set left/bottom; clear any conflicting rules */
+  position: absolute; /* JS will set left & bottom */
+  transform: none !important;
   top: auto !important;
   right: auto !important;
-  transform: none !important;
 }
 
 /* Ensure responsive scaling */

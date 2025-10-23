@@ -201,10 +201,6 @@ export default function App() {
           text2.style.position = 'absolute';
           text2.style.top = `${desiredTop}px`;
           text2.style.bottom = 'auto';
-        } else {
-          text2.style.position = 'absolute';
-          text2.style.top = '';
-          text2.style.bottom = '2%';
         }
       });
     };

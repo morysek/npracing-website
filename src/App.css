@@ -96,7 +96,7 @@ body{
 .placeholder--two,
 .svg--two {
   position: absolute;   /* overlay */
-  top: 60vh;         /* starts at 60% of the viewport height */
+  top: 50vh;         /* starts at 60% of the viewport height */
   right: 0;
   width: 40vw;       /* span full viewport width */
   height: auto;      /* preserve aspect ratio */

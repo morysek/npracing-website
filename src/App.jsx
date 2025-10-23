@@ -192,7 +192,7 @@ React.useEffect(() => {
     const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
     return Boolean(touch || coarse || uaMobile);
   };
-
+  // run initially and on relevant events
 const onDevice = isMobileDevice();
 
 document.querySelectorAll('.page').forEach((page) => {
@@ -229,25 +229,7 @@ document.querySelectorAll('.page').forEach((page) => {
     text2.style.bottom = '2%';
   }
 });
-  };
-
-  // run initially and on relevant events
-  updateDevicePositions();
-  const tick = setTimeout(updateDevicePositions, 60); // catch late layout
-  window.addEventListener('resize', updateDevicePositions);
-  window.addEventListener('orientationchange', updateDevicePositions);
-
-  const ro = new ResizeObserver(updateDevicePositions);
-  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
-
-  return () => {
-    clearTimeout(tick);
-    window.removeEventListener('resize', updateDevicePositions);
-    window.removeEventListener('orientationchange', updateDevicePositions);
-    ro.disconnect();
-  };
-}, []);
-
+  
 React.useEffect(() => {
   const updateGap = () => {
     document.querySelectorAll('.page').forEach((page) => {

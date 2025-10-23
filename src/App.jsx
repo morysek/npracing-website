@@ -313,26 +313,33 @@ export default function App() {
   };
 
   const applyDeviceMode = () => {
-    const onDevice = detectDevice();
+  const onDevice = detectDevice();
 
-    // toggle a class on <html> so CSS can respond
-    document.documentElement.classList.toggle('is-device', onDevice);
+  // toggle class so CSS can react
+  document.documentElement.classList.toggle('is-device', onDevice);
 
-    document.querySelectorAll('.page').forEach((page) => {
-      const inner = page.querySelector('.inner');
-      const text2 = inner && inner.querySelector('.text--two');
-      if (!text2) return;
+  document.querySelectorAll('.page').forEach((page) => {
+    const inner = page.querySelector('.inner');
+    const text2 = inner && inner.querySelector('.text--two');
+    if (!text2) return;
 
-      if (onDevice) {
-        // Let text--two flow (no absolute anchoring) so it won't clip against inner edges
-        text2.style.position = 'static';
-        text2.style.top = '';
-        text2.style.bottom = '';
-        text2.style.left = '';
-        // small breathing room from edges
-        text2.style.margin = '0 2% 4% 2%';
-      }
-    });
+    if (onDevice) {
+      // device: let it flow (no clipping)
+      text2.style.position = 'static';
+      text2.style.margin = '0 2% 4% 2%';
+      text2.style.left = '';
+      text2.style.bottom = '';
+      text2.style.top = '';
+    } else {
+      // non-device: explicitly anchor to inner bottom-left
+      text2.style.position = 'absolute';
+      text2.style.left = '0';
+      text2.style.bottom = '0';
+      text2.style.top = '';
+      text2.style.margin = '';
+    }
+  });
+};
   };
 
   // run now and on orientation/resize (keep responsive if device mode changes)

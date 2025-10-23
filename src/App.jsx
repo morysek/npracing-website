@@ -8,12 +8,8 @@ export default function App() {
 
   // helper device detection used by multiple effects
   const isMobileDevice = () => {
-    const touch =
-      typeof navigator !== 'undefined' &&
-      ('maxTouchPoints' in navigator ? navigator.maxTouchPoints > 0 : 'ontouchstart' in window);
-    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
-    return Boolean(touch || coarse || uaMobile);
+    return Boolean(uaMobile);
   };
 
   // --- FIRST positioning useEffect (branching: device vs non-device) ---
@@ -395,7 +391,7 @@ export default function App() {
           </div>
 
           {/* overlay / second image placed outside .inner */}
-          <img src="/muzschodyweb.svg" alt="" className="img--two" aria-hidden />
+          <img src="/schody.svg" alt="" className="img--two" aria-hidden />
 
           {/* text--three lives on the outer .page so it can overlay above img--two */}
           <div className="text text--three" aria-hidden>

@@ -188,74 +188,73 @@ export default function App() {
   }, []);
 
   // --- Device-based repositioning for text--two (keeps it above text--three on touch devices) ---
-  React.useEffect(() => {
-    const GAP_PX = 48;
+ React.useEffect(() => {
+  const GAP_PX = 48;
 
-    const isMobileDevice = () => {
-      const touch =
-        typeof navigator !== 'undefined' &&
-        ('maxTouchPoints' in navigator ? navigator.maxTouchPoints > 0 : 'ontouchstart' in window);
-      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(
-        navigator.userAgent || ''
-      );
-      return Boolean(touch || coarse || uaMobile);
-    };
+  const isMobileDevice = () => {
+    const touch =
+      typeof navigator !== 'undefined' &&
+      ('maxTouchPoints' in navigator ? navigator.maxTouchPoints > 0 : 'ontouchstart' in window);
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+    return Boolean(touch || coarse || uaMobile);
+  };
 
-    const updateDevicePositions = () => {
-      const onDevice = isMobileDevice();
+  const updateDevicePositions = () => {
+    const onDevice = isMobileDevice();
 
-      document.querySelectorAll('.page').forEach((page) => {
-        const inner = page.querySelector('.inner');
-        const text2 = inner && inner.querySelector('.text--two');
-        const text3 = page.querySelector('.text--three');
-        if (!inner || !text2 || !text3) return;
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const text2 = inner && inner.querySelector('.text--two');
+      const text3 = page.querySelector('.text--three');
+      if (!inner || !text2 || !text3) return;
 
-        const innerR = inner.getBoundingClientRect();
-        const t2R = text2.getBoundingClientRect();
-        const t3R = text3.getBoundingClientRect();
+      const innerR = inner.getBoundingClientRect();
+      const t2R = text2.getBoundingClientRect();
+      const t3R = text3.getBoundingClientRect();
 
-        const t3TopRel = t3R.top - innerR.top;
-        const t2Height = t2R.height;
-        const t2TopRel = t2R.top - innerR.top;
+      const t3TopRel = t3R.top - innerR.top;
+      const t2Height = t2R.height;
 
-        if (!onDevice) {
-          // restore desktop anchor
-          text2.style.position = 'absolute';
-          text2.style.top = '';
-          return;
-        }
+      if (!onDevice) {
+        // desktop/tablet: restore original anchor (bottom:2% assumed in CSS)
+        text2.style.position = 'absolute';
+        text2.style.top = '';
+        text2.style.bottom = '2%';
+        return;
+      }
 
-        // mobile/device: ensure text2 is fully above text3
-        if (t2TopRel + t2Height > t3TopRel - GAP_PX) {
-          const desiredTop = Math.max(0, t3TopRel - GAP_PX - t2Height);
-          text2.style.position = 'absolute';
-          text2.style.top = `${desiredTop}px`;
-          text2.style.bottom = 'auto';
-        } else {
-          text2.style.position = 'absolute';
-          text2.style.top = '';
-          text2.style.bottom = '2%';
-        }
-      });
-    };
+      // mobile/device: place text2 so its BOTTOM is GAP_PX above text3.top (so it's fully above)
+      if (t2R.top - innerR.top + t2Height > t3TopRel - GAP_PX) {
+        const desiredTop = Math.max(0, t3TopRel - GAP_PX - t2Height);
+        text2.style.position = 'absolute';
+        text2.style.top = `${desiredTop}px`;
+        text2.style.bottom = 'auto';
+      } else {
+        // already above, keep natural bottom anchor
+        text2.style.position = 'absolute';
+        text2.style.top = '';
+        text2.style.bottom = '2%';
+      }
+    });
+  };
 
-    // run initially and on events
-    updateDevicePositions();
-    const tick = setTimeout(updateDevicePositions, 60);
-    window.addEventListener('resize', updateDevicePositions);
-    window.addEventListener('orientationchange', updateDevicePositions);
+  // run initially and on changes
+  updateDevicePositions();
+  const tick = setTimeout(updateDevicePositions, 60);
+  window.addEventListener('resize', updateDevicePositions);
+  window.addEventListener('orientationchange', updateDevicePositions);
 
-    const ro = new ResizeObserver(updateDevicePositions);
-    document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+  const ro = new ResizeObserver(updateDevicePositions);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
 
-    return () => {
-      clearTimeout(tick);
-      window.removeEventListener('resize', updateDevicePositions);
-      window.removeEventListener('orientationchange', updateDevicePositions);
-      ro.disconnect();
-    };
-  }, []);
+  return () => {
+    clearTimeout(tick);
+    window.removeEventListener('resize', updateDevicePositions);
+    window.removeEventListener('orientationchange', updateDevicePositions);
+    ro.disconnect();
+  };
+}, []);
 
   // --- Add intermediate space padding so next page begins after svg bottom (when svg extends below inner) ---
   React.useEffect(() => {
@@ -287,6 +286,58 @@ export default function App() {
       ro.disconnect();
     };
   }, []);
+
+  React.useEffect(() => {
+  const updateIntermediateSpace = () => {
+    // Get the anchored svg/image in the viewport
+    const anchored = document.querySelector('.img--two, .placeholder--two, .svg--two');
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+
+      // find/create a sibling div immediately after the page
+      let inter = page.nextElementSibling;
+      if (!inter || !inter.classList.contains('intermediate-space')) {
+        inter = document.createElement('div');
+        inter.className = 'intermediate-space';
+        page.parentNode.insertBefore(inter, page.nextSibling);
+      }
+
+      if (!inner || !anchored) {
+        // no inner or no anchored image — clear height
+        inter.style.height = '0px';
+        return;
+      }
+
+      const innerR = inner.getBoundingClientRect();
+      const anchoredR = anchored.getBoundingClientRect();
+
+      // how many pixels the anchored image extends below inner bottom
+      const gapPx = Math.max(0, anchoredR.bottom - innerR.bottom);
+
+      // set the intermediate-space height so next page begins after that visual area
+      inter.style.height = `${gapPx}px`;
+      inter.style.width = '100%';
+      inter.style.pointerEvents = 'none';
+      inter.style.background = 'transparent';
+      inter.style.display = 'block';
+    });
+  };
+
+  updateIntermediateSpace();
+  const t = setTimeout(updateIntermediateSpace, 60);
+  window.addEventListener('resize', updateIntermediateSpace);
+  window.addEventListener('load', updateIntermediateSpace);
+
+  const ro = new ResizeObserver(updateIntermediateSpace);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updateIntermediateSpace);
+    window.removeEventListener('load', updateIntermediateSpace);
+    ro.disconnect();
+  };
+}, []);
 
   return (
     <div className="App">

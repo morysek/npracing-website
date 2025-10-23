@@ -194,13 +194,6 @@ export default function App() {
         const t2Height = t2R.height;
         const t2TopRel = t2R.top - innerR.top;
 
-        if (!onDevice) {
-          // desktop/tablet: restore original anchor
-          text2.style.position = 'absolute';
-          text2.style.top = '';
-          text2.style.bottom = '2%';
-          return;
-        }
 
         // mobile/device: ensure text2 is fully above text3
         if (t2TopRel + t2Height > t3TopRel - GAP_PX) {
@@ -342,13 +335,6 @@ export default function App() {
         text2.style.left = '';
         // small breathing room from edges
         text2.style.margin = '0 2% 4% 2%';
-      } else {
-        // restore desktop behavior (absolute bottom-left inside .inner)
-        text2.style.position = 'absolute';
-        text2.style.left = '2%';
-        text2.style.bottom = '2%';
-        text2.style.top = '';
-        text2.style.margin = '';
       }
     });
   };

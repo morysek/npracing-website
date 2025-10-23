@@ -317,6 +317,54 @@ export default function App() {
     };
   }, []);
 
+  React.useEffect(() => {
+  const detectDevice = () => {
+    const uaMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+    return Boolean(uaMobile);
+  };
+
+  const applyDeviceMode = () => {
+    const onDevice = detectDevice();
+
+    // toggle a class on <html> so CSS can respond
+    document.documentElement.classList.toggle('is-device', onDevice);
+
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const text2 = inner && inner.querySelector('.text--two');
+      if (!text2) return;
+
+      if (onDevice) {
+        // Let text--two flow (no absolute anchoring) so it won't clip against inner edges
+        text2.style.position = 'static';
+        text2.style.top = '';
+        text2.style.bottom = '';
+        text2.style.left = '';
+        // small breathing room from edges
+        text2.style.margin = '0 2% 4% 2%';
+      } else {
+        // restore desktop behavior (absolute bottom-left inside .inner)
+        text2.style.position = 'absolute';
+        text2.style.left = '2%';
+        text2.style.bottom = '2%';
+        text2.style.top = '';
+        text2.style.margin = '';
+      }
+    });
+  };
+
+  // run now and on orientation/resize (keep responsive if device mode changes)
+  applyDeviceMode();
+  window.addEventListener('orientationchange', applyDeviceMode);
+  window.addEventListener('resize', applyDeviceMode);
+
+  return () => {
+    window.removeEventListener('orientationchange', applyDeviceMode);
+    window.removeEventListener('resize', applyDeviceMode);
+    document.documentElement.classList.remove('is-device');
+  };
+}, []);
+  
   return (
     <div className="App">
       {pages.map((_, i) => (

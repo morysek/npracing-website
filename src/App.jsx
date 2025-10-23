@@ -193,36 +193,42 @@ React.useEffect(() => {
     return Boolean(touch || coarse || uaMobile);
   };
 
-  const updateDevicePositions = () => {
-    const onDevice = isMobileDevice();
+const onDevice = isMobileDevice();
 
-    document.querySelectorAll('.page').forEach((page) => {
-      const inner = page.querySelector('.inner');
-      const text2 = inner && inner.querySelector('.text--two');
-      const text3 = page.querySelector('.text--three');
-      if (!inner || !text2 || !text3) return;
+document.querySelectorAll('.page').forEach((page) => {
+  const inner = page.querySelector('.inner');
+  const text2 = inner && inner.querySelector('.text--two');
+  const text3 = page.querySelector('.text--three');
+  if (!inner || !text2 || !text3) return;
 
-      const innerR = inner.getBoundingClientRect();
-      const t2R = text2.getBoundingClientRect();
-      const t3R = text3.getBoundingClientRect();
+  const innerR = inner.getBoundingClientRect();
+  const t2R = text2.getBoundingClientRect();
+  const t3R = text3.getBoundingClientRect();
 
-      const t3TopRel = t3R.top - innerR.top;
-      const t2Height = t2R.height;
-      const t2TopRel = t2R.top - innerR.top;
+  const t3TopRel = t3R.top - innerR.top;
+  const t2Height = t2R.height;
+  const t2TopRel = t2R.top - innerR.top;
 
-      // if text2 would overlap text3, move it up so its BOTTOM sits above text3.top - GAP
-      if (t2TopRel + t2Height > t3TopRel - GAP_PX) {
-        const desiredTop = Math.max(0, t3TopRel - GAP_PX - t2Height);
-        text2.style.position = 'absolute';
-        text2.style.top = `${desiredTop}px`;
-        text2.style.bottom = 'auto';
-      } else {
-        // already above; keep natural bottom anchor
-        text2.style.position = 'absolute';
-        text2.style.top = '';
-        text2.style.bottom = '2%';
-      }
-    });
+  if (!onDevice) {
+    // desktop/tablet fallback: restore original anchor
+    text2.style.position = 'absolute';
+    text2.style.top = '';
+    text2.style.bottom = '2%';
+    return;
+  }
+
+  // mobile/device: ensure text2 is fully above text3
+  if (t2TopRel + t2Height > t3TopRel - GAP_PX) {
+    const desiredTop = Math.max(0, t3TopRel - GAP_PX - t2Height);
+    text2.style.position = 'absolute';
+    text2.style.top = `${desiredTop}px`;
+    text2.style.bottom = 'auto';
+  } else {
+    text2.style.position = 'absolute';
+    text2.style.top = '';
+    text2.style.bottom = '2%';
+  }
+});
   };
 
   // run initially and on relevant events
@@ -240,6 +246,28 @@ React.useEffect(() => {
     window.removeEventListener('orientationchange', updateDevicePositions);
     ro.disconnect();
   };
+}, []);
+
+React.useEffect(() => {
+  const updateGap = () => {
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const svg = page.querySelector('.img--two, .placeholder--two, .svg--two');
+      if (!inner || !svg) { page.style.paddingBottom = ''; return; }
+
+      const innerR = inner.getBoundingClientRect();
+      const svgR = svg.getBoundingClientRect();
+      const gapPx = Math.max(0, svgR.bottom - innerR.bottom);
+      page.style.paddingBottom = `${gapPx}px`;
+    });
+  };
+  updateGap();
+  const t = setTimeout(updateGap, 60);
+  window.addEventListener('resize', updateGap);
+  window.addEventListener('load', updateGap);
+  const ro = new ResizeObserver(updateGap);
+  document.querySelectorAll('.page').forEach(el => ro.observe(el));
+  return () => { clearTimeout(t); window.removeEventListener('resize', updateGap); window.removeEventListener('load', updateGap); ro.disconnect(); };
 }, []);
 
   return (

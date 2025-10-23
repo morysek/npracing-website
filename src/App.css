@@ -125,6 +125,18 @@ body{
   background: transparent; /* keep visual continuity; change if you want visible separator */
   pointer-events: none;
 }
+
+/* When device detected (html.is-device), make the second image span full viewport width */
+html.is-device .img--two,
+html.is-device .placeholder--two,
+html.is-device .svg--two {
+  width: 100vw !important;
+  max-width: 100vw;
+  left: 0;
+  right: auto;
+  object-fit: contain;
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

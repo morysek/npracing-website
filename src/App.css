@@ -95,7 +95,7 @@ body{
 .img--two,
 .placeholder--two,
 .svg--two {
-  position: fixed;   /* overlay */
+  position: absolute;   /* overlay */
   top: 60vh;         /* starts at 60% of the viewport height */
   right: 0;
   width: 30vh;       /* span full viewport width */
@@ -119,6 +119,12 @@ body{
   white-space: pre-line;
 }
 
+.intermediate-space {
+  width: 100%;
+  display: block;
+  background: transparent; /* keep visual continuity; change if you want visible separator */
+  pointer-events: none;
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

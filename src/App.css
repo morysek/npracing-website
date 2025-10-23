@@ -98,7 +98,7 @@ body{
   position: absolute;   /* overlay */
   top: 60vh;         /* starts at 60% of the viewport height */
   right: 0;
-  width: 30vh;       /* span full viewport width */
+  width: 40vw;       /* span full viewport width */
   height: auto;      /* preserve aspect ratio */
   display: block;
   object-fit: contain;

@@ -173,55 +173,6 @@ export default function App() {
     };
   }, []);
 
-  // --- Centered horizontal line between text--three (bottom) and text--two (top) ---
-  React.useEffect(() => {
-    const updateAllLines = () => {
-      document.querySelectorAll('.page').forEach((page) => {
-        const inner = page.querySelector('.inner');
-        if (!inner) return;
-        const t2 = inner.querySelector('.text--two');
-        const line = inner.querySelector('.line');
-        const t3 = page.querySelector('.text--three'); // t3 may live on outer page
-        if (!t2 || !t3 || !line) return;
-
-        const r2 = t2.getBoundingClientRect();
-        const r3 = t3.getBoundingClientRect();
-        const innerR = inner.getBoundingClientRect();
-
-        // compute bottom of t3 relative to inner top and top of t2 relative to inner top
-        const t3BottomRel = r3.bottom - innerR.top;
-        const t2TopRel = r2.top - innerR.top;
-
-        // center point between bottom of t3 and top of t2, relative to .inner top
-        const centerY = ((t3BottomRel + t2TopRel) / 2);
-
-        // apply positioning to the line
-        line.style.position = 'absolute';
-        line.style.left = '0';
-        line.style.right = '0';
-        line.style.top = `${centerY}px`;
-        line.style.height = '2px';
-        line.style.transform = 'none';
-        line.style.zIndex = '10';
-        line.style.pointerEvents = 'none';
-      });
-    };
-
-    // initial placement
-    updateAllLines();
-
-    // update on resize and on DOM changes
-    window.addEventListener('resize', updateAllLines);
-
-    const ro = new ResizeObserver(updateAllLines);
-    document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
-
-    return () => {
-      window.removeEventListener('resize', updateAllLines);
-      ro.disconnect();
-    };
-  }, []);
-
   // --- Device-based repositioning for text--two (keeps it above text--three on touch devices) ---
   React.useEffect(() => {
     const GAP_PX = 48;
@@ -379,10 +330,8 @@ export default function App() {
               <br />
               Racing
             </div>
-            <div className="line" aria-hidden />
 
-            <div className="text text--two">
-              Czechia's only
+            <div className="text text--two">Czechia's only
               <br />
               STEM Racing
               <br />
@@ -395,7 +344,6 @@ export default function App() {
 
           {/* text--three lives on the outer .page so it can overlay above img--two */}
           <div className="text text--three" aria-hidden>
-            Scroll
           </div>
         </section>
       ))}

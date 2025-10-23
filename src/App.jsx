@@ -277,4 +277,4 @@ React.useEffect(() => {
       ))}
     </div>
   );
-}
+};

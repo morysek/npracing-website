@@ -140,15 +140,15 @@ html:not(.is-device) .text--two {
 }
 
 .line {
-  position: absolute;  /* JS will set exact top; keep it absolute relative to .inner */
+  position: absolute; /* JS sets exact top */
   left: 0;
   right: 0;
-  height: 8px;         /* visual thickness */
+  height: 8px;        /* visual thickness */
   background: var(--bg-dark);
+  z-index: 50;        /* above text backgrounds */
   pointer-events: none;
-  z-index: 10;
+  display: block;
 }
-
 
 /* Ensure responsive scaling */
 @media (max-width: 900px){

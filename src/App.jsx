@@ -340,7 +340,6 @@ export default function App() {
     }
   });
 };
-  };
 
   // run now and on orientation/resize (keep responsive if device mode changes)
   applyDeviceMode();

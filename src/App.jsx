@@ -352,6 +352,56 @@ export default function App() {
     document.documentElement.classList.remove('is-device');
   };
 }, []);
+
+React.useEffect(() => {
+  const LINE_H = 8; // px
+
+  const updateLine = () => {
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      if (!inner) return;
+      const t1 = inner.querySelector('.text--one');
+      const t2 = inner.querySelector('.text--two');
+      const line = inner.querySelector('.line');
+      if (!t1 || !t2 || !line) return;
+
+      const r1 = t1.getBoundingClientRect();
+      const r2 = t2.getBoundingClientRect();
+      const innerR = inner.getBoundingClientRect();
+
+      // midpoint between bottom of t1 and top of t2, relative to inner top
+      const mid = ((r1.bottom + r2.top) / 2) - innerR.top;
+      const topPos = Math.max(0, mid - LINE_H / 2);
+
+      Object.assign(line.style, {
+        position: 'absolute',
+        left: '0',
+        right: '0',
+        top: `${topPos}px`,
+        height: `${LINE_H}px`,
+        background: 'var(--bg-dark)',
+        zIndex: '10',
+        pointerEvents: 'none',
+        transform: 'none',
+      });
+    });
+  };
+
+  updateLine();
+  const t = setTimeout(updateLine, 60);
+  window.addEventListener('resize', updateLine);
+  window.addEventListener('load', updateLine);
+
+  const ro = new ResizeObserver(updateLine);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
+
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updateLine);
+    window.removeEventListener('load', updateLine);
+    ro.disconnect();
+  };
+}, []);
   
   return (
     <div className="App">

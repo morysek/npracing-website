@@ -362,8 +362,20 @@ React.useEffect(() => {
       if (!inner) return;
       const t1 = inner.querySelector('.text--one');
       const t2 = inner.querySelector('.text--two');
-      const line = inner.querySelector('.line');
-      if (!t1 || !t2 || !line) return;
+      let line = inner.querySelector('.line');
+
+      // ensure the .line element exists
+      if (!line) {
+        line = document.createElement('div');
+        line.className = 'line';
+        inner.appendChild(line);
+      }
+
+      if (!t1 || !t2) {
+        line.style.display = 'none';
+        return;
+      }
+      line.style.display = 'block';
 
       const r1 = t1.getBoundingClientRect();
       const r2 = t2.getBoundingClientRect();
@@ -380,7 +392,7 @@ React.useEffect(() => {
         top: `${topPos}px`,
         height: `${LINE_H}px`,
         background: 'var(--bg-dark)',
-        zIndex: '10',
+        zIndex: '50',
         pointerEvents: 'none',
         transform: 'none',
       });

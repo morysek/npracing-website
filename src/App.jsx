@@ -417,8 +417,29 @@ React.useEffect(() => {
   
   return (
     <div className="App">
-      {pages.map((_, i) => (
-        <section key={i} className="page">
+      {pages.map((_, i) => {
+  // Special page 2 (index 1)
+  if (i === 1) {
+    return (
+      <section key={i} className="page">
+        {/* Page 2: dark background, inner same inset */}
+        <div className="inner">
+          {/* yellow horizontal line at 20% from top of inner */}
+          <div className="line" aria-hidden />
+
+          {/* wrapper positioned at the same top (line top); we translate the text up so its bottom aligns to the line */}
+          <div className="car-wrap" aria-hidden>
+            <span className="car-text">The Car</span>
+            <span className="car-num">1</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Default page rendering for all other pages (unchanged)
+  return (
+    <section key={i} className="page">
           {/* Inner box contains ALL content now */}
           <div className="inner">
             {/* Text windows placed inside the inner box */}
@@ -444,7 +465,7 @@ React.useEffect(() => {
           <div className="text text--three" aria-hidden>
           </div>
         </section>
-      ))}
+  );
     </div>
   );
 }

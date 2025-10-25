@@ -436,7 +436,7 @@ React.useEffect(() => {
       </section>
     );
   }
-
+  else{
   // Default page rendering for all other pages (unchanged)
   return (
     <section key={i} className="page">
@@ -466,6 +466,7 @@ React.useEffect(() => {
           </div>
         </section>
   );
+  }
     </div>
   );
 }

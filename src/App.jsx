@@ -436,55 +436,11 @@ React.useEffect(() => {
             </section>
           );
         }
-
+        else{
         // Default page rendering for all other pages (unchanged)
         return (
-          <section key={i} className="page">
-            {/* Inner box contains most content */}
-            <div className="inner">
-              {/* Text windows placed inside the inner box */}
-              <div className="text text--one" aria-hidden>
-                NP
-                <br />
-                Racing
-              </div>
-
-              <div className="text text--two">
-                Czechia's only
-                <br />
-                STEM Racing
-                <br />
-                team
-              </div>
-
-              {/* Placeholder SVG 1 */}
-              <svg
-                className="placeholder placeholder--one"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <rect x="0" y="0" width="100" height="100" />
-              </svg>
-
-              {/* Placeholder SVG 2 */}
-              <svg
-                className="placeholder placeholder--two"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <rect x="0" y="0" width="100" height="100" />
-              </svg>
-
-              {/* decorative line (other pages) */}
-              <div className="line" aria-hidden />
-            </div>
-
-            {/* Third text is moved to the outer .page so it sits above and left of placeholder--two */}
-            <div className="text text--three">Scroll</div>
-          </section>
-        );
+         <section key={i} className="page"> {/* Inner box contains ALL content now */} <div className="inner"> {/* Text windows placed inside the inner box */} <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden /> <div className="text text--one" aria-hidden> NP <br /> Racing </div> <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team </div> </div> {/* overlay / second image placed outside .inner */} <img src="/schody.svg" alt="" className="img--two" aria-hidden /> {/* text--three lives on the outer .page so it can overlay above img--two */} <div className="text text--three" aria-hidden> </div> </section>
+        ); }
       })}
     </div>
   );

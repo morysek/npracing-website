@@ -418,9 +418,9 @@ React.useEffect(() => {
   return (
     <div className="App">
       {pages.map((_, i) => {
-  // Special page 2 (index 1)
-  if (i === 1) {
-    return (
+        // Special page 2 (index 1)
+        if (i === 1) {
+          return (
             <section key={i} className="page">
               {/* Page 2: dark background, inner same inset */}
               <div className="inner">
@@ -435,10 +435,10 @@ React.useEffect(() => {
               </div>
             </section>
           );
-  }
-  else{
-  // Default page rendering for all other pages (unchanged)
-  return (
+        }
+
+        // Default page rendering for all other pages (unchanged)
+        return (
           <section key={i} className="page">
             {/* Inner box contains most content */}
             <div className="inner">

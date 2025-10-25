@@ -150,6 +150,64 @@ html:not(.is-device) .text--two {
   display: block;
 }
 
+.page:nth-of-type(2) {
+  background: var(--bg-dark);
+}
+.page:nth-of-type(2) .inner {
+  background: var(--bg-dark); /* inner stays dark so yellow text/line is visible */
+  position: absolute;         /* keeps same border inset behavior */
+  top: var(--border);
+  left: var(--border);
+  right: var(--border);
+  bottom: var(--border);
+}
+
+/* line: 20% from top of inner, 8px thick, yellow */
+.page:nth-of-type(2) .inner .line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 20%;                 /* 20% down from inner's top */
+  height: 8px;              /* thickness */
+  background: var(--bg-yellow); /* #ffcc00 */
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* wrapper positioned at the line top; text is translated up so its BOTTOM aligns to the line top */
+.page:nth-of-type(2) .inner .car-wrap {
+  position: absolute;
+  left: 0;         /* align with left edge of the line */
+  top: 20%;        /* same vertical origin as the line */
+  display: inline-block;
+  white-space: nowrap;
+  transform: none;
+  z-index: 60;
+}
+
+/* "The Car" — bottom-left aligns to the line's left; we translate up by 100% to make its bottom touch the line */
+.page:nth-of-type(2) .inner .car-text {
+  display: inline-block;
+  font-size: 83px;
+  line-height: 1;
+  color: var(--bg-yellow);
+  transform: translateY(-100%); /* move up by its own height -> bottom sits at wrapper top (=line top) */
+  vertical-align: top;
+}
+
+/* "1" — top-left aligned to top-right corner of the car text */
+.page:nth-of-type(2) .inner .car-num {
+  display: inline-block;
+  position: relative; /* will be shifted from inline flow */
+  font-size: 40px;
+  line-height: 1;
+  color: var(--bg-yellow);
+  margin-left: 8px; /* small gap between text and number; remove if you want exact touching */
+  /* To align top-left to top-right, we place it inline beside .car-text.
+     The .car-text's top is at the wrapper top; .car-num shares that top baseline due to vertical-align. */
+  vertical-align: top;
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

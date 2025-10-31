@@ -253,58 +253,39 @@ export default function App() {
     };
   }, []);
 
-  // --- Intermediate space div per-page (keeps visual gap as separate element) ---
   React.useEffect(() => {
-    const updateIntermediateSpace = () => {
-      // Get the anchored svg/image in the viewport
-      const anchored = document.querySelector('.img--two, .placeholder--two, .svg--two');
-      document.querySelectorAll('.page').forEach((page) => {
-        const inner = page.querySelector('.inner');
+  const updateIntermediateSpace = () => {
+    // remove any existing intermediate-space elements (cleanup)
+    document.querySelectorAll('.intermediate-space').forEach(el => el.remove());
 
-        // find/create a sibling div immediately after the page
-        let inter = page.nextElementSibling;
-        if (!inter || !inter.classList.contains('intermediate-space')) {
-          inter = document.createElement('div');
-          inter.className = 'intermediate-space';
-          page.parentNode.insertBefore(inter, page.nextSibling);
-        }
+    // still compute paddingBottom per page so layout doesn't overlap when svg extends below inner
+    document.querySelectorAll('.page').forEach((page) => {
+      const inner = page.querySelector('.inner');
+      const anchored = page.querySelector('.img--two, .placeholder--two, .svg--two');
+      if (!inner || !anchored) { page.style.paddingBottom = ''; return; }
 
-        if (!inner || !anchored) {
-          // no inner or no anchored image — clear height
-          inter.style.height = '0px';
-          return;
-        }
+      const innerR = inner.getBoundingClientRect();
+      const anchoredR = anchored.getBoundingClientRect();
+      const gapPx = Math.max(0, anchoredR.bottom - innerR.bottom);
+      page.style.paddingBottom = `${gapPx}px`;
+    });
+  };
 
-        const innerR = inner.getBoundingClientRect();
-        const anchoredR = anchored.getBoundingClientRect();
+  updateIntermediateSpace();
+  const t = setTimeout(updateIntermediateSpace, 60);
+  window.addEventListener('resize', updateIntermediateSpace);
+  window.addEventListener('load', updateIntermediateSpace);
 
-        // how many pixels the anchored image extends below inner bottom
-        const gapPx = Math.max(0, anchoredR.bottom - innerR.bottom);
+  const ro = new ResizeObserver(updateIntermediateSpace);
+  document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
 
-        // set the intermediate-space height so next page begins after that visual area
-        inter.style.height = `${gapPx}px`;
-        inter.style.width = '100%';
-        inter.style.pointerEvents = 'none';
-        inter.style.background = 'transparent';
-        inter.style.display = 'block';
-      });
-    };
-
-    updateIntermediateSpace();
-    const t = setTimeout(updateIntermediateSpace, 60);
-    window.addEventListener('resize', updateIntermediateSpace);
-    window.addEventListener('load', updateIntermediateSpace);
-
-    const ro = new ResizeObserver(updateIntermediateSpace);
-    document.querySelectorAll('.inner').forEach((el) => ro.observe(el));
-
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener('resize', updateIntermediateSpace);
-      window.removeEventListener('load', updateIntermediateSpace);
-      ro.disconnect();
-    };
-  }, []);
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updateIntermediateSpace);
+    window.removeEventListener('load', updateIntermediateSpace);
+    ro.disconnect();
+  };
+}, []);
 
   React.useEffect(() => {
   const detectDevice = () => {
@@ -353,7 +334,7 @@ export default function App() {
   };
 }, []);
 
-React.useEffect(() => {
+  React.useEffect(() => {
   const LINE_H = 8; // px
 
   const updateLine = () => {
@@ -411,6 +392,52 @@ React.useEffect(() => {
     clearTimeout(t);
     window.removeEventListener('resize', updateLine);
     window.removeEventListener('load', updateLine);
+    ro.disconnect();
+  };
+}, []);
+
+  React.useEffect(() => {
+  const updateCarNumber = () => {
+    const page = document.querySelector('.page:nth-of-type(2)');
+    if (!page) return;
+    const wrap = page.querySelector('.car-wrap');
+    const carText = wrap && wrap.querySelector('.car-text');
+    const carNum = wrap && wrap.querySelector('.car-num');
+    if (!wrap || !carText || !carNum) return;
+
+    // ensure wrapper is positioned so absolute coords are relative to it
+    wrap.style.position = 'absolute';
+    // keep top/left as your CSS sets (e.g. top:20%; left:0)
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const textRect = carText.getBoundingClientRect();
+    const numRect = carNum.getBoundingClientRect();
+
+    // compute left/top for carNum so its bottom-left == carText top-right
+    const leftPx = textRect.right - wrapRect.left;           // x-coordinate inside wrap
+    const topPx  = textRect.top - wrapRect.top - numRect.height; // set top so bottom sits at textRect.top
+
+    Object.assign(carNum.style, {
+      position: 'absolute',
+      left: `${Math.round(leftPx)}px`,
+      top: `${Math.round(topPx)}px`,
+      marginLeft: '0',
+    });
+  };
+
+  updateCarNumber();
+  const t = setTimeout(updateCarNumber, 60);
+  window.addEventListener('resize', updateCarNumber);
+  window.addEventListener('load', updateCarNumber);
+
+  const ro = new ResizeObserver(updateCarNumber);
+  const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
+  if (wrapEl) ro.observe(wrapEl);
+
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updateCarNumber);
+    window.removeEventListener('load', updateCarNumber);
     ro.disconnect();
   };
 }, []);

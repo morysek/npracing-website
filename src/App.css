@@ -160,7 +160,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;                 /* 20% down from inner's top */
+  top: 20%;                 /* 20% down from inner's top */
   height: 8px;              /* thickness */
   background: var(--bg-yellow); /* #ffcc00 */
   z-index: 999999;
@@ -181,7 +181,7 @@ html:not(.is-device) .text--two {
 /* "The Car" — bottom-left aligns to the line's left; we translate up by 100% to make its bottom touch the line */
 .page:nth-of-type(2) .inner .car-text {
   display: inline-block;
-  font-size: 30vw;
+  font-size: 5vw;
   line-height: 1;
   color: var(--bg-yellow);
   transform: translateY(-100%); /* move up by its own height -> bottom sits at wrapper top (=line top) */
@@ -192,7 +192,7 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(2) .inner .car-num {
   display: inline-block;
   position: relative; /* will be shifted from inline flow */
-  font-size: 50px;
+  font-size: 30px;
   line-height: 1;
   color: var(--bg-yellow);
   margin-left: 8px; /* small gap between text and number; remove if you want exact touching */

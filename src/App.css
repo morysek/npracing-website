@@ -192,10 +192,11 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(2) .inner .car-num {
   display: inline-block;
   position: relative; /* will be shifted from inline flow */
-  font-size: 3.5vw;
+  font-size: 3vw;
   line-height: 1;
+  margin-top: 3vh;
   color: var(--bg-yellow);
-  margin-left: 8px; /* small gap between text and number; remove if you want exact touching */
+  margin-left: 10px; /* small gap between text and number; remove if you want exact touching */
   /* To align top-left to top-right, we place it inline beside .car-text.
      The .car-text's top is at the wrapper top; .car-num shares that top baseline due to vertical-align. */
   vertical-align: top;

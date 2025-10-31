@@ -87,11 +87,11 @@ body{
 .img--two,
 .placeholder--two,
 .svg--two {
-  position: absolute;   /* overlay */
-  top: 55vh;         /* starts at 60% of the viewport height */
+  position: absolute; /* relative to .page (which is position:relative) */
   right: 0;
-  width: 30vw;       /* span full viewport width */
-  height: auto;      /* preserve aspect ratio */
+  bottom: 0;
+  width: auto;
+  height: auto;
   display: block;
   object-fit: contain;
   z-index: 999999;
@@ -109,13 +109,6 @@ body{
   z-index: 9999;
   pointer-events: none;
   white-space: pre-line;
-}
-
-.intermediate-space {
-  width: 100%;
-  display: block;
-  background: transparent; /* keep visual continuity; change if you want visible separator */
-  pointer-events: none;
 }
 
 /* When device detected (html.is-device), make the second image span full viewport width */

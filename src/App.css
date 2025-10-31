@@ -194,7 +194,7 @@ html:not(.is-device) .text--two {
   position: relative; /* will be shifted from inline flow */
   font-size: 3vw;
   line-height: 1;
-  margin-top: 3vh;
+  margin-top: 20px;
   color: var(--bg-yellow);
   margin-left: 10px; /* small gap between text and number; remove if you want exact touching */
   /* To align top-left to top-right, we place it inline beside .car-text.

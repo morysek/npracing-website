@@ -221,6 +221,63 @@ html:not(.is-device) .text--two {
   overflow: visible;
   z-index: 9500;
 }
+.page:nth-of-type(2) .inner-second {
+  position: absolute;
+  left: var(--border);
+  right: var(--border);
+  top: 18%;               /* starts 18% from page top */
+  bottom: var(--border);  /* aligns with original inner bottom */
+  pointer-events: none;
+  background: transparent;
+  z-index: 9000;
+}
+
+/* ensure left-box remains in the left portion of inner-second (unchanged layout intent) */
+.page:nth-of-type(2) .inner-second .left-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 48%;             /* keep your 48% width */
+  box-sizing: border-box;
+  padding: 2.5vh 2.5vw;
+  border-radius: 12px;
+  border: 2px solid var(--bg-yellow);
+  background: rgba(255,204,0,0.03);
+  z-index: 9500;
+  overflow: visible;
+}
+
+/* place car-wrap inside inner-second; The Car text sits at the top of inner-second with 20px gap */
+.page:nth-of-type(2) .inner-second .car-wrap {
+  position: absolute;
+  left: 0;               /* align on inner-second left */
+  top: 0;                /* car-wrap anchored to the top of inner-second */
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* The Car: 20px padding between the top of inner-second and the text */
+.page:nth-of-type(2) .inner-second .car-text {
+  display: inline-block;
+  margin-top: 20px;      /* <- the requested 20px padding between top of inner-second and The Car */
+  font-size: 83px;       /* keep requested size */
+  line-height: 1;
+  color: var(--bg-yellow);
+  vertical-align: top;
+  transform: none;
+}
+
+/* Number: keep absolute positioning possible via JS, but add 15px extra padding on top */
+.page:nth-of-type(2) .inner-second .car-num {
+  position: absolute;    /* JS can set left/top for the precise anchor */
+  padding-top: 15px;     /* <- extra 15px padding on top of the number as requested */
+  font-size: 40px;
+  color: var(--bg-yellow);
+  line-height: 1;
+  z-index: 10001;
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

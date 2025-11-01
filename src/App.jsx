@@ -468,7 +468,6 @@ export default function App() {
       <div className="inner-second" aria-hidden>
         {/* move the "box" that previously sat in the first inner into here */}
         <div className="left-box">
-          <!-- keep any content inside the box here if needed -->
         </div>
       </div>
     </section>

@@ -435,7 +435,7 @@ React.useEffect(() => {
     // leftInsideWrap = textRect.right - wrapRect.left
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
     // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move down)
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height*1.5);
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height + 35);
 
     Object.assign(carNum.style, {
       position: 'absolute',

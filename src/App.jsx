@@ -417,7 +417,7 @@ React.useEffect(() => {
     // 2) compute top so car-text bottom is 20px above inner-second top
     // desired_carText_bottom = inner2Rect.top - 20
     // so wrap.top = desired_carText_bottom - textRect.height
-    const desiredCarTextBottom = inner2Rect.top - 20; // 20px gap
+    const desiredCarTextBottom = inner2Rect.top + 20; // 20px gap
     const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
     // apply positioning to car-wrap (absolute relative to .page)

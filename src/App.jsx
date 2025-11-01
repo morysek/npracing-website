@@ -417,7 +417,7 @@ React.useEffect(() => {
     // 2) compute top so car-text bottom is 20px above inner-second top
     // desired_carText_bottom = inner2Rect.top - 20
     // so wrap.top = desired_carText_bottom - textRect.height
-    const desiredCarTextBottom = inner2Rect.top + 20; // 20px gap
+    const desiredCarTextBottom = inner2Rect.top - 20; // 20px gap
     const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
     // apply positioning to car-wrap (absolute relative to .page)
@@ -435,7 +435,7 @@ React.useEffect(() => {
     // leftInsideWrap = textRect.right - wrapRect.left
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
     // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move up)
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height - 15);
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height + 15);
 
     Object.assign(carNum.style, {
       position: 'absolute',

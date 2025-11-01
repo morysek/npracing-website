@@ -396,29 +396,51 @@ export default function App() {
   };
 }, []);
 
-  React.useEffect(() => {
+React.useEffect(() => {
   const updateCarNumber = () => {
     const page = document.querySelector('.page:nth-of-type(2)');
     if (!page) return;
-    const wrap = page.querySelector('.car-wrap');
+
+    const innerSecond = page.querySelector('.inner-second');
+    const carWrap = page.querySelector('.car-wrap');
     const carText = page.querySelector('.car-text');
-    const carNum = page.querySelector('.car-num');
-    if (!wrap || !carText || !carNum) return;
+    const carNum  = page.querySelector('.car-num');
+    if (!innerSecond || !carWrap || !carText || !carNum) return;
 
-    const wrapRect = wrap.getBoundingClientRect();
+    const pageRect = page.getBoundingClientRect();
+    const inner2Rect = innerSecond.getBoundingClientRect();
     const textRect = carText.getBoundingClientRect();
-    const numRect = carNum.getBoundingClientRect();
+    const numRect  = carNum.getBoundingClientRect();
 
-    // left inside wrap: align carNum.left so its left = textRect.right
-    const leftInsideWrap = textRect.right - wrapRect.left;
+    // 1) place car-wrap so its left aligns with inner-second left
+    const leftForWrap = inner2Rect.left - pageRect.left;
+    // 2) compute top so car-text bottom is 20px above inner-second top
+    // desired_carText_bottom = inner2Rect.top - 20
+    // so wrap.top = desired_carText_bottom - textRect.height
+    const desiredCarTextBottom = inner2Rect.top - 20; // 20px gap
+    const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
-    // top inside wrap: place so carNum.bottom == textRect.top
-    const topInsideWrap = textRect.top - wrapRect.top - numRect.height;
+    // apply positioning to car-wrap (absolute relative to .page)
+    Object.assign(carWrap.style, {
+      position: 'absolute',
+      left: `${Math.round(leftForWrap)}px`,
+      top: `${Math.round(topForWrap)}px`,
+    });
+
+    // After positioning wrap, recompute coords of wrap & text (to be safe)
+    const wrapRect = carWrap.getBoundingClientRect();
+    const updatedTextRect = carText.getBoundingClientRect();
+
+    // number: place so its bottom-left matches text top-right, then add extra -15px vertical offset
+    // leftInsideWrap = textRect.right - wrapRect.left
+    const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
+    // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move up)
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height - 15);
 
     Object.assign(carNum.style, {
       position: 'absolute',
-      left: `${Math.round(leftInsideWrap)}px`,
-      top: `${Math.round(topInsideWrap)}px`,
+      left: `${leftInsideWrap}px`,
+      top: `${topInsideWrap}px`,
     });
   };
 
@@ -428,11 +450,13 @@ export default function App() {
   window.addEventListener('load', updateCarNumber);
 
   const ro = new ResizeObserver(updateCarNumber);
-  // observe both the car-wrap and the text in case sizes change
+  // observe the key elements
   const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
   if (wrapEl) ro.observe(wrapEl);
   const textEl = document.querySelector('.page:nth-of-type(2) .car-text');
   if (textEl) ro.observe(textEl);
+  const inner2El = document.querySelector('.page:nth-of-type(2) .inner-second');
+  if (inner2El) ro.observe(inner2El);
 
   return () => {
     clearTimeout(t);
@@ -441,12 +465,11 @@ export default function App() {
     ro.disconnect();
   };
 }, []);
-  
   return (
     <div className="App">
       {pages.map((_, i) => {
         // Special page 2 (index 1)
-       if (i === 1) {
+      if (i === 1) {
   return (
     <section key={i} className="page">
       {/* main inner (keeps border) */}
@@ -454,17 +477,17 @@ export default function App() {
         <div className="line" aria-hidden />
       </div>
 
+      {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
+      <div className="car-wrap" aria-hidden>
+        <span className="car-text">The Car</span>
+        <span className="car-num">1</span>
+      </div>
+
       {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
       <div className="inner-second" aria-hidden>
         {/* left-box (kept where you had it previously) */}
         <div className="left-box" aria-hidden>
           {/* content if any */}
-        </div>
-
-        {/* Place The Car at the TOP of inner-second: car-wrap sits inside inner-second */}
-        <div className="car-wrap" aria-hidden>
-          <span className="car-text">The Car</span>
-          <span className="car-num">1</span>
         </div>
       </div>
     </section>

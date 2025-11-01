@@ -146,62 +146,86 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(2) {
   background: var(--bg-dark);
 }
+
 .page:nth-of-type(2) .inner {
-  background: var(--bg-dark); /* inner stays dark so yellow text/line is visible */
-  position: absolute;         /* keeps same border inset behavior */
+  --line-top: 15%; /* vertical position of the horizontal line (same as .line top) */
+  background: var(--bg-dark);
+  position: absolute;
   top: var(--border);
   left: var(--border);
   right: var(--border);
   bottom: var(--border);
 }
 
-/* line: 20% from top of inner, 8px thick, yellow */
+/* Keep the existing horizontal line visible and ensure top matches --line-top */
 .page:nth-of-type(2) .inner .line {
+  top: var(--line-top);
+  height: 8px;
+  background: var(--bg-yellow);
+  z-index: 9999;
+}
+
+/* vertical divider at 50% (center) — visible, full inner height */
+.page:nth-of-type(2) .inner::before {
+  content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 15%;                 /* 20% down from inner's top */
-  height: 8px;              /* thickness */
-  background: var(--bg-yellow); /* #ffcc00 */
-  z-index: 999999;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;                 /* thickness of the vertical split */
+  transform: translateX(-50%);
+  background: rgba(255, 204, 0, 1); /* yellow vertical line */
+  z-index: 2000;
   pointer-events: none;
 }
 
-/* wrapper positioned at the line top; text is translated up so its BOTTOM aligns to the line top */
+/* left-box spans from the horizontal line top down to inner bottom and to center line */
+.page:nth-of-type(2) .inner .left-box {
+  position: absolute;
+  left: 0;
+  right: 50%;                 /* stop at the center vertical line */
+  top: var(--line-top);       /* start at the horizontal line so it "spans to the line above" */
+  bottom: 0;                  /* reach inner bottom */
+  box-sizing: border-box;
+  padding: 2.5vh 2.5vw;       /* breathing room inside the box */
+  border-radius: 18px 0 0 18px; /* curved left edges (top-left, bottom-left), flat on right */
+  border: 2px solid var(--bg-yellow); /* visible yellow border */
+  background: rgba(255, 204, 0, 0.03); /* subtle tinted fill to show the box on dark */
+  z-index: 1500;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* keep car-wrap positioned relative inside the left-box, and keep previous translate trick */
 .page:nth-of-type(2) .inner .car-wrap {
   position: absolute;
-  left: 0;         /* align with left edge of the line */
-  top: 13%;        /* same vertical origin as the line */
-  display: inline-block;
-  white-space: nowrap;
-  transform: none;
-  z-index: 60;
+  left: 1.5rem;               /* nudge away from left edge inside the box */
+  top: 0;                     /* wrapper top aligns with the horizontal line (left-box top) */
+  z-index: 1600;
 }
 
-/* "The Car" — bottom-left aligns to the line's left; we translate up by 100% to make its bottom touch the line */
+/* "The Car" sits above the line: translateY(-100%) so its bottom touches the line */
 .page:nth-of-type(2) .inner .car-text {
   display: inline-block;
-  font-size: 7vw;
+  font-size: 7vw; /* responsive; replace with px if you prefer fixed 83px */
   line-height: 1;
   color: var(--bg-yellow);
-  transform: translateY(-100%); /* move up by its own height -> bottom sits at wrapper top (=line top) */
+  transform: translateY(-100%);
   vertical-align: top;
 }
 
-/* "1" — top-left aligned to top-right corner of the car text */
+/* the number (1) will be positioned by your existing JS routine inside .car-wrap.
+   set it to be on top by default so JS can place it precisely. */
 .page:nth-of-type(2) .inner .car-num {
-  display: inline-block;
-  position: relative; /* will be shifted from inline flow */
-  font-size: 3vw;
-  line-height: 1;
-  margin-top: 4vh;
+  position: absolute; /* JS will override left/top to match the requested anchor */
   color: var(--bg-yellow);
-  margin-left: 10px; /* small gap between text and number; remove if you want exact touching */
-  /* To align top-left to top-right, we place it inline beside .car-text.
-     The .car-text's top is at the wrapper top; .car-num shares that top baseline due to vertical-align. */
-  vertical-align: top;
+  font-size: 3vw;     /* responsive; adjust as needed */
+  line-height: 1;
+  top: 0;
+  left: auto;
+  margin-left: 0;
+  z-index: 1700;
 }
-
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

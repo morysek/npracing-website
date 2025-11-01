@@ -434,8 +434,8 @@ React.useEffect(() => {
     // number: place so its bottom-left matches text top-right, then add extra -15px vertical offset
     // leftInsideWrap = textRect.right - wrapRect.left
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move up)
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height + 15);
+    // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move down)
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height + 25);
 
     Object.assign(carNum.style, {
       position: 'absolute',

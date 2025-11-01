@@ -164,7 +164,6 @@ html:not(.is-device) .text--two {
   background: var(--bg-yellow);
   z-index: 9999;
 }
-}
 .page:nth-of-type(2) .car-wrap {
   position: absolute;        /* relative to .page */
   left: var(--border);       /* aligns with left side of .inner */

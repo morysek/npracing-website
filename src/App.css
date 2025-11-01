@@ -165,20 +165,6 @@ html:not(.is-device) .text--two {
   z-index: 9999;
 }
 
-/* vertical divider at 50% (center) — visible, full inner height */
-.page:nth-of-type(2) .inner::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;                 /* thickness of the vertical split */
-  transform: translateX(-50%);
-  background: rgba(255, 204, 0, 1); /* yellow vertical line */
-  z-index: 2000;
-  pointer-events: none;
-}
-
 /* left-box spans from the horizontal line top down to inner bottom and to center line */
 .page:nth-of-type(2) .inner .left-box {
   position: absolute;
@@ -192,7 +178,7 @@ html:not(.is-device) .text--two {
   border: 2px solid var(--bg-yellow); /* visible yellow border */
   background: rgba(255, 204, 0, 0.03); /* subtle tinted fill to show the box on dark */
   z-index: 1500;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -226,9 +212,25 @@ html:not(.is-device) .text--two {
   margin-left: 0;
   z-index: 1700;
 }
+.page:nth-of-type(2) .car-wrap {
+  position: absolute;
+  left: 1.5rem;        /* or adjust to taste */
+  top: var(--line-top); /* exactly at the line's top so translateY(-100%) places bottom on the line */
+  z-index: 10001;      /* higher than the line so text is visible */
+}
+.page:nth-of-type(2) .inner .line {
+  z-index: 10000; /* ensure line sits just beneath car-wrap */
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }
   .text--two{ font-size: clamp(48px, 8.5vw, 100px); }
   .text--three{ font-size: clamp(32px, 5.5vw, 60px); }
+}
+html {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+html::-webkit-scrollbar {    /* WebKit (Chrome, Safari) */
+  display: none;
 }

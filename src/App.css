@@ -164,62 +164,63 @@ html:not(.is-device) .text--two {
   background: var(--bg-yellow);
   z-index: 9999;
 }
+}
+.page:nth-of-type(2) .car-wrap {
+  position: absolute;        /* relative to .page */
+  left: var(--border);       /* aligns with left side of .inner */
+  top: 13%;                  /* 13% from page top as requested */
+  z-index: 11000;
+  pointer-events: none;
+  white-space: nowrap;
+}
 
-/* left-box spans from the horizontal line top down to inner bottom and to center line */
-.page:nth-of-type(2) .inner .left-box {
+/* The Car text keeps its appearance; do not change the global text alignment */
+.page:nth-of-type(2) .car-text {
+  display: inline-block;
+  font-size: 83px; /* your requested size */
+  line-height: 1;
+  color: var(--bg-yellow);
+  vertical-align: top;
+  transform: none; /* do not translate it — we use JS to align the number exactly */
+}
+
+/* Car number is absolutely positioned by JS; default keep it visible */
+.page:nth-of-type(2) .car-num {
   position: absolute;
-  left: 0;
-  right: 50%;                 /* stop at the center vertical line */
-  top: var(--line-top);       /* start at the horizontal line so it "spans to the line above" */
-  bottom: 0;                  /* reach inner bottom */
-  box-sizing: border-box;
-  padding: 2.5vh 2.5vw;       /* breathing room inside the box */
-  border-radius: 18px 0 0 18px; /* curved left edges (top-left, bottom-left), flat on right */
-  border: 2px solid var(--bg-yellow); /* visible yellow border */
-  background: rgba(255, 204, 0, 0.03); /* subtle tinted fill to show the box on dark */
-  z-index: 1500;
-  overflow: visible;
+  color: var(--bg-yellow);
+  font-size: 40px;
+  line-height: 1;
+  z-index: 11001;
+  pointer-events: none;
+  left: 0; top: 0; /* JS will override with precise coords */
+}
+
+/* second inner: anchored left/right to match .inner, top = 18% of page, bottom = var(--border) */
+.page:nth-of-type(2) .inner-second {
+  position: absolute;
+  left: var(--border);
+  right: var(--border);
+  top: 18%;               /* starts 18% from top of the page */
+  bottom: var(--border);  /* aligned with inner's bottom */
+  background: transparent;
+  z-index: 9000;
   pointer-events: none;
 }
 
-/* keep car-wrap positioned relative inside the left-box, and keep previous translate trick */
-.page:nth-of-type(2) .inner .car-wrap {
+/* left-box inside inner-second: sits on the left and takes 48% width of the inner-second */
+.page:nth-of-type(2) .inner-second .left-box {
   position: absolute;
-  left: 1.5rem;               /* nudge away from left edge inside the box */
-  top: 0;                     /* wrapper top aligns with the horizontal line (left-box top) */
-  z-index: 1600;
-}
-
-/* "The Car" sits above the line: translateY(-100%) so its bottom touches the line */
-.page:nth-of-type(2) .inner .car-text {
-  display: inline-block;
-  font-size: 7vw; /* responsive; replace with px if you prefer fixed 83px */
-  line-height: 1;
-  color: var(--bg-yellow);
-  transform: translateY(-100%);
-  vertical-align: top;
-}
-
-/* the number (1) will be positioned by your existing JS routine inside .car-wrap.
-   set it to be on top by default so JS can place it precisely. */
-.page:nth-of-type(2) .inner .car-num {
-  position: absolute; /* JS will override left/top to match the requested anchor */
-  color: var(--bg-yellow);
-  font-size: 3vw;     /* responsive; adjust as needed */
-  line-height: 1;
+  left: 0;
   top: 0;
-  left: auto;
-  margin-left: 0;
-  z-index: 1700;
-}
-.page:nth-of-type(2) .car-wrap {
-  position: absolute;
-  left: 1.5rem;        /* or adjust to taste */
-  top: var(--line-top); /* exactly at the line's top so translateY(-100%) places bottom on the line */
-  z-index: 10001;      /* higher than the line so text is visible */
-}
-.page:nth-of-type(2) .inner .line {
-  z-index: 10000; /* ensure line sits just beneath car-wrap */
+  bottom: 0;
+  width: 48%;              /* occupies 48% of inner-second width */
+  box-sizing: border-box;
+  padding: 2.5vh 2.5vw;
+  border-radius: 12px;
+  border: 2px solid var(--bg-yellow);
+  background: rgba(255, 204, 0, 0.03);
+  overflow: visible;
+  z-index: 9500;
 }
 /* Ensure responsive scaling */
 @media (max-width: 900px){

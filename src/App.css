@@ -175,7 +175,7 @@ html:not(.is-device) .text--two {
 /* The Car text keeps its appearance; do not change the global text alignment */
 .page:nth-of-type(2) .car-text {
   display: inline-block;
-  font-size: 5vh; /* your requested size */
+  font-size: 10vh; /* your requested size */
   line-height: 1;
   color: var(--bg-yellow);
   vertical-align: top;
@@ -186,7 +186,7 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(2) .car-num {
   position: absolute;
   color: var(--bg-yellow);
-  font-size: 2vh;
+  font-size: 5vh;
   line-height: 1;
   z-index: 11001;
   pointer-events: none;

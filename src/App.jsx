@@ -401,27 +401,24 @@ export default function App() {
     const page = document.querySelector('.page:nth-of-type(2)');
     if (!page) return;
     const wrap = page.querySelector('.car-wrap');
-    const carText = wrap && wrap.querySelector('.car-text');
-    const carNum = wrap && wrap.querySelector('.car-num');
+    const carText = page.querySelector('.car-text');
+    const carNum = page.querySelector('.car-num');
     if (!wrap || !carText || !carNum) return;
-
-    // ensure wrapper is positioned so absolute coords are relative to it
-    wrap.style.position = 'absolute';
-    // keep top/left as your CSS sets (e.g. top:20%; left:0)
 
     const wrapRect = wrap.getBoundingClientRect();
     const textRect = carText.getBoundingClientRect();
     const numRect = carNum.getBoundingClientRect();
 
-    // compute left/top for carNum so its bottom-left == carText top-right
-    const leftPx = textRect.right - wrapRect.left;           // x-coordinate inside wrap
-    const topPx  = textRect.top - wrapRect.top - numRect.height; // set top so bottom sits at textRect.top
+    // left inside wrap: align carNum.left so its left = textRect.right
+    const leftInsideWrap = textRect.right - wrapRect.left;
+
+    // top inside wrap: place so carNum.bottom == textRect.top
+    const topInsideWrap = textRect.top - wrapRect.top - numRect.height;
 
     Object.assign(carNum.style, {
       position: 'absolute',
-      left: `${Math.round(leftPx)}px`,
-      top: `${Math.round(topPx)}px`,
-      marginLeft: '0',
+      left: `${Math.round(leftInsideWrap)}px`,
+      top: `${Math.round(topInsideWrap)}px`,
     });
   };
 
@@ -431,8 +428,11 @@ export default function App() {
   window.addEventListener('load', updateCarNumber);
 
   const ro = new ResizeObserver(updateCarNumber);
+  // observe both the car-wrap and the text in case sizes change
   const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
   if (wrapEl) ro.observe(wrapEl);
+  const textEl = document.querySelector('.page:nth-of-type(2) .car-text');
+  if (textEl) ro.observe(textEl);
 
   return () => {
     clearTimeout(t);
@@ -447,27 +447,33 @@ export default function App() {
       {pages.map((_, i) => {
         // Special page 2 (index 1)
         if (i === 1) {
-          return (
-            <section key={i} className="page">
-              {/* Page 2: dark background, inner same inset */}
-              <div className="inner">
-  {/* horizontal line (already used elsewhere) */}
-  <div className="line" aria-hidden />
+  return (
+    <section key={i} className="page">
+      {/* original inner (keeps borders/other stuff if needed) */}
+      <div className="inner">
+        {/* keep the horizontal line inside the original inner if you want it visible */}
+        <div className="line" aria-hidden />
+        {/* NOTE: do NOT place car-wrap here — car-wrap must be placed relative to page for top:13% */}
+      </div>
 
-  {/* left box that spans from the horizontal line down to the inner bottom and to the vertical center */}
-  <div className="left-box">
-    {/* keep the car-wrap inside the left box so positioning is contained */}
-    <div className="car-wrap" aria-hidden>
-      <span className="car-text">The Car</span>
-      <span className="car-num">1</span>
-    </div>
-  </div>
+      {/* car-wrap lives on the outer .page so top:13% is measured from page (viewport height) 
+          and left aligns with the inner left via var(--border) */}
+      <div className="car-wrap" aria-hidden>
+        <span className="car-text">The Car</span>
+        <span className="car-num">1</span>
+      </div>
 
-  {/* no other content on page 2's inner — right side is intentionally empty */}
-</div>
-            </section>
-          );
-        }
+      {/* second inner: aligns left/right with the main inner, top sits at 18% of page,
+          bottom aligns with same inner bottom (var(--border)) */}
+      <div className="inner-second" aria-hidden>
+        {/* move the "box" that previously sat in the first inner into here */}
+        <div className="left-box">
+          <!-- keep any content inside the box here if needed -->
+        </div>
+      </div>
+    </section>
+  );
+}
         else{
         // Default page rendering for all other pages (unchanged)
         return (

@@ -225,7 +225,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: var(--border);
   right: var(--border);
-  top: 18%;               /* starts 18% from page top */
+  top: 30%;               /* starts 18% from page top */
   bottom: var(--border);  /* aligns with original inner bottom */
   pointer-events: none;
   background: transparent;

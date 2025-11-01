@@ -219,6 +219,15 @@ html:not(.is-device) .text--two {
   z-index: 9500;
 }
 
+.page:nth-of-type(2) .car-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: var(--bg-yellow);
+  top: calc(100% + 8px); /* 8px below .car-text */
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

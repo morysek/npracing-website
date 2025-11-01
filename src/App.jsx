@@ -451,15 +451,20 @@ export default function App() {
             <section key={i} className="page">
               {/* Page 2: dark background, inner same inset */}
               <div className="inner">
-                {/* yellow horizontal line at 20% from top of inner */}
-                <div className="line" aria-hidden />
+  {/* horizontal line (already used elsewhere) */}
+  <div className="line" aria-hidden />
 
-                {/* wrapper positioned at the same top (line top); we translate the text up so its bottom aligns to the line */}
-                <div className="car-wrap" aria-hidden>
-                  <span className="car-text">The Car</span>
-                  <span className="car-num">1</span>
-                </div>
-              </div>
+  {/* left box that spans from the horizontal line down to the inner bottom and to the vertical center */}
+  <div className="left-box">
+    {/* keep the car-wrap inside the left box so positioning is contained */}
+    <div className="car-wrap" aria-hidden>
+      <span className="car-text">The Car</span>
+      <span className="car-num">1</span>
+    </div>
+  </div>
+
+  {/* no other content on page 2's inner — right side is intentionally empty */}
+</div>
             </section>
           );
         }

@@ -446,28 +446,25 @@ export default function App() {
     <div className="App">
       {pages.map((_, i) => {
         // Special page 2 (index 1)
-        if (i === 1) {
+       if (i === 1) {
   return (
     <section key={i} className="page">
-      {/* original inner (keeps borders/other stuff if needed) */}
+      {/* main inner (keeps border) */}
       <div className="inner">
-        {/* keep the horizontal line inside the original inner if you want it visible */}
         <div className="line" aria-hidden />
-        {/* NOTE: do NOT place car-wrap here — car-wrap must be placed relative to page for top:13% */}
       </div>
 
-      {/* car-wrap lives on the outer .page so top:13% is measured from page (viewport height) 
-          and left aligns with the inner left via var(--border) */}
-      <div className="car-wrap" aria-hidden>
-        <span className="car-text">The Car</span>
-        <span className="car-num">1</span>
-      </div>
-
-      {/* second inner: aligns left/right with the main inner, top sits at 18% of page,
-          bottom aligns with same inner bottom (var(--border)) */}
+      {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
       <div className="inner-second" aria-hidden>
-        {/* move the "box" that previously sat in the first inner into here */}
-        <div className="left-box">
+        {/* left-box (kept where you had it previously) */}
+        <div className="left-box" aria-hidden>
+          {/* content if any */}
+        </div>
+
+        {/* Place The Car at the TOP of inner-second: car-wrap sits inside inner-second */}
+        <div className="car-wrap" aria-hidden>
+          <span className="car-text">The Car</span>
+          <span className="car-num">1</span>
         </div>
       </div>
     </section>

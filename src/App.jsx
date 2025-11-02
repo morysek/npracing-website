@@ -487,8 +487,6 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
-  };
-}, []);
   return (
     <div className="App">
       {pages.map((_, i) => {

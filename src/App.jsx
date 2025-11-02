@@ -412,27 +412,26 @@ React.useEffect(() => {
     const textRect = carText.getBoundingClientRect();
     const numRect  = carNum.getBoundingClientRect();
 
-    // 1) place car-wrap so its left aligns with inner-second left
+    // place car-wrap so its left aligns with inner-second left
     const leftForWrap = inner2Rect.left - pageRect.left;
-    // 2) compute top so car-text bottom is 20px above inner-second top
+    // compute top so car-text bottom is 20px above inner-second top
     const desiredCarTextBottom = inner2Rect.top - 30; // 20px gap
     const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
-    // apply positioning to car-wrap (absolute relative to .page)
     Object.assign(carWrap.style, {
       position: 'absolute',
       left: `${Math.round(leftForWrap)}px`,
       top: `${Math.round(topForWrap)}px`,
     });
 
-    // --- recompute after placing wrap so measurements reflect final positions ---
+    // recompute after placing wrap so measurements reflect final positions
     const wrapRect = carWrap.getBoundingClientRect();
     const updatedTextRect = carText.getBoundingClientRect();
-    const updatedNumRect  = carNum.getBoundingClientRect(); // height is what we care about
+    const updatedNumRect  = carNum.getBoundingClientRect();
 
     // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 40); // subtract 15px
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 40); // move up 15px
 
     Object.assign(carNum.style, {
       position: 'absolute',
@@ -451,8 +450,7 @@ React.useEffect(() => {
       }
       const innerRect = inner.getBoundingClientRect();
       const finalTextRect = carText.getBoundingClientRect();
-
-      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 6); // 8px below text bottom
+      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 8); // 8px below text bottom
 
       Object.assign(carLine.style, {
         position: 'absolute',
@@ -463,6 +461,34 @@ React.useEffect(() => {
         top: `${topRel}px`,
         zIndex: '10002',
         pointerEvents: 'none',
+      });
+
+      // --- position pruhmuzweb.svg so its right edge matches inner's right,
+      // top == carWrap.top, bottom == finalTextRect.bottom (we set height accordingly)
+      let pruh = page.querySelector('.pruh-img');
+      if (!pruh) {
+        pruh = document.createElement('img');
+        pruh.src = '/pruhmuzweb.svg';
+        pruh.className = 'pruh-img';
+        pruh.setAttribute('aria-hidden', '');
+        page.appendChild(pruh);
+      }
+
+      const innerRect2 = innerRect; // reuse
+      const topPx = Math.round(wrapRect.top - pageRect.top);
+      const heightPx = Math.max(0, Math.round(finalTextRect.bottom - wrapRect.top));
+      const rightPx = Math.round(pageRect.right - innerRect2.right);
+
+      Object.assign(pruh.style, {
+        position: 'absolute',
+        top: `${topPx}px`,
+        height: `${heightPx}px`,
+        right: `${rightPx}px`,
+        width: 'auto',
+        objectFit: 'contain',
+        zIndex: '10000',
+        pointerEvents: 'none',
+        display: heightPx > 0 ? 'block' : 'none',
       });
     }
   };
@@ -488,54 +514,23 @@ React.useEffect(() => {
   };
 }, []);
 
-  React.useEffect(() => {
-  const updatePruh = () => {
-    const page = document.querySelector('.page:nth-of-type(2)');
-    if (!page) return;
-    const inner = page.querySelector('.inner');
-    const leftBox = page.querySelector('.inner-second .left-box');
-    const pruh = page.querySelector('.pruh-img');
-    if (!inner || !leftBox || !pruh) {
-      if (pruh) pruh.style.display = 'none';
-      return;
-    }
+  updateCarNumber();
+  const t = setTimeout(updateCarNumber, 60);
+  window.addEventListener('resize', updateCarNumber);
+  window.addEventListener('load', updateCarNumber);
 
-    pruh.style.display = 'block';
-
-    const innerR = inner.getBoundingClientRect();
-    const boxR = leftBox.getBoundingClientRect();
-
-    const topRel = Math.max(0, boxR.top - innerR.top);
-    const heightPx = Math.max(0, Math.round(boxR.height));
-
-    Object.assign(pruh.style, {
-      position: 'absolute',
-      right: '0px',                     // flush with inner's right edge
-      top: `${Math.round(topRel)}px`,   // align top to left-box top
-      height: `${heightPx}px`,          // match left-box height
-      width: 'auto',
-      objectFit: 'contain',
-      zIndex: '10010',
-      pointerEvents: 'none',
-    });
-  };
-
-  updatePruh();
-  const t = setTimeout(updatePruh, 60);
-  window.addEventListener('resize', updatePruh);
-  window.addEventListener('load', updatePruh);
-
-  const ro = new ResizeObserver(updatePruh);
-  const watchEls = [
-    document.querySelector('.page:nth-of-type(2) .inner-second .left-box'),
-    document.querySelector('.page:nth-of-type(2) .inner')
-  ].filter(Boolean);
-  watchEls.forEach(el => ro.observe(el));
+  const ro = new ResizeObserver(updateCarNumber);
+  const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
+  if (wrapEl) ro.observe(wrapEl);
+  const textEl = document.querySelector('.page:nth-of-type(2) .car-text');
+  if (textEl) ro.observe(textEl);
+  const inner2El = document.querySelector('.page:nth-of-type(2) .inner-second');
+  if (inner2El) ro.observe(inner2El);
 
   return () => {
     clearTimeout(t);
-    window.removeEventListener('resize', updatePruh);
-    window.removeEventListener('load', updatePruh);
+    window.removeEventListener('resize', updateCarNumber);
+    window.removeEventListener('load', updateCarNumber);
     ro.disconnect();
   };
 }, []);

@@ -156,14 +156,6 @@ html:not(.is-device) .text--two {
   right: var(--border);
   bottom: var(--border);
 }
-
-/* Keep the existing horizontal line visible and ensure top matches --line-top */
-.page:nth-of-type(2) .inner .line {
-  top: var(--line-top);
-  height: 8px;
-  background: var(--bg-yellow);
-  z-index: 9999;
-}
 .page:nth-of-type(2) .car-wrap{
   position: absolute;     /* JS will set left/top */
   left: var(--border);    /* align with inner left */

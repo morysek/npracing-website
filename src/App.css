@@ -215,7 +215,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 6px;
   background: var(--bg-yellow);
   z-index: 10002;
   pointer-events: none;

@@ -5,7 +5,6 @@
   --bg-dark: #141414;
   --font: 'HelveticaCustom', Helvetica, Arial, sans-serif;
 }
-
 @font-face{
   font-family: 'HelveticaCustom';
   src: url('/fonts/neuehaasdisplaymedium.woff2') format('woff2');
@@ -13,7 +12,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 /* Basic resets */
 *{ box-sizing: border-box; }
 html,body,#root{ height:100%; margin:0; }
@@ -23,9 +21,7 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
-
 .App{ }
-
 /* Make all divs background #ffcc00 as requested */
 .page{
   position: relative;
@@ -33,7 +29,6 @@ body{
   background: var(--bg-yellow);
   overflow: visible;
 }
-
 /* inner is inset to create a border but contains ALL content now */
 .inner{
   position: absolute;
@@ -43,7 +38,6 @@ body{
   bottom: var(--border);
   background: var(--bg-yellow); /* now yellow as requested */
 }
-
 /* Text windows placed inside (in the inner box) */
 .text{
   position: absolute;
@@ -54,7 +48,6 @@ body{
   letter-spacing: -0.01em; /* requested letter spacing */
   line-height: 0.85em; /* requested line spacing */
 }
-
 /* First text: top-right inside inner, size 80, right-aligned */
 .text--one{
   top: 2%;
@@ -64,7 +57,6 @@ body{
   line-height: 0.8em;
   z-index: 2;
 }
-
 /* Second text: bottom-left inside inner, size 100, left-aligned */
 .text--two{
   bottom: 0;
@@ -72,7 +64,6 @@ body{
   font-size: 8vw;
   text-align: left;
 }
-
 /* top-left image: keeps aspect ratio, 6vw tall */
 .img--one {
   position: absolute;
@@ -83,7 +74,6 @@ body{
   display: block;
   object-fit: contain;
 }
-
 .img--two,
 .placeholder--two,
 .svg--two {
@@ -97,7 +87,6 @@ body{
   z-index: 999999;
   pointer-events: none;
 }
-
 /* ensure text--three can be absolutely positioned from bottom-left */
 .text--three {
   position: absolute; /* JS overrides exact left/top */
@@ -110,7 +99,6 @@ body{
   pointer-events: none;
   white-space: pre-line;
 }
-
 /* When device detected (html.is-device), make the second image span full viewport width */
 html.is-device .img--two,
 html.is-device .placeholder--two,
@@ -121,7 +109,6 @@ html.is-device .svg--two {
   right: auto;
   object-fit: contain;
 }
-
 /* When device is NOT detected (html.is-device absent), pin text--two to inner bottom-left */
 html:not(.is-device) .inner { position: absolute; } /* ensures inner is the containing block */
 html:not(.is-device) .text--two {
@@ -131,7 +118,6 @@ html:not(.is-device) .text--two {
   top: auto !important;
   margin: 0 !important;
 }
-
 .line {
   position: absolute; /* JS sets exact top */
   left: 0;
@@ -142,11 +128,9 @@ html:not(.is-device) .text--two {
   pointer-events: none;
   display: block;
 }
-
 .page:nth-of-type(2) {
   background: var(--bg-dark);
 }
-
 .page:nth-of-type(2) .inner {
   --line-top: 15%; /* vertical position of the horizontal line (same as .line top) */
   background: var(--bg-dark);
@@ -163,7 +147,6 @@ html:not(.is-device) .text--two {
   white-space: nowrap;
   z-index: 11000;
 }
-
 /* The Car text keeps its appearance; do not change the global text alignment */
 .page:nth-of-type(2) .car-text {
   display: inline-block;
@@ -173,7 +156,6 @@ html:not(.is-device) .text--two {
   vertical-align: top;
   transform: none; /* do not translate it — we use JS to align the number exactly */
 }
-
 /* Car number is absolutely positioned by JS; default keep it visible */
 .page:nth-of-type(2) .car-num {
   position: absolute;
@@ -184,7 +166,6 @@ html:not(.is-device) .text--two {
   pointer-events: none;
   left: 0; top: 0; /* JS will override with precise coords */
 }
-
 .page:nth-of-type(2) .inner-second {
   position: absolute;
   left: var(--border);
@@ -195,7 +176,6 @@ html:not(.is-device) .text--two {
   background: transparent;
   z-index: 9000;
 }
-
 /* left-box inside inner-second: sits on the left and takes 48% width of the inner-second */
 .page:nth-of-type(2) .inner-second .left-box {
   position: absolute;
@@ -210,7 +190,6 @@ html:not(.is-device) .text--two {
   overflow: visible;
   z-index: 9500;
 }
-
 .page:nth-of-type(2) .car-line {
   position: absolute;
   left: 0;
@@ -225,7 +204,7 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(2) .pruh-img {
   position: absolute; /* JS will override top/right/height */
   object-fit: contain;
-  pointer-events: none;
+  pointer-events: none;     /* shown by JS when left-box exists */
   z-index: 10000;
   display: none; /* JS will show it when it has a positive height */
 }

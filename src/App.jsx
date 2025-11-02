@@ -410,91 +410,30 @@ React.useEffect(() => {
   };
 }, []);
 
-  React.useEffect(() => {
+React.useEffect(() => {
   const updatePruh = () => {
     const page = document.querySelector('.page:nth-of-type(2)');
     if (!page) return;
-    const inner = page.querySelector('.inner');
-    const leftBox = page.querySelector('.inner-second .left-box');
-    const pruh = page.querySelector('.pruh-img');
-    if (!inner || !leftBox || !pruh) {
-      if (pruh) pruh.style.display = 'none';
-      return;
+    const inner = page.querySelector('.inner') || page;
+
+    // create/reuse the image
+    let img = page.querySelector('.pruh-img');
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'pruh-img';
+      img.src = '/pruhmuzweb.svg';
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      inner.appendChild(img);
     }
 
-    pruh.style.display = 'block';
-
-    const innerR = inner.getBoundingClientRect();
-    const boxR = leftBox.getBoundingClientRect();
-
-    const topRel = Math.max(0, boxR.top - innerR.top);
-    const heightPx = Math.max(0, Math.round(boxR.height));
-
-    Object.assign(pruh.style, {
-      position: 'absolute',
-      right: '0px',                     // flush with inner's right edge
-      top: `${Math.round(topRel)}px`,   // align top to left-box top
-      height: `${heightPx}px`,          // match left-box height
-      width: 'auto',
-      objectFit: 'contain',
-      zIndex: '10010',
-      pointerEvents: 'none',
-    });
-  };
-
-  updatePruh();
-  const t = setTimeout(updatePruh, 60);
-  window.addEventListener('resize', updatePruh);
-  window.addEventListener('load', updatePruh);
-
-  const ro = new ResizeObserver(updatePruh);
-  const watchEls = [
-    document.querySelector('.page:nth-of-type(2) .inner-second .left-box'),
-    document.querySelector('.page:nth-of-type(2) .inner')
-  ].filter(Boolean);
-  watchEls.forEach(el => ro.observe(el));
-
-  return () => {
-    clearTimeout(t);
-    window.removeEventListener('resize', updatePruh);
-    window.removeEventListener('load', updatePruh);
-    ro.disconnect();
-  };
-}, []);
-
-  React.useEffect(() => {
-  const updatePruh = () => {
-    const page = document.querySelector('.page:nth-of-type(2)');
-    if (!page) return;
-    const inner = page.querySelector('.inner');
-    const carText = page.querySelector('.car-text');
-    const img = page.querySelector('.pruh-img'); // should exist in your JSX
-    if (!inner || !carText || !img) {
-      if (img) img.style.display = 'none';
-      return;
-    }
-
-    img.style.display = 'block';
-
-    const pageRect = page.getBoundingClientRect();
-    const innerRect = inner.getBoundingClientRect();
-    const carRect = carText.getBoundingClientRect();
-
-    // match The Car text height
-    const targetHeight = Math.max(0, Math.round(carRect.height));
-
-    // compute top relative to .inner:
-    // desired top = 25% of page height + 30px (measured from page top)
-    // convert that absolute value to a value relative to inner.top
-    const absoluteTopPx = Math.round(pageRect.height * 0.25 + 30 + pageRect.top);
-    const topRelToInner = Math.round(absoluteTopPx - innerRect.top);
-
+    // apply exact placement requested
     Object.assign(img.style, {
       position: 'absolute',
-      right: '0px',                 // flush with inner right
-      top: `${topRelToInner}px`,    // top relative to inner
-      height: `${targetHeight}px`,  // match The Car height
-      width: 'auto',
+      right: 'var(--border)',       // 1/15 of the site from the right
+      top: 'calc(25% + 30px)',      // 25% from top + 30px
+      height: '15vh',               // fixed height as requested
+      width: 'auto',                // preserve aspect ratio
       objectFit: 'contain',
       zIndex: '10005',
       pointerEvents: 'none',
@@ -508,11 +447,8 @@ React.useEffect(() => {
   window.addEventListener('load', updatePruh);
 
   const ro = new ResizeObserver(updatePruh);
-  const watchEls = [
-    document.querySelector('.page:nth-of-type(2) .inner'),
-    document.querySelector('.page:nth-of-type(2) .car-text')
-  ].filter(Boolean);
-  watchEls.forEach(el => ro.observe(el));
+  const innerEl = document.querySelector('.page:nth-of-type(2) .inner');
+  if (innerEl) ro.observe(innerEl);
 
   return () => {
     clearTimeout(t);

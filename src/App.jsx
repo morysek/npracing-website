@@ -431,7 +431,7 @@ React.useEffect(() => {
     Object.assign(img.style, {
       position: 'absolute',
       right: 'var(--border)',       // 1/15 of the site from the right
-      top: 'calc(25% + 30px)',      // 25% from top + 30px
+      bottom: 'calc(75% - 30px)',      // 25% from top + 30px
       height: '15vh',               // fixed height as requested
       width: 'auto',                // preserve aspect ratio
       objectFit: 'contain',

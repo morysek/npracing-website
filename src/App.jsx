@@ -487,6 +487,59 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
+
+  React.useEffect(() => {
+  const updatePruh = () => {
+    const page = document.querySelector('.page:nth-of-type(2)');
+    if (!page) return;
+    const inner = page.querySelector('.inner');
+    const leftBox = page.querySelector('.inner-second .left-box');
+    const pruh = page.querySelector('.pruh-img');
+    if (!inner || !leftBox || !pruh) {
+      if (pruh) pruh.style.display = 'none';
+      return;
+    }
+
+    pruh.style.display = 'block';
+
+    const innerR = inner.getBoundingClientRect();
+    const boxR = leftBox.getBoundingClientRect();
+
+    const topRel = Math.max(0, boxR.top - innerR.top);
+    const heightPx = Math.max(0, Math.round(boxR.height));
+
+    Object.assign(pruh.style, {
+      position: 'absolute',
+      right: '0px',                     // flush with inner's right edge
+      top: `${Math.round(topRel)}px`,   // align top to left-box top
+      height: `${heightPx}px`,          // match left-box height
+      width: 'auto',
+      objectFit: 'contain',
+      zIndex: '10010',
+      pointerEvents: 'none',
+    });
+  };
+
+  updatePruh();
+  const t = setTimeout(updatePruh, 60);
+  window.addEventListener('resize', updatePruh);
+  window.addEventListener('load', updatePruh);
+
+  const ro = new ResizeObserver(updatePruh);
+  const watchEls = [
+    document.querySelector('.page:nth-of-type(2) .inner-second .left-box'),
+    document.querySelector('.page:nth-of-type(2) .inner')
+  ].filter(Boolean);
+  watchEls.forEach(el => ro.observe(el));
+
+  return () => {
+    clearTimeout(t);
+    window.removeEventListener('resize', updatePruh);
+    window.removeEventListener('load', updatePruh);
+    ro.disconnect();
+  };
+}, []);
+  
   return (
     <div className="App">
       {pages.map((_, i) => {
@@ -498,6 +551,7 @@ React.useEffect(() => {
       <div className="inner">
         <div className="line" aria-hidden />
         <div className="car-line" aria-hidden></div>
+        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
       </div>
 
       {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}

@@ -217,7 +217,7 @@ html:not(.is-device) .text--two {
   right: 0;
   height: 8px;
   background: var(--bg-yellow);
-  top: calc(100% + 8px); /* 8px below .car-text */
+  top: calc(22% - 8px); /* 8px below .car-text */
 }
 
 /* Ensure responsive scaling */

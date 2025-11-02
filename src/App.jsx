@@ -533,9 +533,8 @@ React.useEffect(() => {
       <div className="inner">
         <div className="line" aria-hidden />
         <div className="car-line" aria-hidden></div>
-        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
       </div>
-
+      <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
       {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
       <div className="car-wrap" aria-hidden>
         <span className="car-text">The Car</span>

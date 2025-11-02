@@ -348,28 +348,29 @@ React.useEffect(() => {
     const pageRect = page.getBoundingClientRect();
     const inner2Rect = innerSecond.getBoundingClientRect();
     const textRect = carText.getBoundingClientRect();
-    const numRect  = carNum.getBoundingClientRect();
 
-    // place car-wrap so its left aligns with inner-second left
+    // 1) place car-wrap so its left aligns with inner-second left
     const leftForWrap = inner2Rect.left - pageRect.left;
-    // compute top so car-text bottom is 20px above inner-second top
-    const desiredCarTextBottom = inner2Rect.top - 30; // 20px gap
+
+    // 2) compute top so car-text bottom is 30px above inner-second top
+    const desiredCarTextBottom = inner2Rect.top - 30; // 30px gap
     const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
+    // apply positioning to car-wrap (absolute relative to .page)
     Object.assign(carWrap.style, {
       position: 'absolute',
       left: `${Math.round(leftForWrap)}px`,
       top: `${Math.round(topForWrap)}px`,
     });
 
-    // recompute after placing wrap so measurements reflect final positions
+    // --- recompute after placing wrap so measurements reflect final positions ---
     const wrapRect = carWrap.getBoundingClientRect();
     const updatedTextRect = carText.getBoundingClientRect();
     const updatedNumRect  = carNum.getBoundingClientRect();
 
     // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 35); // move up 15px
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height - 15); // -15px offset
 
     Object.assign(carNum.style, {
       position: 'absolute',
@@ -377,45 +378,27 @@ React.useEffect(() => {
       top: `${topInsideWrap}px`,
     });
 
-    // --- ensure .car-line exists inside .inner and place it 8px below the final car-text bottom ---
+    // --- position pruhmuzweb.svg so its right edge matches inner's right,
+    //     top aligns with car-wrap top, and height matches the car-text height ---
     const inner = page.querySelector('.inner');
     if (inner) {
-      let carLine = inner.querySelector('.car-line');
-      if (!carLine) {
-        carLine = document.createElement('div');
-        carLine.className = 'car-line';
-        inner.appendChild(carLine);
-      }
       const innerRect = inner.getBoundingClientRect();
-      const finalTextRect = carText.getBoundingClientRect();
-      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 8); // 8px below text bottom
 
-      Object.assign(carLine.style, {
-        position: 'absolute',
-        left: '0',
-        right: '0',
-        height: '8px',
-        background: 'var(--bg-yellow)',
-        top: `${topRel}px`,
-        zIndex: '10002',
-        pointerEvents: 'none',
-      });
+      // image geometry
+      const topPx = Math.round(wrapRect.top - pageRect.top); // align top to car-wrap top
+      const heightPx = Math.max(0, Math.round(updatedTextRect.bottom - wrapRect.top)); // match distance from wrap top to text bottom
+      const rightPx = Math.round(pageRect.right - innerRect.right); // offset so image right aligns with inner right
 
-      // --- position pruhmuzweb.svg so its right edge matches inner's right,
-      // top == carWrap.top, bottom == finalTextRect.bottom (we set height accordingly)
+      // create / reuse image
       let pruh = page.querySelector('.pruh-img');
       if (!pruh) {
         pruh = document.createElement('img');
-        pruh.src = '/pruhmuzweb.svg';
         pruh.className = 'pruh-img';
-        pruh.setAttribute('aria-hidden', '');
+        pruh.src = '/pruhmuzweb.svg';
+        pruh.alt = '';
+        pruh.setAttribute('aria-hidden', 'true');
         page.appendChild(pruh);
       }
-
-      const innerRect2 = innerRect; // reuse
-      const topPx = Math.round(wrapRect.top - pageRect.top);
-      const heightPx = Math.max(0, Math.round(finalTextRect.bottom - wrapRect.top));
-      const rightPx = Math.round(pageRect.right - innerRect2.right);
 
       Object.assign(pruh.style, {
         position: 'absolute',

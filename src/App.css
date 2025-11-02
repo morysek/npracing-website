@@ -201,14 +201,6 @@ html:not(.is-device) .text--two {
   top: 0; /* JS will set the correct top */
 }
 
-.page:nth-of-type(2) .pruh-img {
-  position: absolute; /* JS will override top/right/height */
-  object-fit: contain;
-  pointer-events: none;     /* shown by JS when left-box exists */
-  z-index: 10000;
-  display: none; /* JS will show it when it has a positive height */
-}
-
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

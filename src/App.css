@@ -189,7 +189,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: var(--border);
   right: var(--border);
-  top: 22%;              /* inner div 2 top at 18% of page height */
+  top: 25%;              /* inner div 2 top at 18% of page height */
   bottom: var(--border);
   pointer-events: none;
   background: transparent;
@@ -215,7 +215,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 4px;
   background: var(--bg-yellow);
   z-index: 10002;
   pointer-events: none;

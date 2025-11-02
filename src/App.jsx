@@ -415,8 +415,6 @@ React.useEffect(() => {
     // 1) place car-wrap so its left aligns with inner-second left
     const leftForWrap = inner2Rect.left - pageRect.left;
     // 2) compute top so car-text bottom is 20px above inner-second top
-    // desired_carText_bottom = inner2Rect.top - 20
-    // so wrap.top = desired_carText_bottom - textRect.height
     const desiredCarTextBottom = inner2Rect.top - 20; // 20px gap
     const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
 
@@ -427,21 +425,46 @@ React.useEffect(() => {
       top: `${Math.round(topForWrap)}px`,
     });
 
-    // After positioning wrap, recompute coords of wrap & text (to be safe)
+    // --- recompute after placing wrap so measurements reflect final positions ---
     const wrapRect = carWrap.getBoundingClientRect();
     const updatedTextRect = carText.getBoundingClientRect();
+    const updatedNumRect  = carNum.getBoundingClientRect(); // height is what we care about
 
-    // number: place so its bottom-left matches text top-right, then add extra -15px vertical offset
-    // leftInsideWrap = textRect.right - wrapRect.left
+    // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    // topInsideWrap = textRect.top - wrapRect.top - numRect.height  (then subtract 15 to move down)
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - numRect.height + 35);
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height - 15); // subtract 15px
 
     Object.assign(carNum.style, {
       position: 'absolute',
       left: `${leftInsideWrap}px`,
       top: `${topInsideWrap}px`,
     });
+
+    // --- ensure .car-line exists inside .inner and place it 8px below the final car-text bottom ---
+    const inner = page.querySelector('.inner');
+    if (inner) {
+      let carLine = inner.querySelector('.car-line');
+      if (!carLine) {
+        carLine = document.createElement('div');
+        carLine.className = 'car-line';
+        inner.appendChild(carLine);
+      }
+      const innerRect = inner.getBoundingClientRect();
+      const finalTextRect = carText.getBoundingClientRect();
+
+      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 8); // 8px below text bottom
+
+      Object.assign(carLine.style, {
+        position: 'absolute',
+        left: '0',
+        right: '0',
+        height: '8px',
+        background: 'var(--bg-yellow)',
+        top: `${topRel}px`,
+        zIndex: '10002',
+        pointerEvents: 'none',
+      });
+    }
   };
 
   updateCarNumber();
@@ -450,7 +473,6 @@ React.useEffect(() => {
   window.addEventListener('load', updateCarNumber);
 
   const ro = new ResizeObserver(updateCarNumber);
-  // observe the key elements
   const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
   if (wrapEl) ro.observe(wrapEl);
   const textEl = document.querySelector('.page:nth-of-type(2) .car-text');
@@ -465,6 +487,8 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
+  };
+}, []);
   return (
     <div className="App">
       {pages.map((_, i) => {
@@ -475,6 +499,7 @@ React.useEffect(() => {
       {/* main inner (keeps border) */}
       <div className="inner">
         <div className="line" aria-hidden />
+        <div className="car-line" aria-hidden></div>
       </div>
 
       {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}

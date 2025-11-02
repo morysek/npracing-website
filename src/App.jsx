@@ -432,7 +432,7 @@ React.useEffect(() => {
 
     // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
     const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height - 15); // subtract 15px
+    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height +35); // subtract 15px
 
     Object.assign(carNum.style, {
       position: 'absolute',
@@ -452,7 +452,7 @@ React.useEffect(() => {
       const innerRect = inner.getBoundingClientRect();
       const finalTextRect = carText.getBoundingClientRect();
 
-      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 8); // 8px below text bottom
+      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 6); // 8px below text bottom
 
       Object.assign(carLine.style, {
         position: 'absolute',

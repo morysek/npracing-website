@@ -223,15 +223,11 @@ html:not(.is-device) .text--two {
 }
 
 .page:nth-of-type(2) .pruh-img {
-  position: absolute;   /* JS overrides top/height but keep right baseline */
-  right: 0;
-  top: 0;
-  height: auto;
-  width: auto;
+  position: absolute; /* JS will override top/right/height */
   object-fit: contain;
-  z-index: 10010;
   pointer-events: none;
-  display: none;        /* shown by JS when left-box exists */
+  z-index: 10000;
+  display: none; /* JS will show it when it has a positive height */
 }
 
 /* Ensure responsive scaling */

@@ -411,12 +411,14 @@ React.useEffect(() => {
 }, []);
 
 React.useEffect(() => {
-  const updatePruh = () => {
+  const updatePruhAlign = () => {
     const page = document.querySelector('.page:nth-of-type(2)');
     if (!page) return;
     const inner = page.querySelector('.inner') || page;
+    const carText = page.querySelector('.car-text');
+    if (!carText) return;
 
-    // create/reuse the image
+    // create or reuse image
     let img = page.querySelector('.pruh-img');
     if (!img) {
       img = document.createElement('img');
@@ -427,13 +429,20 @@ React.useEffect(() => {
       inner.appendChild(img);
     }
 
-    // apply exact placement requested
+    // measure and align
+    const innerR = inner.getBoundingClientRect();
+    const textR  = carText.getBoundingClientRect();
+
+    // calculate top (relative to inner) and height to match text
+    const topPx   = Math.round(textR.top - innerR.top);
+    const heightPx = Math.max(0, Math.round(textR.height));
+
     Object.assign(img.style, {
       position: 'absolute',
-      right: 'var(--border)',       // 1/15 of the site from the right
-      bottom: 'calc(75% + 30px)',      // 25% from top + 30px
-      height: '15vh',               // fixed height as requested
-      width: 'auto',                // preserve aspect ratio
+      right: 'var(--border)',     // keep it anchored 1/15 from right as before
+      top: `${topPx}px`,         // align top with car-text top
+      height: `${heightPx}px`,   // match text height (so top & bottom aligned)
+      width: 'auto',             // preserve aspect ratio
       objectFit: 'contain',
       zIndex: '10005',
       pointerEvents: 'none',
@@ -441,19 +450,24 @@ React.useEffect(() => {
     });
   };
 
-  updatePruh();
-  const t = setTimeout(updatePruh, 60);
-  window.addEventListener('resize', updatePruh);
-  window.addEventListener('load', updatePruh);
+  updatePruhAlign();
+  const t = setTimeout(updatePruhAlign, 60);
+  window.addEventListener('resize', updatePruhAlign);
+  window.addEventListener('load', updatePruhAlign);
 
-  const ro = new ResizeObserver(updatePruh);
-  const innerEl = document.querySelector('.page:nth-of-type(2) .inner');
-  if (innerEl) ro.observe(innerEl);
+  const ro = new ResizeObserver(updatePruhAlign);
+  const watchEls = [
+    document.querySelector('.page:nth-of-type(2) .inner'),
+    document.querySelector('.page:nth-of-type(2) .car-text'),
+    document.querySelector('.page:nth-of-type(2) .car-wrap'),
+    document.querySelector('.page:nth-of-type(2) .inner-second'),
+  ].filter(Boolean);
+  watchEls.forEach(el => ro.observe(el));
 
   return () => {
     clearTimeout(t);
-    window.removeEventListener('resize', updatePruh);
-    window.removeEventListener('load', updatePruh);
+    window.removeEventListener('resize', updatePruhAlign);
+    window.removeEventListener('load', updatePruhAlign);
     ro.disconnect();
   };
 }, []);

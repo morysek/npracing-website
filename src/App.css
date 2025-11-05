@@ -52,7 +52,7 @@ body{
 .text--one{
   top: 2%;
   right: 0;
-  font-size: 6.5vw;
+  font-size: 6vw;
   text-align: right;
   line-height: 0.8em;
   z-index: 2;
@@ -61,7 +61,7 @@ body{
 .text--two{
   bottom: 0;
   left: 0;
-  font-size: 8.5vw;
+  font-size: 8.2vw;
   text-align: left;
 }
 /* top-left image: keeps aspect ratio, 6vw tall */

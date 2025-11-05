@@ -207,7 +207,7 @@ html:not(.is-device) .text--two {
   right: 0;          /* extend to the inner-second right edge */
   top: 0;            /* align to top of inner-second */
   text-align: left;  /* left-aligned text */
-  font-size: 3vw;    /* requested size */
+  font-size: 2vw;    /* requested size */
   line-height: 1.15;
   color: var(--bg-yellow);
   overflow-wrap: break-word;

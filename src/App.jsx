@@ -496,6 +496,13 @@ React.useEffect(() => {
         <div className="left-box" aria-hidden>
           {/* content if any */}
         </div>
+        <div className="right-copy">
+  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
+  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
+  Each lap is an experiment, a test of physics, teamwork, and innovation.
+  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
+</div>
       </div>
     </section>
   );

@@ -439,7 +439,7 @@ React.useEffect(() => {
 
     Object.assign(img.style, {
       position: 'absolute',
-      right: 'var(--border)',     // keep it anchored 1/15 from right as before
+      right: '0',     // keep it anchored 1/15 from right as before
       top: `${topPx}px`,         // align top with car-text top
       height: `${heightPx}px`,   // match text height (so top & bottom aligned)
       width: 'auto',             // preserve aspect ratio
@@ -483,13 +483,13 @@ React.useEffect(() => {
       <div className="inner">
         <div className="line" aria-hidden />
         <div className="car-line" aria-hidden></div>
+        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
       </div>
       {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
       <div className="car-wrap" aria-hidden>
         <span className="car-text">The Car</span>
         <span className="car-num">1</span>
       </div>
-      <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
       {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
       <div className="inner-second" aria-hidden>
         {/* left-box (kept where you had it previously) */}

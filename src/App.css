@@ -201,6 +201,21 @@ html:not(.is-device) .text--two {
   top: 0; /* JS will set the correct top */
 }
 
+.page:nth-of-type(2) .inner-second .right-copy {
+  position: absolute;
+  left: 52%;         /* start at 52% of inner-second width */
+  right: 0;          /* extend to the inner-second right edge */
+  top: 0;            /* align to top of inner-second */
+  text-align: left;  /* left-aligned text */
+  font-size: 1vw;    /* requested size */
+  line-height: 1.15;
+  color: var(--bg-yellow);
+  overflow-wrap: break-word;
+  hyphens: auto;
+  padding-left: 1rem; /* optional breathing room from the left edge of that column */
+  z-index: 9500;
+  pointer-events: none; /* visual only */
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

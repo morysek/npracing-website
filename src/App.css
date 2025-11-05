@@ -182,7 +182,7 @@ html:not(.is-device) .text--two {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 48%;              /* occupies 48% of inner-second width */
+  width: 49.5%;              /* occupies 48% of inner-second width */
   box-sizing: border-box;
   padding: 2.5vh 2.5vw;
   border-radius: 12px;
@@ -203,7 +203,7 @@ html:not(.is-device) .text--two {
 
 .page:nth-of-type(2) .inner-second .right-copy {
   position: absolute;
-  left: 52%;         /* start at 52% of inner-second width */
+  left: 50.5%;         /* start at 52% of inner-second width */
   right: 0;          /* extend to the inner-second right edge */
   top: 0;            /* align to top of inner-second */
   text-align: left;  /* left-aligned text */

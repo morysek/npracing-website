@@ -216,41 +216,49 @@ html:not(.is-device) .text--two {
   pointer-events: none; /* visual only */
 }
 
-.page.inverted {
-  background: var(--bg-yellow); /* page background becomes yellow */
+.page {
+  background: var(--page-bg, var(--bg-yellow));
+}
+.page .inner {
+  background: var(--inner-bg, var(--bg-yellow));
 }
 
-/* inner stays yellow (inverted of page2's dark inner) */
-.page.inverted .inner {
-  background: var(--bg-yellow);
+/* elements that should follow the variant 'accent' color */
+.page .car-text,
+.page .car-num,
+.page .left-box,
+.page .car-line,
+.page .right-copy {
+  color: var(--accent, var(--bg-dark));
 }
 
-/* left-box: make it dark so it contrasts on yellow */
-.page.inverted .left-box {
-  background: var(--bg-dark);
-  border-color: var(--bg-dark);
-  color: var(--bg-yellow); /* any text inside left-box stays yellow */
+/* left-box background should pick a box-bg variable (falls back to subtle tint) */
+.page .left-box {
+  background: var(--box-bg, rgba(255,255,255,0.03));
+  border-color: var(--accent, var(--bg-dark));
 }
 
-/* car text / number / right-copy should be dark on inverted pages */
-.page.inverted .car-text,
-.page.inverted .car-num,
-.page.inverted .right-copy {
-  color: var(--bg-dark);
+/* pruh image tint / visibility can rely on accent if needed (you can keep previous rules) */
+.page .pruh-img { /* existing rules still apply; color decisions may use --accent */ }
+
+/* --- per-page variants --- */
+/* page 2: original dark version (keeps your current style) */
+.page--v2 {
+  --page-bg: var(--bg-dark);
+  --inner-bg: var(--bg-dark);
+  --accent: var(--bg-yellow);       /* yellow text/icons on dark */
+  --box-bg: rgba(255,204,0,0.03);   /* subtle yellow box fill */
 }
 
-/* car-line should contrast (dark line instead of yellow) */
-.page.inverted .car-line {
-  background: var(--bg-dark);
+/* pages 3..5: inverted colors (page copies with colours swapped) */
+.page--v3,
+.page--v4,
+.page--v5 {
+  --page-bg: var(--bg-yellow);      /* page background becomes yellow */
+  --inner-bg: var(--bg-yellow);     /* inner becomes yellow as well */
+  --accent: var(--bg-dark);         /* text/accents become dark */
+  --box-bg: rgba(20,20,20,0.04);    /* subtle dark box fill */
 }
-
-/* pruh image stays as-is — if you need it tinted, add rules here */
-.page.inverted .pruh-img { /* keep default; override if needed */ }
-
-/* ensure any previously page-2-specific z-index/positioning still applies */
-.page.inverted .car-wrap,
-.page.inverted .inner-second,
-.page.inverted .car-line { z-index: inherit; }
 
 /* Ensure responsive scaling */
 @media (max-width: 900px){

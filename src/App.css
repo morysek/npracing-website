@@ -200,7 +200,6 @@ html:not(.is-device) .text--two {
   pointer-events: none;
   top: 0; /* JS will set the correct top */
 }
-
 .page:nth-of-type(2) .inner-second .right-copy {
   position: absolute;
   left: 50.5%;         /* start at 52% of inner-second width */
@@ -216,82 +215,6 @@ html:not(.is-device) .text--two {
   z-index: 9500;
   pointer-events: none; /* visual only */
 }
-
-/* ----- per-page variants ----- */
-
-/* page--dark: same visual scheme as your existing page 2 (dark bg, yellow text) */
-.page--dark {
-  background: var(--bg-dark);
-}
-.page--dark .inner {
-  background: var(--bg-dark);
-}
-.page--dark .car-text,
-.page--dark .car-num,
-.page--dark .car-line,
-.page--dark .right-copy {
-  color: var(--bg-yellow);
-}
-
-/* page--inverted: inverted colours for pages 3-5 */
-.page--inverted {
-  background: var(--bg-yellow); /* outer page becomes yellow */
-}
-.page--inverted .inner {
-  background: var(--bg-yellow); /* inner stays light so visuals invert relative to page--dark */
-}
-.page--inverted .car-text,
-.page--inverted .car-num,
-.page--inverted .car-line {
-  color: var(--bg-dark);        /* dark text on light background */
-}
-
-/* hide the left-box and right-copy on any mirrored (cloned inverted) pages */
-.page.mirror .inner-second .left-box,
-.page.mirror .inner-second .right-copy {
-  display: none !important;
-}
-
-/* ----- swap positions when mirrored ----- */
-
-/* default (page--dark): car-wrap is anchored to the left (we already set this).
-   When .mirror present, pin car-wrap to the RIGHT instead. */
-.page .car-wrap {
-  /* default managed by JS, but ensure fallback */
-  left: var(--border);
-  right: auto;
-}
-.page.mirror .car-wrap {
-  left: auto !important;
-  right: var(--border) !important;
-}
-
-/* pruh image: default on the right; mirrored pages move it to the left */
-.page .pruh-img {
-  right: var(--border);
-  left: auto;
-}
-.page.mirror .pruh-img {
-  left: var(--border);
-  right: auto;
-}
-
-/* ensure the pruh-img stays vertically aligned to the car-text height (JS sets top/height) */
-.page .pruh-img,
-.page.mirror .pruh-img {
-  position: absolute;
-  width: auto;
-  object-fit: contain;
-  z-index: 10005;
-  pointer-events: none;
-}
-
-/* minor: ensure car number remains above text visually */
-.page .car-num { z-index: 11001; }
-
-/* if you used the .page--inverted scheme and want the car-line to show dark on light pages: */
-.page--inverted .car-line { background: var(--bg-dark); }
-
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

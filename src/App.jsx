@@ -332,77 +332,91 @@ export default function App() {
     ro.disconnect();
   };
 }, []);
+  
 React.useEffect(() => {
   const updateCarNumber = () => {
-    const page = document.querySelector('.page:nth-of-type(2)');
-    if (!page) return;
-    const innerSecond = page.querySelector('.inner-second');
-    const carWrap = page.querySelector('.car-wrap');
-    const carText = page.querySelector('.car-text');
-    const carNum  = page.querySelector('.car-num');
-    if (!innerSecond || !carWrap || !carText || !carNum) return;
-    const pageRect = page.getBoundingClientRect();
-    const inner2Rect = innerSecond.getBoundingClientRect();
-    const textRect = carText.getBoundingClientRect();
-    const numRect  = carNum.getBoundingClientRect();
-    // 1) place car-wrap so its left aligns with inner-second left
-    const leftForWrap = inner2Rect.left - pageRect.left;
-    // 2) compute top so car-text bottom is 20px above inner-second top
-    const desiredCarTextBottom = inner2Rect.top - 30; // 20px gap
-    const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
-    // apply positioning to car-wrap (absolute relative to .page)
-    Object.assign(carWrap.style, {
-      position: 'absolute',
-      left: `${Math.round(leftForWrap)}px`,
-      top: `${Math.round(topForWrap)}px`,
-    });
-    // --- recompute after placing wrap so measurements reflect final positions ---
-    const wrapRect = carWrap.getBoundingClientRect();
-    const updatedTextRect = carText.getBoundingClientRect();
-    const updatedNumRect  = carNum.getBoundingClientRect(); // height is what we care about
-    // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
-    const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-    const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 40); // subtract 15px
-    Object.assign(carNum.style, {
-      position: 'absolute',
-      left: `${leftInsideWrap}px`,
-      top: `${topInsideWrap}px`,
-    });
-    // --- ensure .car-line exists inside .inner and place it 8px below the final car-text bottom ---
-    const inner = page.querySelector('.inner');
-    if (inner) {
-      let carLine = inner.querySelector('.car-line');
-      if (!carLine) {
-        carLine = document.createElement('div');
-        carLine.className = 'car-line';
-        inner.appendChild(carLine);
-      }
-      const innerRect = inner.getBoundingClientRect();
-      const finalTextRect = carText.getBoundingClientRect();
-      const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 6); // 8px below text bottom
-      Object.assign(carLine.style, {
+    document.querySelectorAll('.page:nth-of-type(2), .page:nth-of-type(3)').forEach((page) => {
+      const innerSecond = page.querySelector('.inner-second');
+      const carWrap = page.querySelector('.car-wrap');
+      const carText = page.querySelector('.car-text');
+      const carNum  = page.querySelector('.car-num');
+      if (!innerSecond || !carWrap || !carText || !carNum) return;
+      
+      const pageRect = page.getBoundingClientRect();
+      const inner2Rect = innerSecond.getBoundingClientRect();
+      const textRect = carText.getBoundingClientRect();
+      const numRect  = carNum.getBoundingClientRect();
+      
+      // 1) place car-wrap so its left aligns with inner-second left
+      const leftForWrap = inner2Rect.left - pageRect.left;
+      // 2) compute top so car-text bottom is 20px above inner-second top
+      const desiredCarTextBottom = inner2Rect.top - 30; // 20px gap
+      const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
+      
+      // apply positioning to car-wrap (absolute relative to .page)
+      Object.assign(carWrap.style, {
         position: 'absolute',
-        left: '0',
-        right: '0',
-        height: '8px',
-        background: 'var(--bg-yellow)',
-        top: `${topRel}px`,
-        zIndex: '10002',
-        pointerEvents: 'none',
+        left: `${Math.round(leftForWrap)}px`,
+        top: `${Math.round(topForWrap)}px`,
       });
-    }
+      
+      // --- recompute after placing wrap so measurements reflect final positions ---
+      const wrapRect = carWrap.getBoundingClientRect();
+      const updatedTextRect = carText.getBoundingClientRect();
+      const updatedNumRect  = carNum.getBoundingClientRect();
+      
+      // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
+      const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
+      const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 40);
+      
+      Object.assign(carNum.style, {
+        position: 'absolute',
+        left: `${leftInsideWrap}px`,
+        top: `${topInsideWrap}px`,
+      });
+      
+      // --- ensure .car-line exists inside .inner and place it 8px below the final car-text bottom ---
+      const inner = page.querySelector('.inner');
+      if (inner) {
+        let carLine = inner.querySelector('.car-line');
+        if (!carLine) {
+          carLine = document.createElement('div');
+          carLine.className = 'car-line';
+          inner.appendChild(carLine);
+        }
+        const innerRect = inner.getBoundingClientRect();
+        const finalTextRect = carText.getBoundingClientRect();
+        const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 6);
+        
+        Object.assign(carLine.style, {
+          position: 'absolute',
+          left: '0',
+          right: '0',
+          height: '8px',
+          background: 'var(--bg-yellow)',
+          top: `${topRel}px`,
+          zIndex: '10002',
+          pointerEvents: 'none',
+        });
+      }
+    });
   };
+  
   updateCarNumber();
   const t = setTimeout(updateCarNumber, 60);
   window.addEventListener('resize', updateCarNumber);
   window.addEventListener('load', updateCarNumber);
   const ro = new ResizeObserver(updateCarNumber);
-  const wrapEl = document.querySelector('.page:nth-of-type(2) .car-wrap');
-  if (wrapEl) ro.observe(wrapEl);
-  const textEl = document.querySelector('.page:nth-of-type(2) .car-text');
-  if (textEl) ro.observe(textEl);
-  const inner2El = document.querySelector('.page:nth-of-type(2) .inner-second');
-  if (inner2El) ro.observe(inner2El);
+  
+  document.querySelectorAll('.page:nth-of-type(2), .page:nth-of-type(3)').forEach((page) => {
+    const wrapEl = page.querySelector('.car-wrap');
+    const textEl = page.querySelector('.car-text');
+    const inner2El = page.querySelector('.inner-second');
+    if (wrapEl) ro.observe(wrapEl);
+    if (textEl) ro.observe(textEl);
+    if (inner2El) ro.observe(inner2El);
+  });
+  
   return () => {
     clearTimeout(t);
     window.removeEventListener('resize', updateCarNumber);
@@ -410,53 +424,63 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
+  
 React.useEffect(() => {
   const updatePruhAlign = () => {
-    const page = document.querySelector('.page:nth-of-type(2)');
-    if (!page) return;
-    const inner = page.querySelector('.inner') || page;
-    const carText = page.querySelector('.car-text');
-    if (!carText) return;
-    // create or reuse image
-    let img = page.querySelector('.pruh-img');
-    if (!img) {
-      img = document.createElement('img');
-      img.className = 'pruh-img';
-      img.src = '/pruhmuzweb.svg';
-      img.alt = '';
-      img.setAttribute('aria-hidden', 'true');
-      inner.appendChild(img);
-    }
-    // measure and align
-    const innerR = inner.getBoundingClientRect();
-    const textR  = carText.getBoundingClientRect();
-    // calculate top (relative to inner) and height to match text
-    const topPx   = Math.round(textR.top - innerR.top);
-    const heightPx = Math.max(0, Math.round(textR.height));
-    Object.assign(img.style, {
-      position: 'absolute',
-      right: '0',     // keep it anchored 1/15 from right as before
-      top: `${topPx}px`,         // align top with car-text top
-      height: `${heightPx}px`,   // match text height (so top & bottom aligned)
-      width: 'auto',             // preserve aspect ratio
-      objectFit: 'contain',
-      zIndex: '10005',
-      pointerEvents: 'none',
-      display: 'block',
+    document.querySelectorAll('.page:nth-of-type(2), .page:nth-of-type(3)').forEach((page) => {
+      const inner = page.querySelector('.inner') || page;
+      const carText = page.querySelector('.car-text');
+      if (!carText) return;
+      
+      // create or reuse image
+      let img = page.querySelector('.pruh-img');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'pruh-img';
+        img.src = '/pruhmuzweb.svg';
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        inner.appendChild(img);
+      }
+      
+      // measure and align
+      const innerR = inner.getBoundingClientRect();
+      const textR  = carText.getBoundingClientRect();
+      
+      // calculate top (relative to inner) and height to match text
+      const topPx   = Math.round(textR.top - innerR.top);
+      const heightPx = Math.max(0, Math.round(textR.height));
+      
+      Object.assign(img.style, {
+        position: 'absolute',
+        right: '0',
+        top: `${topPx}px`,
+        height: `${heightPx}px`,
+        width: 'auto',
+        objectFit: 'contain',
+        zIndex: '10005',
+        pointerEvents: 'none',
+        display: 'block',
+      });
     });
   };
+  
   updatePruhAlign();
   const t = setTimeout(updatePruhAlign, 60);
   window.addEventListener('resize', updatePruhAlign);
   window.addEventListener('load', updatePruhAlign);
   const ro = new ResizeObserver(updatePruhAlign);
-  const watchEls = [
-    document.querySelector('.page:nth-of-type(2) .inner'),
-    document.querySelector('.page:nth-of-type(2) .car-text'),
-    document.querySelector('.page:nth-of-type(2) .car-wrap'),
-    document.querySelector('.page:nth-of-type(2) .inner-second'),
-  ].filter(Boolean);
-  watchEls.forEach(el => ro.observe(el));
+  
+  document.querySelectorAll('.page:nth-of-type(2), .page:nth-of-type(3)').forEach((page) => {
+    const watchEls = [
+      page.querySelector('.inner'),
+      page.querySelector('.car-text'),
+      page.querySelector('.car-wrap'),
+      page.querySelector('.inner-second'),
+    ].filter(Boolean);
+    watchEls.forEach(el => ro.observe(el));
+  });
+  
   return () => {
     clearTimeout(t);
     window.removeEventListener('resize', updatePruhAlign);
@@ -464,47 +488,74 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
-  return (
-    <div className="App">
-      {pages.map((_, i) => {
-        // Special page 2 (index 1)
-      if (i === 1) {
-  return (
-    <section key={i} className="page">
-      {/* main inner (keeps border) */}
-      <div className="inner">
-        <div className="line" aria-hidden />
-        <div className="car-line" aria-hidden></div>
-        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
-      </div>
-      {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
-      <div className="car-wrap" aria-hidden>
-        <span className="car-text">The Car</span>
-        <span className="car-num">1</span>
-      </div>
-      {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
-      <div className="inner-second" aria-hidden>
-        {/* left-box (kept where you had it previously) */}
-        <div className="left-box" aria-hidden>
-          {/* content if any */}
-        </div>
-        <div className="right-copy">
-  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
-  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
-  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
-  Each lap is an experiment, a test of physics, teamwork, and innovation.
-  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
-</div>
-      </div>
-    </section>
-  );
-}
-        else{
-        // Default page rendering for all other pages (unchanged)
+  
+return (
+  <div className="App">
+    {pages.map((_, i) => {
+      // Special pages 2 and 3 (index 1 and 2)
+      if (i === 1 || i === 2) {
+        // Define content for each page
+        const pageContent = {
+          1: {
+            carText: "The Car",
+            carNum: "1",
+            pruhImg: "/pruhmuzweb.svg",
+            rightCopy: `The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
+Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it's not just a car; it's a rolling laboratory.
+Each lap is an experiment, a test of physics, teamwork, and innovation.
+This is STEM in motion—where theory hits the track and innovation takes the checkered flag.`
+          },
+          2: {
+            carText: "The Team",
+            carNum: "2",
+            pruhImg: "/pruhmuzweb.svg",
+            rightCopy: `Your custom text for page 3 goes here.
+You can write multiple lines and paragraphs.
+Change this to whatever content you want for the third page.`
+          }
+        };
+
+        const content = pageContent[i];
+
         return (
-         <section key={i} className="page"> {/* Inner box contains ALL content now */} <div className="inner"> {/* Text windows placed inside the inner box */} <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden /> <div className="text text--one" aria-hidden> NP <br /> Racing </div> <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team </div> </div> {/* overlay / second image placed outside .inner */} <img src="/schody.svg" alt="" className="img--two" aria-hidden /> {/* text--three lives on the outer .page so it can overlay above img--two */} <div className="text text--three" aria-hidden> </div> </section>
-        ); }
-      })}
-    </div>
-  );
-}
+          <section key={i} className="page">
+            <div className="inner">
+              <div className="line" aria-hidden />
+              <div className="car-line" aria-hidden></div>
+              <img src={content.pruhImg} alt="" className="pruh-img" aria-hidden />
+            </div>
+            <div className="car-wrap" aria-hidden>
+              <span className="car-text">{content.carText}</span>
+              <span className="car-num">{content.carNum}</span>
+            </div>
+            <div className="inner-second" aria-hidden>
+              <div className="left-box" aria-hidden>
+                {/* Add content here if needed */}
+              </div>
+              <div className="right-copy">
+                {content.rightCopy}
+              </div>
+            </div>
+          </section>
+        );
+      }
+      // Default page rendering (unchanged)
+      else {
+        return (
+          <section key={i} className="page">
+            <div className="inner">
+              <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
+              <div className="text text--one" aria-hidden>
+                NP <br /> Racing
+              </div>
+              <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team</div>
+            </div>
+            <img src="/schody.svg" alt="" className="img--two" aria-hidden />
+            <div className="text text--three" aria-hidden></div>
+          </section>
+        );
+      }
+    })}
+  </div>
+);

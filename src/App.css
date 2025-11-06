@@ -216,6 +216,99 @@ html:not(.is-device) .text--two {
   z-index: 9500;
   pointer-events: none; /* visual only */
 }
+
+.page:nth-of-type(3) {
+  background: var(--bg-dark);
+}
+.page:nth-of-type(3) .inner {
+  --line-top: 15%;
+  background: var(--bg-dark);
+  position: absolute;
+  top: var(--border);
+  left: var(--border);
+  right: var(--border);
+  bottom: var(--border);
+}
+.page:nth-of-type(3) .car-wrap{
+  position: absolute;
+  left: var(--border);
+  display: inline-block;
+  white-space: nowrap;
+  z-index: 11000;
+}
+.page:nth-of-type(3) .car-text {
+  display: inline-block;
+  font-size: 15vh;
+  line-height: 1;
+  color: var(--bg-yellow);
+  vertical-align: top;
+  transform: none;
+}
+.page:nth-of-type(3) .car-num {
+  position: absolute;
+  color: var(--bg-yellow);
+  font-size: 8vh;
+  line-height: 1;
+  z-index: 11001;
+  pointer-events: none;
+  left: 0; top: 0;
+}
+.page:nth-of-type(3) .inner-second {
+  position: absolute;
+  left: var(--border);
+  right: var(--border);
+  top: 25%;
+  bottom: var(--border);
+  pointer-events: none;
+  background: transparent;
+  z-index: 9000;
+}
+
+/* SWAPPED: left-box is now on the RIGHT side for page 3 */
+.page:nth-of-type(3) .inner-second .left-box {
+  position: absolute;
+  right: 0;              /* Changed from left: 0 */
+  left: auto;
+  top: 0;
+  bottom: 0;
+  width: 49.5%;
+  box-sizing: border-box;
+  padding: 2.5vh 2.5vw;
+  border-radius: 12px;
+  background: var(--bg-yellow);
+  overflow: visible;
+  z-index: 9500;
+}
+
+.page:nth-of-type(3) .car-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--bg-yellow);
+  z-index: 10002;
+  pointer-events: none;
+  top: 0;
+}
+
+/* SWAPPED: right-copy is now on the LEFT side for page 3 */
+.page:nth-of-type(3) .inner-second .right-copy {
+  position: absolute;
+  left: 0;               /* Changed from left: 50.5% */
+  right: 50.5%;          /* Changed from right: 0 */
+  top: 0;
+  text-align: left;
+  font-size: 2vw;
+  line-height: 1.15;
+  color: var(--bg-yellow);
+  overflow-wrap: break-word;
+  hyphens: auto;
+  padding-right: 1rem;   /* Changed from padding-left */
+  padding-left: 0;
+  z-index: 9500;
+  pointer-events: none;
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

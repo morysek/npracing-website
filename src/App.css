@@ -215,6 +215,43 @@ html:not(.is-device) .text--two {
   z-index: 9500;
   pointer-events: none; /* visual only */
 }
+
+.page.inverted {
+  background: var(--bg-yellow); /* page background becomes yellow */
+}
+
+/* inner stays yellow (inverted of page2's dark inner) */
+.page.inverted .inner {
+  background: var(--bg-yellow);
+}
+
+/* left-box: make it dark so it contrasts on yellow */
+.page.inverted .left-box {
+  background: var(--bg-dark);
+  border-color: var(--bg-dark);
+  color: var(--bg-yellow); /* any text inside left-box stays yellow */
+}
+
+/* car text / number / right-copy should be dark on inverted pages */
+.page.inverted .car-text,
+.page.inverted .car-num,
+.page.inverted .right-copy {
+  color: var(--bg-dark);
+}
+
+/* car-line should contrast (dark line instead of yellow) */
+.page.inverted .car-line {
+  background: var(--bg-dark);
+}
+
+/* pruh image stays as-is — if you need it tinted, add rules here */
+.page.inverted .pruh-img { /* keep default; override if needed */ }
+
+/* ensure any previously page-2-specific z-index/positioning still applies */
+.page.inverted .car-wrap,
+.page.inverted .inner-second,
+.page.inverted .car-line { z-index: inherit; }
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

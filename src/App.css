@@ -308,6 +308,27 @@ html:not(.is-device) .text--two {
   z-index: 9500;
   pointer-events: none;
 }
+.page:nth-of-type(3) {
+  background: var(--bg-yellow);  /* Changed from --bg-dark */
+}
+.page:nth-of-type(3) .inner {
+  background: var(--bg-yellow);  /* Changed from --bg-dark */
+}
+.page:nth-of-type(3) .car-text {
+  color: var(--bg-dark);  /* Changed from --bg-yellow */
+}
+.page:nth-of-type(3) .car-num {
+  color: var(--bg-dark);  /* Changed from --bg-yellow */
+}
+.page:nth-of-type(3) .car-line {
+  background: var(--bg-dark);  /* Changed from --bg-yellow */
+}
+.page:nth-of-type(3) .inner-second .left-box {
+  background: var(--bg-dark);  /* Changed from --bg-yellow */
+}
+.page:nth-of-type(3) .inner-second .right-copy {
+  color: var(--bg-dark);  /* Changed from --bg-yellow */
+}
 
 /* Ensure responsive scaling */
 @media (max-width: 900px){

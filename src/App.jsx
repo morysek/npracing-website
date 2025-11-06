@@ -1,3 +1,4 @@
+
 import React from 'react';
 import './App.css';
 export default function App() {
@@ -463,43 +464,47 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
-    return (
+  return (
     <div className="App">
       {pages.map((_, i) => {
-  // Pages 2..5 => index 1..4: same structure, different variant class per page
-  if (i >= 1 && i <= 4) {
-    const variantClass = `page--v${i + 1}`; // page--v2, page--v3, page--v4, page--v5
-    return (
-      <section key={i} className={`page ${variantClass}`}>
-        {/* main inner (keeps border) */}
-        <div className="inner">
-          <div className="line" aria-hidden />
-          <div className="car-line" aria-hidden />
-          <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
-        </div>
-
-        {/* car-wrap (positioned by JS per-page) */}
-        <div className="car-wrap" aria-hidden>
-          <span className="car-text">The Car</span>
-          <span className="car-num">1</span>
-        </div>
-
-        {/* second inner where left-box + right-copy live */}
-        <div className="inner-second" aria-hidden>
-          <div className="left-box" aria-hidden>{/* per-page content allowed */}</div>
-          <div className="right-copy" aria-hidden>{/* per-page long text allowed */}</div>
-        </div>
-      </section>
-    );
-  }
-
-  // leave default pages (page 1 etc.) unchanged
+        // Special page 2 (index 1)
+      if (i === 1) {
   return (
     <section key={i} className="page">
-      {/* your original default page content here */}
+      {/* main inner (keeps border) */}
+      <div className="inner">
+        <div className="line" aria-hidden />
+        <div className="car-line" aria-hidden></div>
+        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
+      </div>
+      {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
+      <div className="car-wrap" aria-hidden>
+        <span className="car-text">The Car</span>
+        <span className="car-num">1</span>
+      </div>
+      {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
+      <div className="inner-second" aria-hidden>
+        {/* left-box (kept where you had it previously) */}
+        <div className="left-box" aria-hidden>
+          {/* content if any */}
+        </div>
+        <div className="right-copy">
+  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
+  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
+  Each lap is an experiment, a test of physics, teamwork, and innovation.
+  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
+</div>
+      </div>
     </section>
   );
-})}
+}
+        else{
+        // Default page rendering for all other pages (unchanged)
+        return (
+         <section key={i} className="page"> {/* Inner box contains ALL content now */} <div className="inner"> {/* Text windows placed inside the inner box */} <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden /> <div className="text text--one" aria-hidden> NP <br /> Racing </div> <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team </div> </div> {/* overlay / second image placed outside .inner */} <img src="/schody.svg" alt="" className="img--two" aria-hidden /> {/* text--three lives on the outer .page so it can overlay above img--two */} <div className="text text--three" aria-hidden> </div> </section>
+        ); }
+      })}
     </div>
   );
 }

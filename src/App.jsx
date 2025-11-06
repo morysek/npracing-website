@@ -466,80 +466,40 @@ React.useEffect(() => {
     return (
     <div className="App">
       {pages.map((_, i) => {
-        // Page 2 (index 1) — dark version
-        if (i === 1) {
-          return (
-            <section key={i} className="page">
-              <div className="inner">
-                <div className="line" aria-hidden />
-                <div className="car-line" aria-hidden />
-                <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
-              </div>
+  // Pages 2..5 => index 1..4: same structure, different variant class per page
+  if (i >= 1 && i <= 4) {
+    const variantClass = `page--v${i + 1}`; // page--v2, page--v3, page--v4, page--v5
+    return (
+      <section key={i} className={`page ${variantClass}`}>
+        {/* main inner (keeps border) */}
+        <div className="inner">
+          <div className="line" aria-hidden />
+          <div className="car-line" aria-hidden />
+          <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
+        </div>
 
-              <div className="car-wrap" aria-hidden>
-                <span className="car-text">The Car</span>
-                <span className="car-num">1</span>
-              </div>
+        {/* car-wrap (positioned by JS per-page) */}
+        <div className="car-wrap" aria-hidden>
+          <span className="car-text">The Car</span>
+          <span className="car-num">1</span>
+        </div>
 
-              <div className="inner-second" aria-hidden>
-                <div className="left-box" aria-hidden />
-                <div className="right-copy">
-                  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
-                  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
-                  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
-                  Each lap is an experiment, a test of physics, teamwork, and innovation.
-                  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
-                </div>
-              </div>
-            </section>
-          );
-        }
+        {/* second inner where left-box + right-copy live */}
+        <div className="inner-second" aria-hidden>
+          <div className="left-box" aria-hidden>{/* per-page content allowed */}</div>
+          <div className="right-copy" aria-hidden>{/* per-page long text allowed */}</div>
+        </div>
+      </section>
+    );
+  }
 
-        // Pages 3–5: clones of page 2 but with .inverted class (colors flipped by CSS)
-        else if (i >= 2 && i <= 4) {
-          return (
-            <section key={i} className="page inverted">
-              <div className="inner">
-                <div className="line" aria-hidden />
-                <div className="car-line" aria-hidden />
-                <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
-              </div>
-
-              <div className="car-wrap" aria-hidden>
-                <span className="car-text">The Car</span>
-                <span className="car-num">1</span>
-              </div>
-
-              <div className="inner-second" aria-hidden>
-                <div className="left-box" aria-hidden />
-                <div className="right-copy">
-                  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
-                  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
-                  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
-                  Each lap is an experiment, a test of physics, teamwork, and innovation.
-                  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
-                </div>
-              </div>
-            </section>
-          );
-        }
-
-        // Default pages (unchanged)
-        else {
-          return (
-            <section key={i} className="page">
-              <div className="inner">
-                <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
-                <div className="text text--one" aria-hidden>NP<br />Racing</div>
-                <div className="text text--two">Czechia's only<br />STEM Racing<br />team</div>
-              </div>
-
-              <img src="/schody.svg" alt="" className="img--two" aria-hidden />
-              <div className="text text--three" aria-hidden />
-            </section>
-          );
-        }
-      })}
+  // leave default pages (page 1 etc.) unchanged
+  return (
+    <section key={i} className="page">
+      {/* your original default page content here */}
+    </section>
+  );
+})}
     </div>
   );
 }

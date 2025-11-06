@@ -496,25 +496,25 @@ return (
       if (i === 1 || i === 2) {
         // Define content for each page
         const pageContent = {
-          1: {
-            carText: "The Car",
-            carNum: "1",
-            pruhImg: "/pruhmuzweb.svg",
-            rightCopy: `The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+  1: {
+    carText: "The Car",
+    carNum: "1",
+    pruhImg: "/pruhmuzweb.svg",
+    rightCopy: `The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
 Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
 Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it's not just a car; it's a rolling laboratory.
 Each lap is an experiment, a test of physics, teamwork, and innovation.
 This is STEM in motion—where theory hits the track and innovation takes the checkered flag.`
-          },
-          2: {
-            carText: "The Team",
-            carNum: "2",
-            pruhImg: "/pruhmuzweb.svg",
-            rightCopy: `Your custom text for page 3 goes here.
+  },
+  2: {
+    carText: "The Team",
+    carNum: "2",
+    pruhImg: "/theteamweb.svg",  // Changed from pruhmuzweb.svg
+    rightCopy: `Your custom text for page 3 goes here.
 You can write multiple lines and paragraphs.
 Change this to whatever content you want for the third page.`
-          }
-        };
+  }
+};
 
         const content = pageContent[i];
 

@@ -463,46 +463,82 @@ React.useEffect(() => {
     ro.disconnect();
   };
 }, []);
-  return (
+    return (
     <div className="App">
       {pages.map((_, i) => {
-        // Special page 2 (index 1)
-      if (i === 1) {
-  return (
-    <section key={i} className="page">
-      {/* main inner (keeps border) */}
-      <div className="inner">
-        <div className="line" aria-hidden />
-        <div className="car-line" aria-hidden></div>
-        <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
-      </div>
-      {/* car-wrap must be a direct child of .page so JS can position it relative to the page */}
-      <div className="car-wrap" aria-hidden>
-        <span className="car-text">The Car</span>
-        <span className="car-num">1</span>
-      </div>
-      {/* --- inner-second: anchored left/right like .inner, top:18%, bottom:var(--border) */}
-      <div className="inner-second" aria-hidden>
-        {/* left-box (kept where you had it previously) */}
-        <div className="left-box" aria-hidden>
-          {/* content if any */}
-        </div>
-        <div className="right-copy">
-  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
-  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
-  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
-  Each lap is an experiment, a test of physics, teamwork, and innovation.
-  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
-</div>
-      </div>
-    </section>
-  );
-}
-        else{
-        // Default page rendering for all other pages (unchanged)
-        return (
-         <section key={i} className="page"> {/* Inner box contains ALL content now */} <div className="inner"> {/* Text windows placed inside the inner box */} <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden /> <div className="text text--one" aria-hidden> NP <br /> Racing </div> <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team </div> </div> {/* overlay / second image placed outside .inner */} <img src="/schody.svg" alt="" className="img--two" aria-hidden /> {/* text--three lives on the outer .page so it can overlay above img--two */} <div className="text text--three" aria-hidden> </div> </section>
-        ); }
+        // Page 2 (index 1) — dark version
+        if (i === 1) {
+          return (
+            <section key={i} className="page">
+              <div className="inner">
+                <div className="line" aria-hidden />
+                <div className="car-line" aria-hidden />
+                <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
+              </div>
+
+              <div className="car-wrap" aria-hidden>
+                <span className="car-text">The Car</span>
+                <span className="car-num">1</span>
+              </div>
+
+              <div className="inner-second" aria-hidden>
+                <div className="left-box" aria-hidden />
+                <div className="right-copy">
+                  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+                  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
+                  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
+                  Each lap is an experiment, a test of physics, teamwork, and innovation.
+                  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        // Pages 3–5: clones of page 2 but with .inverted class (colors flipped by CSS)
+        else if (i >= 2 && i <= 4) {
+          return (
+            <section key={i} className="page inverted">
+              <div className="inner">
+                <div className="line" aria-hidden />
+                <div className="car-line" aria-hidden />
+                <img src="/pruhmuzweb.svg" alt="" className="pruh-img" aria-hidden />
+              </div>
+
+              <div className="car-wrap" aria-hidden>
+                <span className="car-text">The Car</span>
+                <span className="car-num">1</span>
+              </div>
+
+              <div className="inner-second" aria-hidden>
+                <div className="left-box" aria-hidden />
+                <div className="right-copy">
+                  The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+                  Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
+                  Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it’s not just a car; it’s a rolling laboratory.
+                  Each lap is an experiment, a test of physics, teamwork, and innovation.
+                  This is STEM in motion—where theory hits the track and innovation takes the checkered flag.
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        // Default pages (unchanged)
+        else {
+          return (
+            <section key={i} className="page">
+              <div className="inner">
+                <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
+                <div className="text text--one" aria-hidden>NP<br />Racing</div>
+                <div className="text text--two">Czechia's only<br />STEM Racing<br />team</div>
+              </div>
+
+              <img src="/schody.svg" alt="" className="img--two" aria-hidden />
+              <div className="text text--three" aria-hidden />
+            </section>
+          );
+        }
       })}
     </div>
   );

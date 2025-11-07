@@ -393,7 +393,6 @@ React.useEffect(() => {
           left: '0',
           right: '0',
           height: '8px',
-          background: 'var(--bg-yellow)',
           top: `${topRel}px`,
           zIndex: '10002',
           pointerEvents: 'none',

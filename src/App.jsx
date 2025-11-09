@@ -348,7 +348,18 @@ React.useEffect(() => {
       const numRect  = carNum.getBoundingClientRect();
       
       // 1) place car-wrap so its left aligns with inner-second left
-      const leftForWrap = inner2Rect.left - pageRect.left;
+      let leftForWrap;
+if (page.matches(':nth-of-type(3)')) {
+  // For page 3: align the car-text / car-num block to the RIGHT side of .inner
+  // so that text.width + num.width sit flush to inner.right (num sits at the far right).
+  // formula: leftForWrap = inner_right - page_left - (text_width + num_width)
+  leftForWrap = Math.round(
+    inner2Rect.right - pageRect.left - (textRect.width + numRect.width)
+  );
+} else {
+  // default: align left as before (inner-second left)
+  leftForWrap = Math.round(inner2Rect.left - pageRect.left);
+}
       // 2) compute top so car-text bottom is 20px above inner-second top
       const desiredCarTextBottom = inner2Rect.top - 30; // 20px gap
       const topForWrap = desiredCarTextBottom - textRect.height - pageRect.top;
@@ -450,17 +461,41 @@ React.useEffect(() => {
       const topPx   = Math.round(textR.top - innerR.top);
       const heightPx = Math.max(0, Math.round(textR.height));
       
-      Object.assign(img.style, {
-        position: 'absolute',
-        right: '0',
-        top: `${topPx}px`,
-        height: `${heightPx}px`,
-        width: 'auto',
-        objectFit: 'contain',
-        zIndex: '10005',
-        pointerEvents: 'none',
-        display: 'block',
-      });
+      const innerR = inner.getBoundingClientRect();
+const textR  = carText.getBoundingClientRect();
+const pageRect = page.getBoundingClientRect();
+
+// compute numeric values
+const topPx   = Math.round(textR.top - innerR.top);
+const heightPx = Math.max(0, Math.round(textR.height));
+
+if (page.matches(':nth-of-type(3)')) {
+  // Page 3: left wall of image flush with inner left
+  Object.assign(img.style, {
+    position: 'absolute',
+    left: `${Math.round(innerR.left - pageRect.left)}px`, // align left wall to inner left
+    top: `${topPx}px`,          // align top to car-text top (so top edges match)
+    height: `${heightPx}px`,    // match car-text height so bottom aligns too
+    width: 'auto',
+    objectFit: 'contain',
+    zIndex: '10005',
+    pointerEvents: 'none',
+    display: 'block',
+  });
+} else {
+  // Default (page 2): keep right-anchored behavior
+  Object.assign(img.style, {
+    position: 'absolute',
+    right: '0',
+    top: `${topPx}px`,
+    height: `${heightPx}px`,
+    width: 'auto',
+    objectFit: 'contain',
+    zIndex: '10005',
+    pointerEvents: 'none',
+    display: 'block',
+  });
+}
     });
   };
   

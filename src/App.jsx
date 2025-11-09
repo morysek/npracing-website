@@ -453,14 +453,6 @@ React.useEffect(() => {
         inner.appendChild(img);
       }
       
-      // measure and align
-      const innerR = inner.getBoundingClientRect();
-      const textR  = carText.getBoundingClientRect();
-      
-      // calculate top (relative to inner) and height to match text
-      const topPx   = Math.round(textR.top - innerR.top);
-      const heightPx = Math.max(0, Math.round(textR.height));
-      
       const innerR = inner.getBoundingClientRect();
 const textR  = carText.getBoundingClientRect();
 const pageRect = page.getBoundingClientRect();

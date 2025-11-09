@@ -465,7 +465,7 @@ if (page.matches(':nth-of-type(3)')) {
   // Page 3: left wall of image flush with inner left
   Object.assign(img.style, {
     position: 'absolute',
-    left: `${Math.round(innerR.left - pageRect.left)}px`, // align left wall to inner left
+    left: '0', // align left wall to inner left
     top: `${topPx}px`,          // align top to car-text top (so top edges match)
     height: `${heightPx}px`,    // match car-text height so bottom aligns too
     width: 'auto',

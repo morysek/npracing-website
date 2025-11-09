@@ -410,6 +410,7 @@ if (page.matches(':nth-of-type(3)')) {
         });
         
 if (page.matches(':nth-of-type(3)')) {
+  const topRel = Math.round((finalTextRect.bottom - innerRect.top) + 6);
   innerSecond.style.top = `${´topRel}px`;
 }
       }

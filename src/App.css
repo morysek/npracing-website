@@ -329,6 +329,9 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second .left-box {
   background: var(--bg-dark);  /* Changed from --bg-yellow */
 }
+.page:nth-of-type(3) .inner-second {
+  padding-bottom: calc(100vh / 40); /* 1/40 of viewport height (≈2.5vh) */
+}
 
 /* Ensure responsive scaling */
 @media (max-width: 900px){

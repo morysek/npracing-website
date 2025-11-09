@@ -330,7 +330,7 @@ html:not(.is-device) .text--two {
   background: var(--bg-dark);  /* Changed from --bg-yellow */
 }
 .page:nth-of-type(3) .inner-second {
-  padding-bottom: calc(100vh / 40); /* 1/40 of viewport height (≈2.5vh) */
+  bottom: calc(100vh / 40); /* 1/40 of viewport height (≈2.5vh) */
 }
 
 /* Ensure responsive scaling */

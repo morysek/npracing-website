@@ -408,6 +408,14 @@ if (page.matches(':nth-of-type(3)')) {
           zIndex: '10002',
           pointerEvents: 'none',
         });
+        
+if (page.matches(':nth-of-type(3)')) {
+  // compute inner-second top so its top aligns with the car-line
+  // finalTextRect.bottom is viewport y; pageRect.top is viewport y of page top
+  const topForInnerSecond = Math.round(finalTextRect.bottom - pageRect.top + 6); // +6 like your car-line gap
+  // apply as px (inner-second is positioned absolute on .page)
+  innerSecond.style.top = `${topForInnerSecond}px`;
+}
       }
     });
   };

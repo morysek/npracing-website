@@ -370,7 +370,7 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second .panel .panel-text {
   position: absolute;
   left: 0;
-  bottom: 2vh;
+  bottom: 4vh;
   font-size: 12vh; /* your scaling choice */
   line-height: 1;
   margin: 0;

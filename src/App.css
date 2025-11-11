@@ -340,7 +340,6 @@ html:not(.is-device) .text--two {
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
-  top: calc(25% + 30px);
 }
 
 /* panels exact pixel heights are set by JS; keep CSS minimal */

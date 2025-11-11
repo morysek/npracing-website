@@ -514,7 +514,77 @@ if (page.matches(':nth-of-type(3)')) {
     ro.disconnect();
   };
 }, []);
-  
+  React.useEffect(() => {
+  const updatePanels = () => {
+    const page = document.querySelector('.page:nth-of-type(3)');
+    if (!page) return;
+    const inner2 = page.querySelector('.inner-second');
+    if (!inner2) return;
+
+    // ensure exactly 4 .panel elements exist (create if missing)
+    let panels = Array.from(inner2.querySelectorAll('.panel'));
+    if (panels.length !== 4) {
+      inner2.innerHTML = ''; // replace contents for a clean slate
+      const labels = ['Engineer', 'Team leader', 'Communication', 'Networking'];
+      for (let i = 0; i < 4; i++) {
+        const p = document.createElement('div');
+        p.className = 'panel';
+        // text wrapper that won't affect layout (we'll absolutely position it)
+        const t = document.createElement('div');
+        t.className = 'panel-text';
+        t.textContent = labels[i] || '';
+        p.appendChild(t);
+        inner2.appendChild(p);
+      }
+      panels = Array.from(inner2.querySelectorAll('.panel'));
+    }
+
+    // measure inner-second and set explicit pixel heights
+    const innerRect = inner2.getBoundingClientRect();
+    const innerH = Math.max(0, Math.round(innerRect.height));
+
+    // floor division to get consistent pixels, then distribute remainder to last panel
+    const base = Math.floor(innerH / 4);
+    const remainder = innerH - base * 4;
+
+    panels.forEach((p, idx) => {
+      p.style.boxSizing = 'border-box';
+      p.style.width = '100%';
+      p.style.height = `${base + (idx === panels.length - 1 ? remainder : 0)}px`;
+      p.style.margin = '0';
+      p.style.padding = '0';
+      p.style.overflow = 'hidden';
+      p.style.position = 'relative'; // establishes a containing block for absolutely positioned children
+
+      // ensure panel text is absolutely positioned so it doesn't affect panel height
+      const t = p.querySelector('.panel-text');
+      if (t) {
+        Object.assign(t.style, {
+          position: 'absolute',
+          left: '0px',
+          bottom: '0px',
+          margin: '0',
+          padding: '0',
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+        });
+      }
+    });
+  };
+
+  updatePanels();
+  const ro = new ResizeObserver(updatePanels);
+  const watchEl = document.querySelector('.page:nth-of-type(3) .inner-second');
+  if (watchEl) ro.observe(watchEl);
+  window.addEventListener('resize', updatePanels);
+  window.addEventListener('load', updatePanels);
+
+  return () => {
+    ro.disconnect();
+    window.removeEventListener('resize', updatePanels);
+    window.removeEventListener('load', updatePanels);
+  };
+}, []);
 return (
   <div className="App">
     {pages.map((_, i) => {

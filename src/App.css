@@ -352,26 +352,37 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
 
 .page:nth-of-type(3) .inner-second {
-  display: flex;
-  flex-direction: column;
-  gap: 0;               /* absolutely no gap between panels */
+  height: 100%;
   padding: 0;
   margin: 0;
-  height: 100%;         /* ensure it fills its container (inner-second should already be sized) */
+  box-sizing: border-box;
+  overflow: hidden;
+  display: block; /* not flex — we'll size panels explicitly */
+}
+
+/* each panel exactly 1/4 of inner-second, stacked with no gaps */
+.page:nth-of-type(3) .inner-second .panel {
+  display: block;
+  width: 100%;
+  height: calc(100% / 4); /* EXACT quarter heights — no flex math, no gaps */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+  position: relative;
+  background: transparent;
+  min-height: 0; /* prevents flex-ish overflow on small screens */
+}
+
+/* wipe default margins from panel children that commonly introduce gaps */
+.page:nth-of-type(3) .inner-second .panel,
+.page:nth-of-type(3) .inner-second .panel * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
-.page:nth-of-type(3) .inner-second .panel {
-  flex: 1 1 0;          /* each panel gets equal share, no shrinking gaps */
-  min-height: 0;        /* prevents flex overflow on small screens */
-  position: relative;   /* for the ::after line and absolutely-positioned text */
-  margin: 0;            /* remove any rogue margins */
-  padding: 0;           /* keep panels flush */
-  background: transparent;
-  overflow: visible;
-}
-
-/* bottom 4px line spanning the panel width (does not affect layout) */
+/* 4px bottom rule for each panel (does not affect layout) */
 .page:nth-of-type(3) .inner-second .panel::after {
   content: "";
   position: absolute;
@@ -379,31 +390,22 @@ html:not(.is-device) .text--two {
   right: 0;
   bottom: 0;
   height: 4px;
-  background: var(--bg-dark); /* pick contrast color; change to var(--bg-yellow) if you prefer */
+  background: var(--bg-dark);
   pointer-events: none;
   z-index: 1;
 }
 
-/* text boxes pinned bottom-left in each panel */
+/* text pinned bottom-left inside each panel */
 .page:nth-of-type(3) .inner-second .panel .panel-text {
   position: absolute;
   left: 0;
   bottom: 0;
-  margin: 0;
-  padding: 0;
   font-size: 12vh;
   line-height: 1;
   white-space: nowrap;
   background: transparent;
+  z-index: 2;
   pointer-events: none;
-  z-index: 2; /* above the line */
-}
-
-/* ensure no default margins from text elements */
-.page:nth-of-type(3) .inner-second .panel *, 
-.page:nth-of-type(3) .inner-second .panel { 
-  margin: 0; 
-  box-sizing: border-box;
 }
 /* Ensure responsive scaling */
 @media (max-width: 900px){

@@ -572,10 +572,18 @@ Change this to whatever content you want for the third page.`
               </div>
             ) : (
               <div className="inner-second" aria-hidden>
-                <div className="panel panel--1" />
-                <div className="panel panel--2" />
-                <div className="panel panel--3" />
-                <div className="panel panel--4" />
+                  <div className="panel panel--1">
+                    <div className="panel-text">Engineer</div>
+                  </div>
+                  <div className="panel panel--2">
+                    <div className="panel-text">Team leader</div>
+                  </div>
+                  <div className="panel panel--3">
+                    <div className="panel-text">Communication</div>
+                  </div>
+                  <div className="panel panel--4">
+                    <div className="panel-text">Networking</div>
+                  </div>
               </div>
             )}
           </section>

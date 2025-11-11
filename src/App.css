@@ -345,11 +345,6 @@ html:not(.is-device) .text--two {
   z-index: 9500;
 }
 
-/* four equal-height slices (top offsets expressed as percentages of inner-second) */
-.page:nth-of-type(3) .inner-second .panel--1 { top: 0%;   height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--2 { top: 25%;  height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--3 { top: 50%;  height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
 
 .page:nth-of-type(3) .inner-second {
   height: 100%;

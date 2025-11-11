@@ -520,68 +520,82 @@ return (
     {pages.map((_, i) => {
       // Special pages 2 and 3 (index 1 and 2)
       if (i === 1 || i === 2) {
-        // Define content for each page
         const pageContent = {
-  1: {
-    carText: "The Car",
-    carNum: "1",
-    pruhImg: "/pruhmuzweb.svg",
-    rightCopy: `The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
+          1: {
+            carText: "The Car",
+            carNum: "1",
+            pruhImg: "/pruhmuzweb.svg",
+            rightCopy: `The STEM Racing Professional Class Car is a precision-engineered machine where science meets speed.
 Every component is optimized through data-driven design—aerodynamic contours sculpted by computational fluid dynamics.
 Built to demonstrate the fusion of engineering disciplines—mechanical, and computational—it's not just a car; it's a rolling laboratory.
 Each lap is an experiment, a test of physics, teamwork, and innovation.
 This is STEM in motion—where theory hits the track and innovation takes the checkered flag.`
-  },
-  2: {
-    carText: "The Team",
-    carNum: "2",
-    pruhImg: "/theteamweb.svg",  // Changed from pruhmuzweb.svg
-    rightCopy: `Your custom text for page 3 goes here.
+          },
+          2: {
+            carText: "The Team",
+            carNum: "2",
+            pruhImg: "/theteamweb.svg",
+            rightCopy: `Your custom text for page 3 goes here.
 You can write multiple lines and paragraphs.
 Change this to whatever content you want for the third page.`
-  }
-};
+          }
+        };
 
         const content = pageContent[i];
 
         return (
           <section key={i} className="page">
+            {/* inner (keeps border and contains the horizontal line + pruh image) */}
             <div className="inner">
               <div className="line" aria-hidden />
-              <div className="car-line" aria-hidden></div>
+              <div className="car-line" aria-hidden />
               <img src={content.pruhImg} alt="" className="pruh-img" aria-hidden />
             </div>
+
+            {/* car-wrap positioned by JS (shared for both pages) */}
             <div className="car-wrap" aria-hidden>
               <span className="car-text">{content.carText}</span>
               <span className="car-num">{content.carNum}</span>
             </div>
-            <div className="inner-second" aria-hidden>
-              <div className="left-box" aria-hidden>
-                {/* Add content here if needed */}
+
+            {/* inner-second differs per page:
+                - page 2 (i===1): left-box + right-copy
+                - page 3 (i===2): four equal vertical panels (full-width each) */}
+            {i === 1 ? (
+              <div className="inner-second" aria-hidden>
+                <div className="left-box" aria-hidden>
+                  {/* left-box content for page 2 (kept empty intentionally) */}
+                </div>
+                <div className="right-copy" aria-hidden>
+                  {content.rightCopy}
+                </div>
               </div>
-              <div className="right-copy">
-                {content.rightCopy}
+            ) : (
+              <div className="inner-second" aria-hidden>
+                <div className="panel panel--1" />
+                <div className="panel panel--2" />
+                <div className="panel panel--3" />
+                <div className="panel panel--4" />
               </div>
-            </div>
+            )}
           </section>
         );
       }
+
       // Default page rendering (unchanged)
-      else {
-        return (
-          <section key={i} className="page">
-            <div className="inner">
-              <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
-              <div className="text text--one" aria-hidden>
-                NP <br /> Racing
-              </div>
-              <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team</div>
+      return (
+        <section key={i} className="page">
+          <div className="inner">
+            <img src="/websitegrafikalogo.svg" alt="" className="img--one" aria-hidden />
+            <div className="text text--one" aria-hidden>
+              NP <br /> Racing
             </div>
-            <img src="/schody.svg" alt="" className="img--two" aria-hidden />
-            <div className="text text--three" aria-hidden></div>
-          </section>
-        );
-      }
+            <div className="text text--two">Czechia's only <br /> STEM Racing <br /> team</div>
+          </div>
+          <img src="/schody.svg" alt="" className="img--two" aria-hidden />
+          <div className="text text--three" aria-hidden></div>
+        </section>
+      );
     })}
   </div>
 );

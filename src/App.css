@@ -356,7 +356,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: 0;
   right: 0;
-  height: 4px;               /* line thickness */
+  height: 8px;               /* line thickness */
   bottom: 0;                 /* stick to panel bottom */
   background: var(--bg-dark); /* change if you want another color */
   pointer-events: none;      /* don't block clicks */

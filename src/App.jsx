@@ -378,7 +378,7 @@ if (page.matches(':nth-of-type(3)')) {
       
       // number: place so its bottom-left matches text top-right, then apply -15px vertical offset
       const leftInsideWrap = Math.round(updatedTextRect.right - wrapRect.left);
-      const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 40);
+      const topInsideWrap  = Math.round(updatedTextRect.top - wrapRect.top - updatedNumRect.height + 45);
       
       Object.assign(carNum.style, {
         position: 'absolute',

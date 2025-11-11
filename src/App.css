@@ -336,60 +336,47 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second { position: absolute; left: var(--border); right: var(--border); /* top/bottom already set elsewhere */ }
 
 .page:nth-of-type(3) .inner-second {
-  height: 100%;
   padding: 0;
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
-  display: block; /* not flex — we'll size panels explicitly */
 }
 
-/* each panel exactly 1/4 of inner-second, stacked with no gaps */
+/* panels exact pixel heights are set by JS; keep CSS minimal */
 .page:nth-of-type(3) .inner-second .panel {
-  display: block;
   width: 100%;
-  height: calc(100% / 4); /* EXACT quarter heights — no flex math, no gaps */
   margin: 0;
   padding: 0;
-  border: 0;
   box-sizing: border-box;
-  position: relative;
+  position: relative; /* JS also sets this; keep for safety */
   background: transparent;
-  min-height: 0; /* prevents flex-ish overflow on small screens */
+  overflow: hidden;
 }
 
-/* wipe default margins from panel children that commonly introduce gaps */
-.page:nth-of-type(3) .inner-second .panel,
-.page:nth-of-type(3) .inner-second .panel * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* 4px bottom rule for each panel (does not affect layout) */
+/* panel-bottom rule: thicker now (8px) */
 .page:nth-of-type(3) .inner-second .panel::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 4px;
+  height: 8px;                 /* changed from 4px -> 8px */
   background: var(--bg-dark);
   pointer-events: none;
   z-index: 1;
 }
 
-/* text pinned bottom-left inside each panel */
+/* panel text pinned bottom-left and absolutely positioned (no layout influence) */
 .page:nth-of-type(3) .inner-second .panel .panel-text {
   position: absolute;
   left: 0;
   bottom: 0;
-  font-size: 12vh;
+  font-size: 12vh; /* your scaling choice */
   line-height: 1;
-  white-space: nowrap;
-  background: transparent;
-  z-index: 2;
+  margin: 0;
+  padding: 0;
   pointer-events: none;
+  z-index: 2;
 }
 /* Ensure responsive scaling */
 @media (max-width: 900px){

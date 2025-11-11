@@ -371,7 +371,7 @@ html:not(.is-device) .text--two {
   position: absolute;
   left: 0;
   bottom: 4vh;
-  font-size: 12vh; /* your scaling choice */
+  font-size: 11vh; /* your scaling choice */
   line-height: 1;
   margin: 0;
   padding: 0;

@@ -351,38 +351,60 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second .panel--3 { top: 50%;  height: 25%; }
 .page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
 
+.page:nth-of-type(3) .inner-second {
+  display: flex;
+  flex-direction: column;
+  gap: 0;               /* absolutely no gap between panels */
+  padding: 0;
+  margin: 0;
+  height: 100%;         /* ensure it fills its container (inner-second should already be sized) */
+  box-sizing: border-box;
+}
+
+.page:nth-of-type(3) .inner-second .panel {
+  flex: 1 1 0;          /* each panel gets equal share, no shrinking gaps */
+  min-height: 0;        /* prevents flex overflow on small screens */
+  position: relative;   /* for the ::after line and absolutely-positioned text */
+  margin: 0;            /* remove any rogue margins */
+  padding: 0;           /* keep panels flush */
+  background: transparent;
+  overflow: visible;
+}
+
+/* bottom 4px line spanning the panel width (does not affect layout) */
 .page:nth-of-type(3) .inner-second .panel::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  height: 8px;               /* line thickness */
-  bottom: 0;                 /* stick to panel bottom */
-  background: var(--bg-dark); /* change if you want another color */
-  pointer-events: none;      /* don't block clicks */
-  z-index: 9310;             /* sits above the transparent panel but below most UI */
+  bottom: 0;
+  height: 4px;
+  background: var(--bg-dark); /* pick contrast color; change to var(--bg-yellow) if you prefer */
+  pointer-events: none;
+  z-index: 1;
 }
 
-.page:nth-of-type(3) .inner-second .panel {
-  position: relative;   /* so .panel-text absolute positioning is relative to the panel */
-  background: transparent;
-  overflow: visible;
-}
-
-/* the visible text boxes pinned to bottom-left of each panel */
+/* text boxes pinned bottom-left in each panel */
 .page:nth-of-type(3) .inner-second .panel .panel-text {
   position: absolute;
   left: 0;
   bottom: 0;
-  font-size: 12vh;        /* scaling size as requested */
+  margin: 0;
+  padding: 0;
+  font-size: 12vh;
   line-height: 1;
-  color: var(--bg-dark);  /* change if you want another color */
-  background: transparent;
-  pointer-events: none;   /* visual only */
   white-space: nowrap;
-  z-index: 1000700;
+  background: transparent;
+  pointer-events: none;
+  z-index: 2; /* above the line */
 }
 
+/* ensure no default margins from text elements */
+.page:nth-of-type(3) .inner-second .panel *, 
+.page:nth-of-type(3) .inner-second .panel { 
+  margin: 0; 
+  box-sizing: border-box;
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

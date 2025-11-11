@@ -333,32 +333,6 @@ html:not(.is-device) .text--two {
   bottom: calc(100vh / 50); /* 1/40 of viewport height (≈2.5vh) */
 }
 
-.page:nth-of-type(3) .inner-second {
-  position: relative; /* panels are positioned absolutely inside this */
-  overflow: hidden;
-}
-
-/* common panel base */
-.page:nth-of-type(3) .inner-second .panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* split into 4 equal vertical slices */
-.page:nth-of-type(3) .inner-second .panel--1 { top: 0%;   height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--2 { top: 25%;  height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--3 { top: 50%;  height: 25%; }
-.page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
-
-/* optional: visible outlines to help during development (remove or tweak colors later) */
-.page:nth-of-type(3) .inner-second .panel {
-  /* remove/comment the next line when you don't need visual debugging */
-  /* border-top: 1px solid rgba(255,255,255,0.06); */
-}
-
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

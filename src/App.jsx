@@ -562,7 +562,7 @@ if (page.matches(':nth-of-type(3)')) {
         Object.assign(t.style, {
           position: 'absolute',
           left: '0px',
-          bottom: '2vh',
+          bottom: '1vh',
           margin: '0',
           padding: '0',
           pointerEvents: 'none',

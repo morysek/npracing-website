@@ -358,7 +358,7 @@ html:not(.is-device) .text--two {
   right: 0;
   height: 4px;               /* line thickness */
   bottom: 0;                 /* stick to panel bottom */
-  background: var(--bg-yellow); /* change if you want another color */
+  background: var(--bg-dark); /* change if you want another color */
   pointer-events: none;      /* don't block clicks */
   z-index: 9310;             /* sits above the transparent panel but below most UI */
 }

@@ -363,6 +363,27 @@ html:not(.is-device) .text--two {
   z-index: 9310;             /* sits above the transparent panel but below most UI */
 }
 
+.page:nth-of-type(3) .inner-second .panel {
+  position: relative;   /* so .panel-text absolute positioning is relative to the panel */
+  background: transparent;
+  overflow: visible;
+}
+
+/* the visible text boxes pinned to bottom-left of each panel */
+.page:nth-of-type(3) .inner-second .panel .panel-text {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 12vh;        /* scaling size as requested */
+  line-height: 1;
+  color: var(--bg-dark);  /* change if you want another color */
+  background: transparent;
+  padding: 0.5rem 1rem;   /* optional breathing room — remove if you want flush */
+  pointer-events: none;   /* visual only */
+  white-space: nowrap;
+  z-index: 9400;
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

@@ -378,10 +378,9 @@ html:not(.is-device) .text--two {
   line-height: 1;
   color: var(--bg-dark);  /* change if you want another color */
   background: transparent;
-  padding: 0.5rem 1rem;   /* optional breathing room — remove if you want flush */
   pointer-events: none;   /* visual only */
   white-space: nowrap;
-  z-index: 9400;
+  z-index: 1000700;
 }
 
 /* Ensure responsive scaling */

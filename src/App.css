@@ -351,6 +351,18 @@ html:not(.is-device) .text--two {
 .page:nth-of-type(3) .inner-second .panel--3 { top: 50%;  height: 25%; }
 .page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
 
+.page:nth-of-type(3) .inner-second .panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;               /* line thickness */
+  bottom: 0;                 /* stick to panel bottom */
+  background: var(--bg-yellow); /* change if you want another color */
+  pointer-events: none;      /* don't block clicks */
+  z-index: 9310;             /* sits above the transparent panel but below most UI */
+}
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

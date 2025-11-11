@@ -333,6 +333,24 @@ html:not(.is-device) .text--two {
   bottom: calc(100vh / 50); /* 1/40 of viewport height (≈2.5vh) */
 }
 
+.page:nth-of-type(3) .inner-second { position: absolute; left: var(--border); right: var(--border); /* top/bottom already set elsewhere */ }
+
+.page:nth-of-type(3) .inner-second .panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: transparent; /* fully transparent as requested */
+  pointer-events: none;    /* visual only — doesn't intercept clicks */
+  z-index: 9500;
+}
+
+/* four equal-height slices (top offsets expressed as percentages of inner-second) */
+.page:nth-of-type(3) .inner-second .panel--1 { top: 0%;   height: 25%; }
+.page:nth-of-type(3) .inner-second .panel--2 { top: 25%;  height: 25%; }
+.page:nth-of-type(3) .inner-second .panel--3 { top: 50%;  height: 25%; }
+.page:nth-of-type(3) .inner-second .panel--4 { top: 75%;  height: 25%; }
+
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

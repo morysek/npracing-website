@@ -379,6 +379,76 @@ html:not(.is-device) .text--two {
   pointer-events: none;
   z-index: 2;
 }
+.page:nth-of-type(3) .inner-second .panel {
+  transition: opacity 400ms cubic-bezier(.2,.9,.2,1), transform 480ms cubic-bezier(.2,.9,.2,1);
+  will-change: opacity, transform;
+}
+
+/* collapsed: hide all panels visually (fade) except panel--1 */
+.page:nth-of-type(3) .inner-second.collapsed .panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+}
+
+/* ensure panel--1 stays visible while collapsed */
+.page:nth-of-type(3) .inner-second.collapsed .panel--1 {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+}
+
+/* when restoring, fade panels back in */
+.page:nth-of-type(3) .inner-second.restoring .panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* the cloned moving element uses its own class for transform and opacity animation */
+.moving-panel-text {
+  position: absolute;
+  z-index: 20000;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease;
+  will-change: transform, opacity, top, left;
+}
+
+/* subtle fade for the whole inner-second while animating out (optional) */
+.page:nth-of-type(3) .inner-second.animating {
+  transition: opacity 420ms ease;
+  opacity: 1;
+}
+
+/* when animating out, make inner-second slightly dim so move stands out */
+.page:nth-of-type(3) .inner-second.animating.out {
+  opacity: 0.88;
+}
+
+/* small helper for smooth text wrap in panel--1 when collapsed (allow multiple lines) */
+.page:nth-of-type(3) .inner-second .panel--1 .panel-text {
+  white-space: nowrap; /* normal by default; we change to normal while collapsed via style toggle in JS */
+}
+.page:nth-of-type(3) .inner-second.collapsed .panel {
+  display: none !important;
+  pointer-events: none;
+}
+
+.page:nth-of-type(3) .inner-second.collapsed .panel--1 {
+  display: block !important;
+  pointer-events: auto !important;
+}
+
+/* small visual cue: center the visible text in panel--1 while collapsed (optional) */
+.page:nth-of-type(3) .inner-second.collapsed .panel--1 .panel-text {
+  left: 0;
+  bottom: 1.5vh;
+  white-space: normal;
+  pointer-events: none;
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

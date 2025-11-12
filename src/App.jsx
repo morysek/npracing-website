@@ -586,6 +586,10 @@ if (page.matches(':nth-of-type(3)')) {
   };
 }, []);
 
+// Animated panel click behaviour for page 3 (updated):
+// - clicking panel 2..4 clones that panel text and animates it into panel-1
+// - clicking panel 1 when NOT collapsed will collapse the layout leaving panel-1 visible (no clone/move)
+// - clicking panel 1 when collapsed restores the original layout with a fade-in
 React.useEffect(() => {
   const page = document.querySelector('.page:nth-of-type(3)');
   if (!page) return;
@@ -595,9 +599,10 @@ React.useEffect(() => {
   const panels = Array.from(inner2.querySelectorAll('.panel'));
   if (!panels.length) return;
 
+  // allow clicks through the .inner-second container and panels
   inner2.style.pointerEvents = 'auto';
-  panels.forEach(p => { p.style.pointerEvents = 'auto'; });
-  
+  panels.forEach(p => { p.style.pointerEvents = 'auto'; p.style.cursor = 'pointer'; });
+
   // keep originals so we can restore
   const originalTexts = panels.map((p) => {
     const t = p.querySelector('.panel-text');
@@ -608,12 +613,10 @@ React.useEffect(() => {
   let movingEl = null;
   let restoreTimeout = null;
 
-  // Helper - create a positioned clone of the .panel-text
   const createCloneAt = (textEl, rect) => {
     const clone = document.createElement('div');
     clone.className = 'moving-panel-text';
     clone.textContent = textEl.textContent;
-    // initial sizing and placement
     clone.style.left = `${rect.left + window.scrollX}px`;
     clone.style.top = `${rect.top + window.scrollY}px`;
     clone.style.fontFamily = window.getComputedStyle(textEl).fontFamily || 'inherit';
@@ -625,100 +628,94 @@ React.useEffect(() => {
     return clone;
   };
 
-  // Animate clone from source rect -> target rect (absolute screen coords)
   const animateCloneToTarget = (clone, fromRect, toRect) => {
-    // compute translation delta in page coordinates
     const startLeft = fromRect.left + window.scrollX;
     const startTop = fromRect.top + window.scrollY;
     const endLeft = toRect.left + window.scrollX;
     const endTop = toRect.top + window.scrollY;
-
-    // set initial transform origin (none) and position already set
-    // force reflow
-    clone.getBoundingClientRect();
-
-    // compute translate amounts
     const deltaX = endLeft - startLeft;
     const deltaY = endTop - startTop;
-
-    // apply transform to animate
+    // force reflow
+    clone.getBoundingClientRect();
     clone.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
     clone.style.opacity = '1';
   };
 
-  // Perform collapse animation to index idx (idx !== 0)
+  // collapse behavior; if idx === 0 we do a simple collapse (no clone/move)
   const collapseTo = (idx) => {
-    if (isCollapsed || idx === 0) return;
-    const sourcePanel = panels[idx];
-    const sourceText = sourcePanel.querySelector('.panel-text');
+    if (isCollapsed) return;
     const targetPanel = panels[0];
     const targetText = targetPanel.querySelector('.panel-text');
-    if (!sourceText || !targetText) return;
+    if (!targetText) return;
 
-    // prepare state
     isCollapsed = true;
     inner2.classList.add('animating');
     inner2.classList.remove('restoring');
 
-    // compute rects
+    if (idx === 0) {
+      // simple collapse: leave panel-1 text as-is and fade out others
+      inner2.classList.add('collapsed');
+      // small delay to clear animating flag after transition
+      clearTimeout(restoreTimeout);
+      restoreTimeout = setTimeout(() => {
+        inner2.classList.remove('animating');
+      }, 420);
+      return;
+    }
+
+    // idx !== 0: clone source text and animate it into panel--1
+    const sourcePanel = panels[idx];
+    const sourceText = sourcePanel.querySelector('.panel-text');
+    if (!sourceText) return;
+
     const srcRect = sourceText.getBoundingClientRect();
     const tgtRect = targetText.getBoundingClientRect();
 
-    // create clone at source
     movingEl = createCloneAt(sourceText, srcRect);
 
     // allow panel--1 to accept multiple lines visually while animating
     targetText.style.whiteSpace = 'normal';
 
-    // fade other panels down (CSS will handle opacity transition)
+    // fade other panels down (CSS handles opacity/transform)
     inner2.classList.add('collapsed');
 
-    // small delay so CSS collapse starts before we move clone
+    // animate clone on next frame so CSS collapse starts
     requestAnimationFrame(() => {
-      // animate clone to target rect
+      // ensure transition properties are present
+      movingEl.style.transition = 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
       animateCloneToTarget(movingEl, srcRect, tgtRect);
 
-      // fade clone slightly during move so it feels natural
-      movingEl.style.transition = 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
-      // after animation completes, keep text in panel--1 and remove clone
+      // cleanup after animation
       const cleanup = () => {
-        // set panel-1 content to source text permanently
-        targetText.textContent = sourceText.textContent;
-        // restore target text layout to standard
+        if (targetText) targetText.textContent = sourceText.textContent;
         targetText.style.whiteSpace = '';
-        // remove clone
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
         inner2.classList.remove('animating');
       };
-      // ensure cleanup runs after transition (600ms) + small buffer
       clearTimeout(restoreTimeout);
-      restoreTimeout = setTimeout(cleanup, 680);
+      restoreTimeout = setTimeout(cleanup, 700);
     });
   };
 
-  // Restore everything back to original with fade-in
+  // restore everything back to original with fade-in
   const restoreAll = () => {
     if (!isCollapsed) return;
-    // remove any moving clone immediately
     if (movingEl && movingEl.parentNode) {
       movingEl.parentNode.removeChild(movingEl);
       movingEl = null;
     }
-    // mark that we're restoring so CSS can animate opacity to 1
+
     inner2.classList.add('restoring');
     inner2.classList.remove('animating');
 
-    // restore the texts to original content
     panels.forEach((p, i) => {
       const t = p.querySelector('.panel-text');
       if (t) t.textContent = originalTexts[i] || '';
     });
 
-    // remove collapsed so panels visually fade in (CSS transition handles opacity)
     inner2.classList.remove('collapsed');
 
-    // after fade-in duration, clear restoring flag
     clearTimeout(restoreTimeout);
     restoreTimeout = setTimeout(() => {
       inner2.classList.remove('restoring');
@@ -726,19 +723,24 @@ React.useEffect(() => {
     }, 480);
   };
 
-  // Attach click handlers
+  // attach click handlers
   const handlers = panels.map((p, i) => {
     const fn = (ev) => {
       ev.stopPropagation();
-      if (i === 0 && isCollapsed) {
-        restoreAll();
+      // clicking panel 1 toggles:
+      // - if currently collapsed -> restore
+      // - if not collapsed -> collapse to panel 1 (no clone/move)
+      if (i === 0) {
+        if (isCollapsed) {
+          restoreAll();
+        } else {
+          collapseTo(0);
+        }
         return;
       }
-      if (i !== 0 && !isCollapsed) {
-        collapseTo(i);
-      }
+      // clicking any other panel when not collapsed -> collapse + animate move
+      if (!isCollapsed) collapseTo(i);
     };
-    p.style.cursor = 'pointer';
     p.addEventListener('click', fn);
     return { el: p, fn };
   });
@@ -747,15 +749,18 @@ React.useEffect(() => {
   return () => {
     handlers.forEach(h => h.el.removeEventListener('click', h.fn));
     inner2.classList.remove('collapsed', 'animating', 'restoring');
+    inner2.style.pointerEvents = '';
     panels.forEach((p, i) => {
       const t = p.querySelector('.panel-text');
       if (t) t.textContent = originalTexts[i] || '';
+      p.style.pointerEvents = '';
       p.style.cursor = '';
     });
     if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
     clearTimeout(restoreTimeout);
   };
 }, []);
+
   
 return (
   <div className="App">

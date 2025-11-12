@@ -585,6 +585,175 @@ if (page.matches(':nth-of-type(3)')) {
     window.removeEventListener('load', updatePanels);
   };
 }, []);
+
+React.useEffect(() => {
+  const page = document.querySelector('.page:nth-of-type(3)');
+  if (!page) return;
+  const inner2 = page.querySelector('.inner-second');
+  if (!inner2) return;
+
+  const panels = Array.from(inner2.querySelectorAll('.panel'));
+  if (!panels.length) return;
+
+  // keep originals so we can restore
+  const originalTexts = panels.map((p) => {
+    const t = p.querySelector('.panel-text');
+    return t ? t.textContent : '';
+  });
+
+  let isCollapsed = false;
+  let movingEl = null;
+  let restoreTimeout = null;
+
+  // Helper - create a positioned clone of the .panel-text
+  const createCloneAt = (textEl, rect) => {
+    const clone = document.createElement('div');
+    clone.className = 'moving-panel-text';
+    clone.textContent = textEl.textContent;
+    // initial sizing and placement
+    clone.style.left = `${rect.left + window.scrollX}px`;
+    clone.style.top = `${rect.top + window.scrollY}px`;
+    clone.style.fontFamily = window.getComputedStyle(textEl).fontFamily || 'inherit';
+    clone.style.fontSize = window.getComputedStyle(textEl).fontSize || 'inherit';
+    clone.style.lineHeight = window.getComputedStyle(textEl).lineHeight || 'normal';
+    clone.style.color = window.getComputedStyle(textEl).color || 'inherit';
+    clone.style.opacity = '1';
+    document.body.appendChild(clone);
+    return clone;
+  };
+
+  // Animate clone from source rect -> target rect (absolute screen coords)
+  const animateCloneToTarget = (clone, fromRect, toRect) => {
+    // compute translation delta in page coordinates
+    const startLeft = fromRect.left + window.scrollX;
+    const startTop = fromRect.top + window.scrollY;
+    const endLeft = toRect.left + window.scrollX;
+    const endTop = toRect.top + window.scrollY;
+
+    // set initial transform origin (none) and position already set
+    // force reflow
+    clone.getBoundingClientRect();
+
+    // compute translate amounts
+    const deltaX = endLeft - startLeft;
+    const deltaY = endTop - startTop;
+
+    // apply transform to animate
+    clone.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    clone.style.opacity = '1';
+  };
+
+  // Perform collapse animation to index idx (idx !== 0)
+  const collapseTo = (idx) => {
+    if (isCollapsed || idx === 0) return;
+    const sourcePanel = panels[idx];
+    const sourceText = sourcePanel.querySelector('.panel-text');
+    const targetPanel = panels[0];
+    const targetText = targetPanel.querySelector('.panel-text');
+    if (!sourceText || !targetText) return;
+
+    // prepare state
+    isCollapsed = true;
+    inner2.classList.add('animating');
+    inner2.classList.remove('restoring');
+
+    // compute rects
+    const srcRect = sourceText.getBoundingClientRect();
+    const tgtRect = targetText.getBoundingClientRect();
+
+    // create clone at source
+    movingEl = createCloneAt(sourceText, srcRect);
+
+    // allow panel--1 to accept multiple lines visually while animating
+    targetText.style.whiteSpace = 'normal';
+
+    // fade other panels down (CSS will handle opacity transition)
+    inner2.classList.add('collapsed');
+
+    // small delay so CSS collapse starts before we move clone
+    requestAnimationFrame(() => {
+      // animate clone to target rect
+      animateCloneToTarget(movingEl, srcRect, tgtRect);
+
+      // fade clone slightly during move so it feels natural
+      movingEl.style.transition = 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
+      // after animation completes, keep text in panel--1 and remove clone
+      const cleanup = () => {
+        // set panel-1 content to source text permanently
+        targetText.textContent = sourceText.textContent;
+        // restore target text layout to standard
+        targetText.style.whiteSpace = '';
+        // remove clone
+        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+        movingEl = null;
+        inner2.classList.remove('animating');
+      };
+      // ensure cleanup runs after transition (600ms) + small buffer
+      clearTimeout(restoreTimeout);
+      restoreTimeout = setTimeout(cleanup, 680);
+    });
+  };
+
+  // Restore everything back to original with fade-in
+  const restoreAll = () => {
+    if (!isCollapsed) return;
+    // remove any moving clone immediately
+    if (movingEl && movingEl.parentNode) {
+      movingEl.parentNode.removeChild(movingEl);
+      movingEl = null;
+    }
+    // mark that we're restoring so CSS can animate opacity to 1
+    inner2.classList.add('restoring');
+    inner2.classList.remove('animating');
+
+    // restore the texts to original content
+    panels.forEach((p, i) => {
+      const t = p.querySelector('.panel-text');
+      if (t) t.textContent = originalTexts[i] || '';
+    });
+
+    // remove collapsed so panels visually fade in (CSS transition handles opacity)
+    inner2.classList.remove('collapsed');
+
+    // after fade-in duration, clear restoring flag
+    clearTimeout(restoreTimeout);
+    restoreTimeout = setTimeout(() => {
+      inner2.classList.remove('restoring');
+      isCollapsed = false;
+    }, 480);
+  };
+
+  // Attach click handlers
+  const handlers = panels.map((p, i) => {
+    const fn = (ev) => {
+      ev.stopPropagation();
+      if (i === 0 && isCollapsed) {
+        restoreAll();
+        return;
+      }
+      if (i !== 0 && !isCollapsed) {
+        collapseTo(i);
+      }
+    };
+    p.style.cursor = 'pointer';
+    p.addEventListener('click', fn);
+    return { el: p, fn };
+  });
+
+  // cleanup
+  return () => {
+    handlers.forEach(h => h.el.removeEventListener('click', h.fn));
+    inner2.classList.remove('collapsed', 'animating', 'restoring');
+    panels.forEach((p, i) => {
+      const t = p.querySelector('.panel-text');
+      if (t) t.textContent = originalTexts[i] || '';
+      p.style.cursor = '';
+    });
+    if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+    clearTimeout(restoreTimeout);
+  };
+}, []);
+  
 return (
   <div className="App">
     {pages.map((_, i) => {

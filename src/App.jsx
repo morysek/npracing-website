@@ -586,10 +586,6 @@ if (page.matches(':nth-of-type(3)')) {
   };
 }, []);
 
-// Animated panel click behaviour for page 3 (updated):
-// - clicking panel 2..4 clones that panel text and animates it into panel-1
-// - clicking panel 1 when NOT collapsed will collapse the layout leaving panel-1 visible (no clone/move)
-// - clicking panel 1 when collapsed restores the original layout with a fade-in
 React.useEffect(() => {
   const page = document.querySelector('.page:nth-of-type(3)');
   if (!page) return;
@@ -603,7 +599,7 @@ React.useEffect(() => {
   inner2.style.pointerEvents = 'auto';
   panels.forEach(p => { p.style.pointerEvents = 'auto'; p.style.cursor = 'pointer'; });
 
-  // keep originals so we can restore
+  // stash originals
   const originalTexts = panels.map((p) => {
     const t = p.querySelector('.panel-text');
     return t ? t.textContent : '';
@@ -612,11 +608,13 @@ React.useEffect(() => {
   let isCollapsed = false;
   let movingEl = null;
   let restoreTimeout = null;
+  let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
 
   const createCloneAt = (textEl, rect) => {
     const clone = document.createElement('div');
     clone.className = 'moving-panel-text';
     clone.textContent = textEl.textContent;
+    // initial absolute placement in page coordinates
     clone.style.left = `${rect.left + window.scrollX}px`;
     clone.style.top = `${rect.top + window.scrollY}px`;
     clone.style.fontFamily = window.getComputedStyle(textEl).fontFamily || 'inherit';
@@ -624,123 +622,174 @@ React.useEffect(() => {
     clone.style.lineHeight = window.getComputedStyle(textEl).lineHeight || 'normal';
     clone.style.color = window.getComputedStyle(textEl).color || 'inherit';
     clone.style.opacity = '1';
+    clone.style.transform = 'none';
     document.body.appendChild(clone);
     return clone;
   };
 
-  const animateCloneToTarget = (clone, fromRect, toRect) => {
+  const animateClone = (clone, fromRect, toRect, opts = {}) => {
     const startLeft = fromRect.left + window.scrollX;
     const startTop = fromRect.top + window.scrollY;
     const endLeft = toRect.left + window.scrollX;
     const endTop = toRect.top + window.scrollY;
     const deltaX = endLeft - startLeft;
     const deltaY = endTop - startTop;
-    // force reflow
+
+    // ensure CSS transitions will run
     clone.getBoundingClientRect();
-    clone.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-    clone.style.opacity = '1';
+    clone.style.transition = opts.transition || 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
+    clone.style.transform = `translate(${deltaX}px, ${deltaY}px)${opts.scale ? ` scale(${opts.scale})` : ''}`;
+    if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
 
+  // collapse behavior; if idx === 0 we do a simple collapse (no clone/move)
   const collapseTo = (idx) => {
-  if (isCollapsed) return;
-  const targetPanel = panels[0];
-  const targetText = targetPanel.querySelector('.panel-text');
-  if (!targetText) return;
+    if (isCollapsed) return;
+    const targetPanel = panels[0];
+    const targetText = targetPanel.querySelector('.panel-text');
+    if (!targetText) return;
 
-  isCollapsed = true;
-  inner2.classList.add('animating');
-  inner2.classList.remove('restoring');
+    isCollapsed = true;
+    inner2.classList.add('animating');
+    inner2.classList.remove('restoring');
 
-  if (idx === 0) {
-    // simple collapse: leave panel-1 text as-is and fade out others
+    if (idx === 0) {
+      // simple collapse: leave panel-1 text as-is and fade out others
+      inner2.classList.add('collapsed');
+      clearTimeout(restoreTimeout);
+      restoreTimeout = setTimeout(() => {
+        inner2.classList.remove('animating');
+      }, 420);
+      lastCollapsedSourceIdx = 0;
+      return;
+    }
+
+    // idx !== 0: clone source text and animate it into panel--1
+    const sourcePanel = panels[idx];
+    const sourceText = sourcePanel.querySelector('.panel-text');
+    if (!sourceText) return;
+
+    const srcRect = sourceText.getBoundingClientRect();
+    const tgtRect = targetText.getBoundingClientRect();
+
+    // hide the original target text so only the moving clone is visible
+    targetText.style.visibility = 'hidden';
+
+    movingEl = createCloneAt(sourceText, srcRect);
+
+    // allow panel--1 to accept multiple lines visually while animating (no layout jump)
+    targetText.style.whiteSpace = 'normal';
+
+    // fade other panels down (CSS handles opacity/transform)
     inner2.classList.add('collapsed');
+
+    // animate clone on next frame so CSS collapse starts first
+    requestAnimationFrame(() => {
+      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
+      // cleanup after animation completes
+      const cleanup = () => {
+        if (targetText) targetText.textContent = sourceText.textContent;
+        if (targetText) targetText.style.visibility = '';
+        targetText.style.whiteSpace = '';
+        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+        movingEl = null;
+        inner2.classList.remove('animating');
+      };
+      clearTimeout(restoreTimeout);
+      restoreTimeout = setTimeout(cleanup, 700);
+    });
+
+    lastCollapsedSourceIdx = idx;
+  };
+
+  // restore with movement: animate panel-1 text back into the original panel position
+  const restoreAll = () => {
+    if (!isCollapsed) return;
+
+    // if a clone exists mid-flight, remove it
+    if (movingEl && movingEl.parentNode) {
+      movingEl.parentNode.removeChild(movingEl);
+      movingEl = null;
+    }
+
+    const srcIdx = lastCollapsedSourceIdx || 0; // if 0 then no moving animation required
+    const targetPanel = panels[0];
+    const targetText = targetPanel.querySelector('.panel-text');
+
+    // If we collapsed from a non-zero panel, animate panel-1 -> that panel
+    if (srcIdx !== 0) {
+      // create clone from current panel-1 text (since panel-1 currently shows the collapsed content)
+      const fromRect = targetText.getBoundingClientRect();
+      const destPanel = panels[srcIdx];
+      const destText = destPanel.querySelector('.panel-text');
+
+      // make sure destination exists and we have dest rect
+      const destRect = destText.getBoundingClientRect();
+
+      // hide the real panel-1 text while clone moves
+      targetText.style.visibility = 'hidden';
+
+      // create clone at panel-1 position and animate to destination
+      movingEl = createCloneAt(targetText, fromRect);
+      // ensure clone styles for smooth motion
+      requestAnimationFrame(() => {
+        // fade other panels in slightly during this animation by removing collapsed class shortly after
+        // start clone movement
+        animateClone(movingEl, fromRect, destRect, { opacityTo: 1, scale: 1.02 });
+
+        // start restoring other panels visually immediately (they will fade/slide in via CSS)
+        inner2.classList.remove('collapsed');
+        inner2.classList.add('restoring');
+
+        // after the clone movement finishes, place text back and cleanup
+        clearTimeout(restoreTimeout);
+        restoreTimeout = setTimeout(() => {
+          // restore all panel texts to originals
+          panels.forEach((p, i) => {
+            const t = p.querySelector('.panel-text');
+            if (t) {
+              t.textContent = originalTexts[i] || '';
+              t.style.visibility = ''; // ensure visible
+              t.style.whiteSpace = '';
+            }
+          });
+          // remove clone
+          if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+          movingEl = null;
+          inner2.classList.remove('restoring', 'animating');
+          isCollapsed = false;
+          lastCollapsedSourceIdx = null;
+        }, 700); // match the timing used during collapse
+      });
+      return;
+    }
+
+    // If collapsed from panel-1 itself (idx === 0) or unknown, just fade panels back in
+    inner2.classList.add('restoring');
+    inner2.classList.remove('animating');
+    panels.forEach((p, i) => {
+      const t = p.querySelector('.panel-text');
+      if (t) {
+        t.textContent = originalTexts[i] || '';
+        t.style.visibility = '';
+        t.style.whiteSpace = '';
+      }
+    });
+    inner2.classList.remove('collapsed');
     clearTimeout(restoreTimeout);
     restoreTimeout = setTimeout(() => {
-      inner2.classList.remove('animating');
-    }, 420);
-    return;
-  }
+      inner2.classList.remove('restoring');
+      isCollapsed = false;
+      lastCollapsedSourceIdx = null;
+    }, 480);
+  };
 
-  // idx !== 0: clone source text and animate it into panel--1
-  const sourcePanel = panels[idx];
-  const sourceText = sourcePanel.querySelector('.panel-text');
-  if (!sourceText) return;
-
-  const srcRect = sourceText.getBoundingClientRect();
-  const tgtRect = targetText.getBoundingClientRect();
-
-  // hide the original target text so only the moving clone is visible
-  targetText.style.visibility = 'hidden';
-
-  movingEl = createCloneAt(sourceText, srcRect);
-
-  // allow panel--1 to accept multiple lines visually while animating (no layout jump)
-  targetText.style.whiteSpace = 'normal';
-
-  // fade other panels down (CSS handles opacity/transform)
-  inner2.classList.add('collapsed');
-
-  // animate clone on next frame so CSS collapse starts
-  requestAnimationFrame(() => {
-    // ensure transition properties are present
-    movingEl.style.transition = 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
-    animateCloneToTarget(movingEl, srcRect, tgtRect);
-
-    // cleanup after animation
-    const cleanup = () => {
-      // set panel-1 content to source text permanently
-      if (targetText) targetText.textContent = sourceText.textContent;
-      // reveal the restored panel-1 text
-      if (targetText) targetText.style.visibility = '';
-      targetText.style.whiteSpace = '';
-      if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-      movingEl = null;
-      inner2.classList.remove('animating');
-    };
-    clearTimeout(restoreTimeout);
-    restoreTimeout = setTimeout(cleanup, 700);
-  });
-};
-
-// restore everything back to original with fade-in
-const restoreAll = () => {
-  if (!isCollapsed) return;
-  if (movingEl && movingEl.parentNode) {
-    movingEl.parentNode.removeChild(movingEl);
-    movingEl = null;
-  }
-
-  inner2.classList.add('restoring');
-  inner2.classList.remove('animating');
-
-  // restore the texts to original content
-  panels.forEach((p, i) => {
-    const t = p.querySelector('.panel-text');
-    if (t) {
-      t.textContent = originalTexts[i] || '';
-      // ensure panel-1 text is visible again
-      if (i === 0) t.style.visibility = '';
-      // reset white-space in case it was changed
-      t.style.whiteSpace = '';
-    }
-  });
-
-  inner2.classList.remove('collapsed');
-
-  clearTimeout(restoreTimeout);
-  restoreTimeout = setTimeout(() => {
-    inner2.classList.remove('restoring');
-    isCollapsed = false;
-  }, 480);
-};
   // attach click handlers
   const handlers = panels.map((p, i) => {
     const fn = (ev) => {
       ev.stopPropagation();
-      // clicking panel 1 toggles:
-      // - if currently collapsed -> restore
-      // - if not collapsed -> collapse to panel 1 (no clone/move)
       if (i === 0) {
+        // panel-1 click toggles: collapse -> restore or collapse (no clone)
         if (isCollapsed) {
           restoreAll();
         } else {
@@ -748,7 +797,7 @@ const restoreAll = () => {
         }
         return;
       }
-      // clicking any other panel when not collapsed -> collapse + animate move
+      // clicking another panel while not collapsed collapses + animate into panel-1
       if (!isCollapsed) collapseTo(i);
     };
     p.addEventListener('click', fn);

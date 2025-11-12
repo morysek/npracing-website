@@ -595,6 +595,9 @@ React.useEffect(() => {
   const panels = Array.from(inner2.querySelectorAll('.panel'));
   if (!panels.length) return;
 
+  inner2.style.pointerEvents = 'auto';
+  panels.forEach(p => { p.style.pointerEvents = 'auto'; });
+  
   // keep originals so we can restore
   const originalTexts = panels.map((p) => {
     const t = p.querySelector('.panel-text');

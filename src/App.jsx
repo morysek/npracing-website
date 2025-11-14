@@ -587,6 +587,20 @@ if (page.matches(':nth-of-type(3)')) {
 }, []);
 
 React.useEffect(() => {
+  // keep originals so we can restore
+const originalTexts = panels.map((p) => {
+  const t = p.querySelector('.panel-text');
+  return t ? t.textContent : '';
+});
+
+let isCollapsed = false;
+let movingEl = null;
+let restoreTimeout = null;
+let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
+
+// NEW: store source rects so restore can animate back to the exact original position
+const savedSourceRects = {};
+
   const page = document.querySelector('.page:nth-of-type(3)');
   if (!page) return;
   const inner2 = page.querySelector('.inner-second');
@@ -670,7 +684,15 @@ React.useEffect(() => {
     if (!sourceText) return;
 
     const srcRect = sourceText.getBoundingClientRect();
-    const tgtRect = targetText.getBoundingClientRect();
+// store the source rect for later restore (use page coordinates with scroll)
+savedSourceRects[idx] = {
+  left: srcRect.left + window.scrollX,
+  top: srcRect.top + window.scrollY,
+  width: srcRect.width,
+  height: srcRect.height,
+};
+// measure target (panel-1) rect for immediate animation destination
+const tgtRect = targetText.getBoundingClientRect();
 
     // hide the original target text so only the moving clone is visible
     targetText.style.visibility = 'hidden';
@@ -724,22 +746,39 @@ React.useEffect(() => {
       const destText = destPanel.querySelector('.panel-text');
 
       // make sure destination exists and we have dest rect
-      const destRect = destText.getBoundingClientRect();
+      const saved = savedSourceRects[srcIdx];
+if (!saved) {
+  // fallback to measuring destText if saved rect missing
+  const destRect = destText.getBoundingClientRect();
+  savedRectForAnimation = {
+    left: destRect.left + window.scrollX,
+    top: destRect.top + window.scrollY,
+    width: destRect.width,
+    height: destRect.height,
+  };
+} else {
+  savedRectForAnimation = saved;
+}
 
-      // hide the real panel-1 text while clone moves
-      targetText.style.visibility = 'hidden';
+// hide the real panel-1 text while clone moves
+targetText.style.visibility = 'hidden';
 
-      // create clone at panel-1 position and animate to destination
-      movingEl = createCloneAt(targetText, fromRect);
-      // ensure clone styles for smooth motion
-      requestAnimationFrame(() => {
-        // fade other panels in slightly during this animation by removing collapsed class shortly after
-        // start clone movement
-        animateClone(movingEl, fromRect, destRect, { opacityTo: 1, scale: 1.02 });
+// create clone at panel-1 position
+movingEl = createCloneAt(targetText, fromRect);
 
-        // start restoring other panels visually immediately (they will fade/slide in via CSS)
-        inner2.classList.remove('collapsed');
-        inner2.classList.add('restoring');
+// compute a toRect-like object compatible with animateClone (which expects DOMRect-like)
+const toRect = {
+  left: savedRectForAnimation.left - window.scrollX,
+  top: savedRectForAnimation.top - window.scrollY,
+  width: savedRectForAnimation.width,
+  height: savedRectForAnimation.height,
+};
+
+// animate clone to the saved screen coordinates (animateClone uses page coords via fromRect/toRect conversion)
+requestAnimationFrame(() => {
+  animateClone(movingEl, fromRect, toRect, { opacityTo: 1, scale: 1.02 });
+  inner2.classList.remove('collapsed');
+  inner2.classList.add('restoring');
 
         // after the clone movement finishes, place text back and cleanup
         clearTimeout(restoreTimeout);

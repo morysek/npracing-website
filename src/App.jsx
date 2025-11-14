@@ -729,22 +729,68 @@ const tgtRect = targetText.getBoundingClientRect();
 
     // If we collapsed from a non-zero panel, animate panel-1 -> that panel
     if (srcIdx !== 0) {
-      // create clone from current panel-1 text (since panel-1 currently shows the collapsed content)
-      const fromRect = targetText.getBoundingClientRect();
-      const destPanel = panels[srcIdx];
-      const destText = destPanel.querySelector('.panel-text');
+  // create clone from current panel-1 text (panel-1 currently shows the collapsed content)
+  const fromRect = targetText.getBoundingClientRect();
+  const destPanel = panels[srcIdx];
+  const destText = destPanel ? destPanel.querySelector('.panel-text') : null;
 
-      // make sure destination exists and we have dest rect
-      const saved = savedSourceRects[srcIdx];
-if (!saved) {
-  // fallback to measuring destText if saved rect missing
-  const destRect = destText.getBoundingClientRect();
-  savedRectForAnimation = {
-    left: destRect.left + window.scrollX,
-    top: destRect.top + window.scrollY,
-    width: destRect.width,
-    height: destRect.height,
-  };
+  // Use saved rect if available (captured at collapse time), otherwise measure destText now
+  const saved = savedSourceRects[srcIdx];
+  let finalToRect;
+  if (saved) {
+    // convert saved absolute page coords back to viewport-relative DOMRect-like coords
+    finalToRect = {
+      left: saved.left - window.scrollX,
+      top: saved.top - window.scrollY,
+      width: saved.width,
+      height: saved.height,
+    };
+  } else {
+    // fallback: measure destination element now
+    const destRect = destText ? destText.getBoundingClientRect() : fromRect;
+    finalToRect = {
+      left: destRect.left,
+      top: destRect.top,
+      width: destRect.width,
+      height: destRect.height,
+    };
+  }
+
+  // hide the real panel-1 text while clone moves
+  targetText.style.visibility = 'hidden';
+
+  // create clone at panel-1 position
+  movingEl = createCloneAt(targetText, fromRect);
+
+  // animate clone -> finalToRect (viewport coords interpreted by animateClone)
+  requestAnimationFrame(() => {
+    animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
+
+    // start restoring other panels visually
+    inner2.classList.remove('collapsed');
+    inner2.classList.add('restoring');
+
+    // cleanup after animation finishes (matching collapse timing)
+    clearTimeout(restoreTimeout);
+    restoreTimeout = setTimeout(() => {
+      panels.forEach((p, i) => {
+        const t = p.querySelector('.panel-text');
+        if (t) {
+          t.textContent = originalTexts[i] || '';
+          t.style.visibility = '';
+          t.style.whiteSpace = '';
+        }
+      });
+      if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+      movingEl = null;
+      inner2.classList.remove('restoring', 'animating');
+      isCollapsed = false;
+      lastCollapsedSourceIdx = null;
+      // optional: delete savedSourceRects[srcIdx]; // uncomment to clear stored rect
+    }, 700);
+  });
+
+  return;
 } else {
   savedRectForAnimation = saved;
 }

@@ -587,17 +587,6 @@ if (page.matches(':nth-of-type(3)')) {
 }, []);
 
 React.useEffect(() => {
-  // keep originals so we can restore
-const originalTexts = panels.map((p) => {
-  const t = p.querySelector('.panel-text');
-  return t ? t.textContent : '';
-});
-
-let isCollapsed = false;
-let movingEl = null;
-let restoreTimeout = null;
-let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
-
 // NEW: store source rects so restore can animate back to the exact original position
 const savedSourceRects = {};
 

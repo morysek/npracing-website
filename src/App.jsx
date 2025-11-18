@@ -889,6 +889,44 @@ Change this to whatever content you want for the third page.`
         };
 
         const content = pageContent[i];
+        
+        React.useEffect(() => {
+  const page3 = document.querySelector('.page:nth-of-type(3)');
+  if (!page3) return;
+
+  const inner2 = page3.querySelector('.inner-second');
+  if (!inner2) return;
+
+  // Helper: when restore/collapse animation is active we consider "in progress"
+  const isAnimating = (el) =>
+    el.classList.contains('animating') || el.classList.contains('restoring') || el.classList.contains('collapsed');
+
+  // Initial state
+  page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+
+  // Observe class changes on inner2
+  const mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'class') {
+        page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+        break;
+      }
+    }
+  });
+  mo.observe(inner2, { attributes: true, attributeFilter: ['class'] });
+
+  // Also update on window load/resize as a fallback
+  const refresh = () => page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+  window.addEventListener('load', refresh);
+  window.addEventListener('resize', refresh);
+
+  return () => {
+    mo.disconnect();
+    window.removeEventListener('load', refresh);
+    window.removeEventListener('resize', refresh);
+    page3.removeAttribute('data-restore-in-progress');
+  };
+}, []);
 
         return (
           <section key={i} className="page">

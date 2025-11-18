@@ -612,6 +612,7 @@ const savedSourceRects = {};
   let movingEl = null;
   let restoreTimeout = null;
   let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
+  let savedRectForAnimation = null;
 
   const createCloneAt = (textEl, rect) => {
     const clone = document.createElement('div');
@@ -791,8 +792,26 @@ const tgtRect = targetText.getBoundingClientRect();
   });
 
   return;
-} else {
+} const saved = savedSourceRects[srcIdx];
+if (saved) {
   savedRectForAnimation = saved;
+} else if (destText) {
+  const destRect = destText.getBoundingClientRect();
+  savedRectForAnimation = {
+    left: destRect.left + window.scrollX,
+    top: destRect.top + window.scrollY,
+    width: destRect.width,
+    height: destRect.height,
+  };
+} else {
+  // ultimate fallback: use current targetText rect so animation still runs without throwing
+  const fallbackRect = fromRect;
+  savedRectForAnimation = {
+    left: fallbackRect.left + window.scrollX,
+    top: fallbackRect.top + window.scrollY,
+    width: fallbackRect.width || 0,
+    height: fallbackRect.height || 0,
+  };
 }
 
 // hide the real panel-1 text while clone moves

@@ -612,6 +612,7 @@ const savedSourceRects = {};
   let movingEl = null;
   let restoreTimeout = null;
   let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
+  let savedRectForAnimation = null;
 
   const createCloneAt = (textEl, rect) => {
     const clone = document.createElement('div');
@@ -644,44 +645,6 @@ const savedSourceRects = {};
     clone.style.transform = `translate(${deltaX}px, ${deltaY}px)${opts.scale ? ` scale(${opts.scale})` : ''}`;
     if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
-  const hideElementsForCollapse = (srcIdx, hide = true) => {
-  // pick elements that need the visibility method instead of display
-  // adjust selectors to match your DOM nodes exactly
-  const pageEl = document.querySelector('section.page:nth-of-type(3)');
-  if (!pageEl) return;
-  const pruhImg = pageEl.querySelector('.pruh-img');
-  const carWrap = pageEl.querySelector('.car-wrap');
-  const carLine = pageEl.querySelector('.car-line');
-  const panels = Array.from(pageEl.querySelectorAll('.panel'));
-
-  // Example logic: if collapsing from panel 2..4, hide the PRUH image and carWrap visually
-  // If collapsing from panel 1, hide nothing (or other behavior you prefer)
-  if (srcIdx === 0) {
-    // default: nothing special to hide
-    if (pruhImg) pruhImg.style.visibility = '';
-    if (carWrap) carWrap.style.visibility = '';
-    if (carLine) carLine.style.visibility = '';
-    panels.forEach(p => { const t = p.querySelector('.panel-text'); if (t) t.style.visibility = ''; });
-    return;
-  }
-
-  // when hiding, set visibility:hidden; when restoring, clear visibility style
-  const v = hide ? 'hidden' : '';
-
-  if (pruhImg) pruhImg.style.visibility = v;
-  if (carWrap) carWrap.style.visibility = v;
-  if (carLine) carLine.style.visibility = v;
-
-  // optionally hide panel backgrounds / separators for the source panel only
-  panels.forEach((p, i) => {
-    if (i === srcIdx) {
-      p.style.visibility = hide ? 'hidden' : '';
-    } else {
-      // keep others as-is (you can change to hide others too if needed)
-      p.style.visibility = p.style.visibility || '';
-    }
-  });
-};
 
   // collapse behavior; if idx === 0 we do a simple collapse (no clone/move)
   const collapseTo = (idx) => {
@@ -693,8 +656,6 @@ const savedSourceRects = {};
     isCollapsed = true;
     inner2.classList.add('animating');
     inner2.classList.remove('restoring');
-    
-    hideElementsForCollapse(idx, true);
 
     if (idx === 0) {
       // simple collapse: leave panel-1 text as-is and fade out others
@@ -745,8 +706,6 @@ const tgtRect = targetText.getBoundingClientRect();
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
         inner2.classList.remove('animating');
-        hideElementsForCollapse(idx, false);
-        
       };
       clearTimeout(restoreTimeout);
       restoreTimeout = setTimeout(cleanup, 700);
@@ -826,29 +785,22 @@ const restoreAll = () => {
       inner2.classList.add('restoring');
 
       clearTimeout(restoreTimeout);
-    restoreTimeout = setTimeout(() => {
-      // restore all panel texts and per-panel inline visibility
-      panels.forEach((p, i) => {
-        const t = p.querySelector('.panel-text');
-        if (t) {
-          t.textContent = originalTexts[i] || '';
-          t.style.visibility = '';
-          t.style.whiteSpace = '';
-        }
-      });
-
-      // restore any page-local visuals that were hidden during collapse for this src panel
-      hideElementsForCollapse(srcIdx, false);
-
-      // remove clone element
-      if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-      movingEl = null;
-
-      inner2.classList.remove('restoring', 'animating');
-      isCollapsed = false;
-      lastCollapsedSourceIdx = null;
-      // optional: delete savedSourceRects[srcIdx];
-    }, 700);
+      restoreTimeout = setTimeout(() => {
+        // restore all texts and visibility
+        panels.forEach((p, i) => {
+          const t = p.querySelector('.panel-text');
+          if (t) {
+            t.textContent = originalTexts[i] || '';
+            t.style.visibility = '';
+            t.style.whiteSpace = '';
+          }
+        });
+        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+        movingEl = null;
+        inner2.classList.remove('restoring', 'animating');
+        isCollapsed = false;
+        lastCollapsedSourceIdx = null;
+      }, 700);
     });
 
     return;
@@ -937,6 +889,44 @@ Change this to whatever content you want for the third page.`
         };
 
         const content = pageContent[i];
+        
+        React.useEffect(() => {
+  const page3 = document.querySelector('.page:nth-of-type(3)');
+  if (!page3) return;
+
+  const inner2 = page3.querySelector('.inner-second');
+  if (!inner2) return;
+
+  // Helper: when restore/collapse animation is active we consider "in progress"
+  const isAnimating = (el) =>
+    el.classList.contains('animating') || el.classList.contains('restoring') || el.classList.contains('collapsed');
+
+  // Initial state
+  page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+
+  // Observe class changes on inner2
+  const mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'class') {
+        page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+        break;
+      }
+    }
+  });
+  mo.observe(inner2, { attributes: true, attributeFilter: ['class'] });
+
+  // Also update on window load/resize as a fallback
+  const refresh = () => page3.setAttribute('data-restore-in-progress', isAnimating(inner2) ? 'true' : 'false');
+  window.addEventListener('load', refresh);
+  window.addEventListener('resize', refresh);
+
+  return () => {
+    mo.disconnect();
+    window.removeEventListener('load', refresh);
+    window.removeEventListener('resize', refresh);
+    page3.removeAttribute('data-restore-in-progress');
+  };
+}, []);
 
         return (
           <section key={i} className="page">

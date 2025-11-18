@@ -695,6 +695,17 @@ const tgtRect = targetText.getBoundingClientRect();
     // fade other panels down (CSS handles opacity/transform)
     inner2.classList.add('collapsed');
 
+    const hideOtherPanels = () => {
+  panels.slice(1).forEach(p => {
+    const t = p.querySelector('.panel-text');
+    if (t) {
+      t.style.visibility = 'hidden';
+      t.style.opacity = '0';
+    }
+    p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = 'none'; });
+  });
+};
+hideOtherPanels();
     // animate clone on next frame so CSS collapse starts first
     requestAnimationFrame(() => {
       animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
@@ -792,8 +803,10 @@ const restoreAll = () => {
           if (t) {
             t.textContent = originalTexts[i] || '';
             t.style.visibility = '';
+            t.style.opacity = '';
             t.style.whiteSpace = '';
           }
+          p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
         });
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
@@ -807,23 +820,34 @@ const restoreAll = () => {
   }
 
   // If collapsed from panel-1 itself: just fade panels back in
-  inner2.classList.add('restoring');
-  inner2.classList.remove('animating');
-  panels.forEach((p, i) => {
-    const t = p.querySelector('.panel-text');
-    if (t) {
-      t.textContent = originalTexts[i] || '';
-      t.style.visibility = '';
-      t.style.whiteSpace = '';
-    }
-  });
-  inner2.classList.remove('collapsed');
-  clearTimeout(restoreTimeout);
-  restoreTimeout = setTimeout(() => {
-    inner2.classList.remove('restoring');
-    isCollapsed = false;
-    lastCollapsedSourceIdx = null;
-  }, 480);
+  panels.slice(1).forEach(p => {
+  const t = p.querySelector('.panel-text');
+  if (t) {
+    t.style.visibility = 'hidden';
+    t.style.opacity = '0';
+  }
+  p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = 'none'; });
+});
+
+inner2.classList.add('restoring');
+inner2.classList.remove('animating');
+panels.forEach((p, i) => {
+  const t = p.querySelector('.panel-text');
+  if (t) {
+    t.textContent = originalTexts[i] || '';
+    t.style.visibility = '';
+    t.style.opacity = '';
+    t.style.whiteSpace = '';
+  }
+  p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
+});
+inner2.classList.remove('collapsed');
+clearTimeout(restoreTimeout);
+restoreTimeout = setTimeout(() => {
+  inner2.classList.remove('restoring');
+  isCollapsed = false;
+  lastCollapsedSourceIdx = null;
+}, 480);
 };
   // attach click handlers
   const handlers = panels.map((p, i) => {

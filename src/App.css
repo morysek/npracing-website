@@ -450,20 +450,6 @@ html:not(.is-device) .text--two {
   pointer-events: none;
 }
 
-/* Hide everything except page-3 when restore is in progress on page-3 */
-.page[data-restore-in-progress="true"] ~ .page,
-.page[data-restore-in-progress="true"]:not(:nth-of-type(3)) {
-  visibility: hidden;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Ensure page-3 remains visible while in-progress */
-.page[data-restore-in-progress="true"]:nth-of-type(3) {
-  visibility: visible;
-  pointer-events: auto;
-}
-
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

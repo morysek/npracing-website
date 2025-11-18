@@ -665,6 +665,11 @@ const savedSourceRects = {};
       clearTimeout(restoreTimeout);
       restoreTimeout = setTimeout(() => {
         inner2.classList.remove('animating');
+
+          inner2.style.pointerEvents = '';
+          panels.forEach(p => {
+            p.style.pointerEvents = '';
+            p.style.cursor = '';   
       }, 420);
       lastCollapsedSourceIdx = 0;
       return;

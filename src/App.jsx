@@ -717,7 +717,7 @@ const tgtRect = targetText.getBoundingClientRect();
 const restoreAll = () => {
   if (!isCollapsed) return;
 
-  // remove any mid-flight clone
+  // remove any mid-flight clone immediately (defensive)
   if (movingEl && movingEl.parentNode) {
     movingEl.parentNode.removeChild(movingEl);
     movingEl = null;
@@ -725,27 +725,47 @@ const restoreAll = () => {
 
   const srcIdx = lastCollapsedSourceIdx || 0;
   const targetPanel = panels[0];
-  const targetText = targetPanel ? targetPanel.querySelector('.panel-text') : null;
+  const targetText = targetPanel.querySelector('div.panel-text');
 
-  if (!targetText) {
-    // fallback: restore without animation
+  // helper to restore everything and clear state
+  const finalizeRestore = () => {
+    // restore texts and per-panel inline style changes
     panels.forEach((p, i) => {
-      const t = p.querySelector('.panel-text');
-      if (t) t.textContent = originalTexts[i] || '';
+      const t = p.querySelector('div.panel-text');
+      if (t) {
+        t.textContent = originalTexts[i] || '';
+        t.style.visibility = '';
+        t.style.whiteSpace = '';
+      }
+      // if you changed pointerEvents/cursor during animation, reset them
+      p.style.pointerEvents = '';
+      p.style.cursor = '';
+      p.style.position = p.style.position || ''; // keep safe
     });
-    inner2.classList.remove('collapsed');
+
+    // remove animation classes and reset flags
+    inner2.classList.remove('collapsed', 'animating', 'restoring');
     isCollapsed = false;
     lastCollapsedSourceIdx = null;
-    return;
-  }
 
-  // If we collapsed from a non-zero panel, animate panel-1 -> original position
+    // optional: delete saved rect for this index if you want to free memory
+    // delete savedSourceRects[srcIdx];
+
+    // clear any pending fallback timeout
+    if (restoreTimeout) { clearTimeout(restoreTimeout); restoreTimeout = null; }
+
+    // Re-run layout updates used elsewhere so everything recalculates
+    // (call the same helpers or dispatch a custom event your other effects listen for)
+    // Example: window.dispatchEvent(new Event('resize')); // triggers many of your update handlers
+    window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+  };
+
+  // If we collapsed from a non-zero panel we animate the clone back; otherwise just finalize
   if (srcIdx !== 0) {
+    // create clone from current panel-1 text (panel-1 shows collapsed content)
     const fromRect = targetText.getBoundingClientRect();
-    const destPanel = panels[srcIdx];
-    const destText = destPanel ? destPanel.querySelector('.panel-text') : null;
 
-    // prefer saved rect captured at collapse time
+    // compute destination rect (prefer saved rect captured at collapse time)
     const saved = savedSourceRects[srcIdx];
     let finalToRect;
     if (saved) {
@@ -753,78 +773,100 @@ const restoreAll = () => {
         left: saved.left - window.scrollX,
         top: saved.top - window.scrollY,
         width: saved.width,
-        height: saved.height,
+        height: saved.height
       };
-    } else if (destText) {
-      const destRect = destText.getBoundingClientRect();
+    } else {
+      // fallback if saved rect missing
+      const destPanel = panels[srcIdx];
+      const destText = destPanel ? destPanel.querySelector('div.panel-text') : null;
+      const destRect = destText ? destText.getBoundingClientRect() : fromRect;
       finalToRect = {
         left: destRect.left,
         top: destRect.top,
         width: destRect.width,
-        height: destRect.height,
-      };
-    } else {
-      finalToRect = {
-        left: fromRect.left,
-        top: fromRect.top,
-        width: fromRect.width,
-        height: fromRect.height,
+        height: destRect.height
       };
     }
 
-    // hide real panel-1 text while clone moves
+    // hide the real panel-1 text while clone moves
     targetText.style.visibility = 'hidden';
 
     // create clone at panel-1 position
     movingEl = createCloneAt(targetText, fromRect);
 
-    requestAnimationFrame(() => {
-      animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
+    // ensure clone has transitions (match collapse timing)
+    movingEl.style.transition = 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
+    // compute delta for animateClone (it expects DOMRect-like toRect with viewport coords)
+    const toRectForAnim = {
+      left: finalToRect.left - window.scrollX,
+      top: finalToRect.top - window.scrollY,
+      width: finalToRect.width,
+      height: finalToRect.height
+    };
 
+    // set a one-time handler for transitionend and a fallback timer
+    let cleaned = false;
+    const cleanupHandler = () => {
+      if (cleaned) return;
+      cleaned = true;
+      if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+      movingEl = null;
+      finalizeRestore();
+    };
+
+    const onTransitionEnd = (ev) => {
+      // only respond to transform or opacity (safety)
+      if (ev.propertyName && (ev.propertyName.includes('transform') || ev.propertyName.includes('opacity'))) {
+        movingEl.removeEventListener('transitionend', onTransitionEnd);
+        cleanupHandler();
+      }
+    };
+
+    movingEl.addEventListener('transitionend', onTransitionEnd);
+
+    // fallback timeout in case transitionend doesn't fire (e.g., tab hidden)
+    restoreTimeout = setTimeout(() => {
+      if (movingEl) movingEl.removeEventListener('transitionend', onTransitionEnd);
+      cleanupHandler();
+    }, 900); // slightly larger than your animation (~700ms) to be safe
+
+    // trigger animation on next frame
+    requestAnimationFrame(() => {
+      animateClone(movingEl, fromRect, toRectForAnim, { opacityTo: 1, scale: 1.02 });
       inner2.classList.remove('collapsed');
       inner2.classList.add('restoring');
-
-      clearTimeout(restoreTimeout);
-      restoreTimeout = setTimeout(() => {
-        // restore all texts and visibility
-        panels.forEach((p, i) => {
-          const t = p.querySelector('.panel-text');
-          if (t) {
-            t.textContent = originalTexts[i] || '';
-            t.style.visibility = '';
-            t.style.whiteSpace = '';
-          }
-        });
-        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-        movingEl = null;
-        inner2.classList.remove('restoring', 'animating');
-        isCollapsed = false;
-        lastCollapsedSourceIdx = null;
-      }, 700);
     });
 
     return;
   }
 
-  // If collapsed from panel-1 itself: just fade panels back in
+  // if collapsed from panel-1 itself (idx === 0) or unknown, just restore without clone animation
   inner2.classList.add('restoring');
   inner2.classList.remove('animating');
+
   panels.forEach((p, i) => {
-    const t = p.querySelector('.panel-text');
+    const t = p.querySelector('div.panel-text');
     if (t) {
       t.textContent = originalTexts[i] || '';
       t.style.visibility = '';
       t.style.whiteSpace = '';
     }
   });
+
   inner2.classList.remove('collapsed');
+
+  // clear any previous fallback and then finalize after the fade timing
   clearTimeout(restoreTimeout);
   restoreTimeout = setTimeout(() => {
     inner2.classList.remove('restoring');
     isCollapsed = false;
     lastCollapsedSourceIdx = null;
+    restoreTimeout = null;
+    // keep parity with finalization: run layout updates
+    window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
   }, 480);
 };
+
 
 
   // attach click handlers

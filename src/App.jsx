@@ -665,14 +665,12 @@ const savedSourceRects = {};
       clearTimeout(restoreTimeout);
       restoreTimeout = setTimeout(() => {
         inner2.classList.remove('animating');
-
-  // RESTORE clickability after collapse finishes
-        inner2.style.pointerEvents = '';
-        panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
       }, 420);
       lastCollapsedSourceIdx = 0;
       return;
     }
+
+    // idx !== 0: clone source text and animate it into panel--1
     const sourcePanel = panels[idx];
     const sourceText = sourcePanel.querySelector('.panel-text');
     if (!sourceText) return;
@@ -710,10 +708,7 @@ const tgtRect = targetText.getBoundingClientRect();
   });
 };
 hideOtherPanels();
-
-    inner2.style.pointerEvents = 'none';
-    panels.forEach(p => { p.style.pointerEvents = 'none'; p.style.cursor = 'default'; });
-    
+    // animate clone on next frame so CSS collapse starts first
     requestAnimationFrame(() => {
       animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
       // cleanup after animation completes
@@ -723,10 +718,6 @@ hideOtherPanels();
         targetText.style.whiteSpace = '';
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
-
-        inner2.style.pointerEvents = '';
-        panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
-        
         inner2.classList.remove('animating');
       };
       clearTimeout(restoreTimeout);
@@ -872,52 +863,40 @@ restoreTimeout = setTimeout(() => {
   lastCollapsedSourceIdx = null;
 }, 480);
 };
-// attach a single delegated click handler on inner2 instead of per-panel listeners
-const onInner2Click = (ev) => {
-  // preserve existing guards you used: ignore during animating/restoring/collapsed
-  if (inner2.classList.contains('animating') || inner2.classList.contains('restoring') || inner2.classList.contains('collapsed')) return;
-
-  // find the panel element clicked (works for clicks on children)
-  const panel = ev.target.closest('.panel');
-  if (!panel || !inner2.contains(panel)) return;
-
-  ev.stopPropagation();
-
-  // re-query current panels so this works even after DOM recreation
-  const currentPanels = Array.from(inner2.querySelectorAll('.panel'));
-  const idx = currentPanels.indexOf(panel);
-  if (idx === -1) return;
-
-  // preserve your original semantics:
-  if (idx === 0) {
-    if (isCollapsed) {
-      restoreAll();
-    } else {
-      collapseTo(0);
-    }
-    return;
-  }
-
-  if (!isCollapsed) collapseTo(idx);
-};
-
-// attach once
-inner2.addEventListener('click', onInner2Click);
-
-// cleanup: remove delegated listener and perform the rest of your current cleanup
-return () => {
-  inner2.removeEventListener('click', onInner2Click);
-  inner2.classList.remove('collapsed', 'animating', 'restoring');
-  inner2.style.pointerEvents = '';
-  panels.forEach((p, i) => {
-    const t = p.querySelector('panel-text');
-    if (t) t.textContent = originalTexts[i] || '';
-    p.style.pointerEvents = '';
-    p.style.cursor = '';
+  // attach click handlers
+  const handlers = panels.map((p, i) => {
+    const fn = (ev) => {
+      ev.stopPropagation();
+      if (i === 0) {
+        // panel-1 click toggles: collapse -> restore or collapse (no clone)
+        if (isCollapsed) {
+          restoreAll();
+        } else {
+          collapseTo(0);
+        }
+        return;
+      }
+      // clicking another panel while not collapsed collapses + animate into panel-1
+      if (!isCollapsed) collapseTo(i);
+    };
+    p.addEventListener('click', fn);
+    return { el: p, fn };
   });
-  if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-  clearTimeout(restoreTimeout);
-};
+
+  // cleanup
+  return () => {
+    handlers.forEach(h => h.el.removeEventListener('click', h.fn));
+    inner2.classList.remove('collapsed', 'animating', 'restoring');
+    inner2.style.pointerEvents = '';
+    panels.forEach((p, i) => {
+      const t = p.querySelector('.panel-text');
+      if (t) t.textContent = originalTexts[i] || '';
+      p.style.pointerEvents = '';
+      p.style.cursor = '';
+    });
+    if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+    clearTimeout(restoreTimeout);
+  };
 }, []);
 
   

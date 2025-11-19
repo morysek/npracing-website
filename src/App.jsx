@@ -666,11 +666,9 @@ const savedSourceRects = {};
       restoreTimeout = setTimeout(() => {
         inner2.classList.remove('animating');
 
-          inner2.style.pointerEvents = '';
-          panels.forEach(p => {
-            p.style.pointerEvents = '';
-            p.style.cursor = '';
-          });
+  // RESTORE clickability after collapse finishes
+        inner2.style.pointerEvents = '';
+        panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
       }, 420);
       lastCollapsedSourceIdx = 0;
       return;
@@ -712,7 +710,10 @@ const tgtRect = targetText.getBoundingClientRect();
   });
 };
 hideOtherPanels();
-    // animate clone on next frame so CSS collapse starts first
+
+    inner2.style.pointerEvents = 'none';
+    panels.forEach(p => { p.style.pointerEvents = 'none'; p.style.cursor = 'default'; });
+    
     requestAnimationFrame(() => {
       animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
       // cleanup after animation completes
@@ -722,6 +723,10 @@ hideOtherPanels();
         targetText.style.whiteSpace = '';
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
+
+        inner2.style.pointerEvents = '';
+        panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
+        
         inner2.classList.remove('animating');
       };
       clearTimeout(restoreTimeout);
@@ -871,6 +876,7 @@ restoreTimeout = setTimeout(() => {
   const handlers = panels.map((p, i) => {
     const fn = (ev) => {
       ev.stopPropagation();
+      if (inner2.classList.contains('animating') || inner2.classList.contains('restoring') || inner2.classList.contains('collapsed')) return;
       if (i === 0) {
         // panel-1 click toggles: collapse -> restore or collapse (no clone)
         if (isCollapsed) {

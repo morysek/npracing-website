@@ -674,8 +674,6 @@ const savedSourceRects = {};
       lastCollapsedSourceIdx = 0;
       return;
     }
-
-    // idx !== 0: clone source text and animate it into panel--1
     const sourcePanel = panels[idx];
     const sourceText = sourcePanel.querySelector('.panel-text');
     if (!sourceText) return;

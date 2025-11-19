@@ -1,3 +1,4 @@
+
 import React from 'react';
 import './App.css';
 export default function App() {
@@ -656,9 +657,6 @@ const savedSourceRects = {};
     inner2.classList.add('animating');
     inner2.classList.remove('restoring');
 
-    inner2.style.pointerEvents = 'none';
-    panels.forEach(p => { p.style.pointerEvents = 'none'; p.style.cursor = 'default'; });
-
     if (idx === 0) {
       // simple collapse: leave panel-1 text as-is and fade out others
       inner2.classList.add('collapsed');
@@ -791,9 +789,6 @@ const restoreAll = () => {
     // create clone at panel-1 position
     movingEl = createCloneAt(targetText, fromRect);
 
-    inner2.style.pointerEvents = 'none';
-    panels.forEach(p => { p.style.pointerEvents = 'none'; p.style.cursor = 'default'; });
-    
     requestAnimationFrame(() => {
       animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
 
@@ -813,10 +808,6 @@ const restoreAll = () => {
           }
           p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
         });
-        
-        inner2.style.pointerEvents = '';
-        panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
-        
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
         inner2.classList.remove('restoring', 'animating');
@@ -838,9 +829,6 @@ const restoreAll = () => {
   p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = 'none'; });
 });
 
-inner2.style.pointerEvents = 'none';
-panels.forEach(p => { p.style.pointerEvents = 'none'; p.style.cursor = 'default'; });
-
 inner2.classList.add('restoring');
 inner2.classList.remove('animating');
 panels.forEach((p, i) => {
@@ -848,16 +836,14 @@ panels.forEach((p, i) => {
   if (t) {
     t.textContent = originalTexts[i] || '';
     t.style.visibility = '';
+    t.style.opacity = '';
     t.style.whiteSpace = '';
   }
+  p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
 });
 inner2.classList.remove('collapsed');
 clearTimeout(restoreTimeout);
 restoreTimeout = setTimeout(() => {
-  // RESTORE clickability
-  inner2.style.pointerEvents = '';
-  panels.forEach(p => { p.style.pointerEvents = ''; p.style.cursor = ''; });
-
   inner2.classList.remove('restoring');
   isCollapsed = false;
   lastCollapsedSourceIdx = null;

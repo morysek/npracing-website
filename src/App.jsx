@@ -872,41 +872,52 @@ restoreTimeout = setTimeout(() => {
   lastCollapsedSourceIdx = null;
 }, 480);
 };
-  // attach click handlers
-  const handlers = panels.map((p, i) => {
-    const fn = (ev) => {
-      ev.stopPropagation();
-      if (inner2.classList.contains('animating') || inner2.classList.contains('restoring')) return;
-      if (i === 0) {
-        // panel-1 click toggles: collapse -> restore or collapse (no clone)
-        if (isCollapsed) {
-          restoreAll();
-        } else {
-          collapseTo(0);
-        }
-        return;
-      }
-      // clicking another panel while not collapsed collapses + animate into panel-1
-      if (!isCollapsed) collapseTo(i);
-    };
-    p.addEventListener('click', fn);
-    return { el: p, fn };
-  });
+// attach a single delegated click handler on inner2 instead of per-panel listeners
+const onInner2Click = (ev) => {
+  // preserve existing guards you used: ignore during animating/restoring/collapsed
+  if (inner2.classList.contains('animating') || inner2.classList.contains('restoring') || inner2.classList.contains('collapsed')) return;
 
-  // cleanup
-  return () => {
-    handlers.forEach(h => h.el.removeEventListener('click', h.fn));
-    inner2.classList.remove('collapsed', 'animating', 'restoring');
-    inner2.style.pointerEvents = '';
-    panels.forEach((p, i) => {
-      const t = p.querySelector('.panel-text');
-      if (t) t.textContent = originalTexts[i] || '';
-      p.style.pointerEvents = '';
-      p.style.cursor = '';
-    });
-    if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-    clearTimeout(restoreTimeout);
-  };
+  // find the panel element clicked (works for clicks on children)
+  const panel = ev.target.closest('.panel');
+  if (!panel || !inner2.contains(panel)) return;
+
+  ev.stopPropagation();
+
+  // re-query current panels so this works even after DOM recreation
+  const currentPanels = Array.from(inner2.querySelectorAll('.panel'));
+  const idx = currentPanels.indexOf(panel);
+  if (idx === -1) return;
+
+  // preserve your original semantics:
+  if (idx === 0) {
+    if (isCollapsed) {
+      restoreAll();
+    } else {
+      collapseTo(0);
+    }
+    return;
+  }
+
+  if (!isCollapsed) collapseTo(idx);
+};
+
+// attach once
+inner2.addEventListener('click', onInner2Click);
+
+// cleanup: remove delegated listener and perform the rest of your current cleanup
+return () => {
+  inner2.removeEventListener('click', onInner2Click);
+  inner2.classList.remove('collapsed', 'animating', 'restoring');
+  inner2.style.pointerEvents = '';
+  panels.forEach((p, i) => {
+    const t = p.querySelector('panel-text');
+    if (t) t.textContent = originalTexts[i] || '';
+    p.style.pointerEvents = '';
+    p.style.cursor = '';
+  });
+  if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+  clearTimeout(restoreTimeout);
+};
 }, []);
 
   

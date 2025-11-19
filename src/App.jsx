@@ -669,7 +669,8 @@ const savedSourceRects = {};
           inner2.style.pointerEvents = '';
           panels.forEach(p => {
             p.style.pointerEvents = '';
-            p.style.cursor = '';   
+            p.style.cursor = '';
+          });
       }, 420);
       lastCollapsedSourceIdx = 0;
       return;

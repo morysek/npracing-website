@@ -876,7 +876,7 @@ restoreTimeout = setTimeout(() => {
   const handlers = panels.map((p, i) => {
     const fn = (ev) => {
       ev.stopPropagation();
-      if (inner2.classList.contains('animating') || inner2.classList.contains('restoring') || inner2.classList.contains('collapsed')) return;
+      if (inner2.classList.contains('animating') || inner2.classList.contains('restoring')) return;
       if (i === 0) {
         // panel-1 click toggles: collapse -> restore or collapse (no clone)
         if (isCollapsed) {

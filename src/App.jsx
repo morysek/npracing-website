@@ -595,6 +595,18 @@ React.useEffect(() => {
   if (!inner2) return;
 
   const panels = Array.from(inner2.querySelectorAll('.panel'));
+  
+  let collapsedOverlay = inner2.querySelector('.collapsed-overlay');
+if (!collapsedOverlay) {
+  collapsedOverlay = document.createElement('div');
+  collapsedOverlay.className = 'collapsed-overlay';
+  const overlayText = document.createElement('div');
+  overlayText.className = 'overlay-text';
+  collapsedOverlay.appendChild(overlayText);
+  inner2.appendChild(collapsedOverlay);
+}
+const getOverlayTextEl = () => collapsedOverlay.querySelector('.overlay-text');
+  
   if (!panels.length) return;
 
   inner2.style.pointerEvents = 'auto';
@@ -674,7 +686,6 @@ const sourcePanel = panels[idx];
 const sourceText = sourcePanel.querySelector('.panel-text');
 if (!sourceText) return;
 
-// measure source and save rect
 const srcRect = sourceText.getBoundingClientRect();
 savedSourceRects[idx] = {
   left: srcRect.left + window.scrollX,
@@ -684,19 +695,48 @@ savedSourceRects[idx] = {
 };
 const tgtRect = targetText.getBoundingClientRect();
 
-// Immediately copy clicked text into targetText so the DOM content matches the clicked item
-// but keep it visually hidden until the clone animation finishes.
+// --- IMMEDITATE: set targetText to clicked text so DOM reflects chosen content
 targetText.textContent = sourceText.textContent;
 targetText.style.visibility = 'hidden';
 
+// create the clone for the moving animation
 movingEl = createCloneAt(sourceText, srcRect);
 
-// allow multi-line in target while animating into collapsed state
+// allow multi-line inside the collapsed target
 targetText.style.whiteSpace = 'normal';
 
-inner2.classList.add('collapsed');
+// compute overlay vertical span: top of panel 2 to bottom of panel 4 (relative to inner2)
+const panelTopRect = panels[1].getBoundingClientRect();
+const panelBottomRect = panels[3].getBoundingClientRect();
+const innerRect = inner2.getBoundingClientRect();
 
-// hide all other panel texts and their lines while animating
+// position/size overlay relative to inner2
+const overlayTop = Math.round(panelTopRect.top - innerRect.top);
+const overlayHeight = Math.round((panelBottomRect.bottom - panelTopRect.top));
+collapsedOverlay.style.top = `${overlayTop}px`;
+collapsedOverlay.style.height = `${overlayHeight}px`;
+collapsedOverlay.style.left = `0px`;
+collapsedOverlay.style.right = `0px`;
+
+// set overlay text depending on clicked panel (customize messages here)
+const overlayTextEl = getOverlayTextEl();
+    
+const panelMessages = {
+  0: 'Engineer — short summary or CTA for Engineer',
+  1: 'Team leader — short summary or CTA for Team leader',
+  2: 'Communication — short summary or CTA for Communication',
+  3: 'Networking — short summary or CTA for Networking',
+};
+overlayTextEl.textContent = panelMessages[idx] || sourceText.textContent;
+
+// ensure overlay is present and styled (will be shown via `.collapsed` class)
+if (!collapsedOverlay.parentNode) inner2.appendChild(collapsedOverlay);
+
+// apply collapsed state
+inner2.classList.add('collapsed');
+inner2.classList.add('animating');
+
+// hide other panel texts and lines during animation
 panels.slice(1).forEach(p => {
   const t = p.querySelector('.panel-text');
   if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
@@ -705,21 +745,21 @@ hidePanelLines();
 
 requestAnimationFrame(() => {
   animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1 });
-
   const cleanup = () => {
-    // Reveal the target text now that animation is done
+    // reveal the targetText (already contains the clicked text)
     if (targetText) targetText.style.visibility = '';
     if (targetText) targetText.style.whiteSpace = '';
     if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
     movingEl = null;
     inner2.classList.remove('animating');
+    // overlay remains visible while inner2 has .collapsed; restoreAll will remove it
   };
-
   clearTimeout(restoreTimeout);
   restoreTimeout = setTimeout(cleanup, 700);
 });
 
 lastCollapsedSourceIdx = idx;
+
   };
 
   const restoreAll = () => {
@@ -806,6 +846,10 @@ lastCollapsedSourceIdx = idx;
           showPanelLines();
           isCollapsed = false;
           lastCollapsedSourceIdx = null;
+          if (collapsedOverlay && collapsedOverlay.parentNode) {
+  collapsedOverlay.remove();
+  collapsedOverlay = null;
+}
         }, 700);
       });
 
@@ -837,6 +881,10 @@ lastCollapsedSourceIdx = idx;
       showPanelLines();
       isCollapsed = false;
       lastCollapsedSourceIdx = null;
+      if (collapsedOverlay && collapsedOverlay.parentNode) {
+  collapsedOverlay.remove();
+  collapsedOverlay = null;
+}
     }, 480);
   };
 

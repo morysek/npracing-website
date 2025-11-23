@@ -670,49 +670,56 @@ React.useEffect(() => {
       return;
     }
 
-    const sourcePanel = panels[idx];
-    const sourceText = sourcePanel.querySelector('.panel-text');
-    if (!sourceText) return;
+const sourcePanel = panels[idx];
+const sourceText = sourcePanel.querySelector('.panel-text');
+if (!sourceText) return;
 
-    const srcRect = sourceText.getBoundingClientRect();
-    savedSourceRects[idx] = {
-      left: srcRect.left + window.scrollX,
-      top: srcRect.top + window.scrollY,
-      width: srcRect.width,
-      height: srcRect.height,
-    };
-    const tgtRect = targetText.getBoundingClientRect();
+// measure source and save rect
+const srcRect = sourceText.getBoundingClientRect();
+savedSourceRects[idx] = {
+  left: srcRect.left + window.scrollX,
+  top: srcRect.top + window.scrollY,
+  width: srcRect.width,
+  height: srcRect.height,
+};
+const tgtRect = targetText.getBoundingClientRect();
 
-    targetText.style.visibility = 'hidden';
+// Immediately copy clicked text into targetText so the DOM content matches the clicked item
+// but keep it visually hidden until the clone animation finishes.
+targetText.textContent = sourceText.textContent;
+targetText.style.visibility = 'hidden';
 
-    movingEl = createCloneAt(sourceText, srcRect);
+movingEl = createCloneAt(sourceText, srcRect);
 
-    targetText.style.whiteSpace = 'normal';
+// allow multi-line in target while animating into collapsed state
+targetText.style.whiteSpace = 'normal';
 
-    inner2.classList.add('collapsed');
+inner2.classList.add('collapsed');
 
-    // hide panel texts and panel .line elements (panels 2..n)
-    panels.slice(1).forEach(p => {
-      const t = p.querySelector('.panel-text');
-      if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
-    });
-    hidePanelLines();
+// hide all other panel texts and their lines while animating
+panels.slice(1).forEach(p => {
+  const t = p.querySelector('.panel-text');
+  if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
+});
+hidePanelLines();
 
-    requestAnimationFrame(() => {
-      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1 });
-      const cleanup = () => {
-        if (targetText) targetText.textContent = sourceText.textContent;
-        if (targetText) targetText.style.visibility = '';
-        targetText.style.whiteSpace = '';
-        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-        movingEl = null;
-        inner2.classList.remove('animating');
-      };
-      clearTimeout(restoreTimeout);
-      restoreTimeout = setTimeout(cleanup, 700);
-    });
+requestAnimationFrame(() => {
+  animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1 });
 
-    lastCollapsedSourceIdx = idx;
+  const cleanup = () => {
+    // Reveal the target text now that animation is done
+    if (targetText) targetText.style.visibility = '';
+    if (targetText) targetText.style.whiteSpace = '';
+    if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+    movingEl = null;
+    inner2.classList.remove('animating');
+  };
+
+  clearTimeout(restoreTimeout);
+  restoreTimeout = setTimeout(cleanup, 700);
+});
+
+lastCollapsedSourceIdx = idx;
   };
 
   const restoreAll = () => {

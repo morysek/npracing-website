@@ -586,8 +586,8 @@ if (page.matches(':nth-of-type(3)')) {
 }, []);
 
 React.useEffect(() => {
-// NEW: store source rects so restore can animate back to the exact original position
-const savedSourceRects = {};
+  // NEW: store source rects so restore can animate back to the exact original position
+  const savedSourceRects = {};
 
   const page = document.querySelector('.page:nth-of-type(3)');
   if (!page) return;
@@ -597,11 +597,9 @@ const savedSourceRects = {};
   const panels = Array.from(inner2.querySelectorAll('.panel'));
   if (!panels.length) return;
 
-  // allow clicks through the .inner-second container and panels
   inner2.style.pointerEvents = 'auto';
   panels.forEach(p => { p.style.pointerEvents = 'auto'; p.style.cursor = 'pointer'; });
 
-  // stash originals
   const originalTexts = panels.map((p) => {
     const t = p.querySelector('.panel-text');
     return t ? t.textContent : '';
@@ -610,14 +608,13 @@ const savedSourceRects = {};
   let isCollapsed = false;
   let movingEl = null;
   let restoreTimeout = null;
-  let lastCollapsedSourceIdx = null; // remember which panel collapsed into panel-1
-  let savedRectForAnimation = null;
+  let lastCollapsedSourceIdx = null;
 
   const createCloneAt = (textEl, rect) => {
     const clone = document.createElement('div');
     clone.className = 'moving-panel-text';
     clone.textContent = textEl.textContent;
-    // initial absolute placement in page coordinates
+    clone.style.position = 'absolute';
     clone.style.left = `${rect.left + window.scrollX}px`;
     clone.style.top = `${rect.top + window.scrollY}px`;
     clone.style.fontFamily = window.getComputedStyle(textEl).fontFamily || 'inherit';
@@ -626,6 +623,7 @@ const savedSourceRects = {};
     clone.style.color = window.getComputedStyle(textEl).color || 'inherit';
     clone.style.opacity = '1';
     clone.style.transform = 'none';
+    clone.style.pointerEvents = 'none';
     document.body.appendChild(clone);
     return clone;
   };
@@ -637,15 +635,21 @@ const savedSourceRects = {};
     const endTop = toRect.top + window.scrollY;
     const deltaX = endLeft - startLeft;
     const deltaY = endTop - startTop;
-
-    // ensure CSS transitions will run
     clone.getBoundingClientRect();
     clone.style.transition = opts.transition || 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease';
     clone.style.transform = `translate(${deltaX}px, ${deltaY}px)${opts.scale ? ` scale(${opts.scale})` : ''}`;
     if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
 
-  // collapse behavior; if idx === 0 we do a simple collapse (no clone/move)
+  const hidePanelLines = () => {
+    // hide only .line inside panels 2..n
+    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
+  };
+
+  const showPanelLines = () => {
+    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
+  };
+
   const collapseTo = (idx) => {
     if (isCollapsed) return;
     const targetPanel = panels[0];
@@ -657,7 +661,6 @@ const savedSourceRects = {};
     inner2.classList.remove('restoring');
 
     if (idx === 0) {
-      // simple collapse: leave panel-1 text as-is and fade out others
       inner2.classList.add('collapsed');
       clearTimeout(restoreTimeout);
       restoreTimeout = setTimeout(() => {
@@ -667,50 +670,36 @@ const savedSourceRects = {};
       return;
     }
 
-    // idx !== 0: clone source text and animate it into panel--1
     const sourcePanel = panels[idx];
     const sourceText = sourcePanel.querySelector('.panel-text');
     if (!sourceText) return;
 
     const srcRect = sourceText.getBoundingClientRect();
-// store the source rect for later restore (use page coordinates with scroll)
-savedSourceRects[idx] = {
-  left: srcRect.left + window.scrollX,
-  top: srcRect.top + window.scrollY,
-  width: srcRect.width,
-  height: srcRect.height,
-};
-// measure target (panel-1) rect for immediate animation destination
-const tgtRect = targetText.getBoundingClientRect();
+    savedSourceRects[idx] = {
+      left: srcRect.left + window.scrollX,
+      top: srcRect.top + window.scrollY,
+      width: srcRect.width,
+      height: srcRect.height,
+    };
+    const tgtRect = targetText.getBoundingClientRect();
 
-    // hide the original target text so only the moving clone is visible
     targetText.style.visibility = 'hidden';
 
     movingEl = createCloneAt(sourceText, srcRect);
 
-    // allow panel--1 to accept multiple lines visually while animating (no layout jump)
     targetText.style.whiteSpace = 'normal';
 
-    // fade other panels down (CSS handles opacity/transform)
     inner2.classList.add('collapsed');
 
-const hideOtherPanels = () => {
-  panels.slice(1).forEach(p => {
-    const t = p.querySelector('.panel-text');
-    if (t) {
-      t.style.visibility = 'hidden';
-      t.style.opacity = '0';
-    }
-    // hide only .line inside the other panels (leave .car-line alone)
-    p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; });
-  });
-};
-hideOtherPanels();
-    
-    // animate clone on next frame so CSS collapse starts first
+    // hide panel texts and panel .line elements (panels 2..n)
+    panels.slice(1).forEach(p => {
+      const t = p.querySelector('.panel-text');
+      if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
+    });
+    hidePanelLines();
+
     requestAnimationFrame(() => {
-      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1. });
-      // cleanup after animation completes
+      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
       const cleanup = () => {
         if (targetText) targetText.textContent = sourceText.textContent;
         if (targetText) targetText.style.visibility = '';
@@ -726,136 +715,128 @@ hideOtherPanels();
     lastCollapsedSourceIdx = idx;
   };
 
-const restoreAll = () => {
-  if (!isCollapsed) return;
+  const restoreAll = () => {
+    if (!isCollapsed) return;
 
-  // remove any mid-flight clone
-  if (movingEl && movingEl.parentNode) {
-    movingEl.parentNode.removeChild(movingEl);
-    movingEl = null;
-  }
-
-  const srcIdx = lastCollapsedSourceIdx || 0;
-  const targetPanel = panels[0];
-  const targetText = targetPanel ? targetPanel.querySelector('.panel-text') : null;
-
-  if (!targetText) {
-    // fallback: restore without animation
-    panels.forEach((p, i) => {
-      const t = p.querySelector('.panel-text');
-      if (t) t.textContent = originalTexts[i] || '';
-    });
-    inner2.classList.remove('collapsed');
-    isCollapsed = false;
-    lastCollapsedSourceIdx = null;
-    return;
-  }
-
-  // If we collapsed from a non-zero panel, animate panel-1 -> original position
-  if (srcIdx !== 0) {
-    const fromRect = targetText.getBoundingClientRect();
-    const destPanel = panels[srcIdx];
-    const destText = destPanel ? destPanel.querySelector('.panel-text') : null;
-
-    // prefer saved rect captured at collapse time
-    const saved = savedSourceRects[srcIdx];
-    let finalToRect;
-    if (saved) {
-      finalToRect = {
-        left: saved.left - window.scrollX,
-        top: saved.top - window.scrollY,
-        width: saved.width,
-        height: saved.height,
-      };
-    } else if (destText) {
-      const destRect = destText.getBoundingClientRect();
-      finalToRect = {
-        left: destRect.left,
-        top: destRect.top,
-        width: destRect.width,
-        height: destRect.height,
-      };
-    } else {
-      finalToRect = {
-        left: fromRect.left,
-        top: fromRect.top,
-        width: fromRect.width,
-        height: fromRect.height,
-      };
+    if (movingEl && movingEl.parentNode) {
+      movingEl.parentNode.removeChild(movingEl);
+      movingEl = null;
     }
 
-    // hide real panel-1 text while clone moves
-    targetText.style.visibility = 'hidden';
+    const srcIdx = lastCollapsedSourceIdx || 0;
+    const targetPanel = panels[0];
+    const targetText = targetPanel ? targetPanel.querySelector('.panel-text') : null;
 
-    // create clone at panel-1 position
-    movingEl = createCloneAt(targetText, fromRect);
-
-    requestAnimationFrame(() => {
-      animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1 });
-
+    if (!targetText) {
+      panels.forEach((p, i) => {
+        const t = p.querySelector('.panel-text');
+        if (t) t.textContent = originalTexts[i] || '';
+      });
       inner2.classList.remove('collapsed');
-      inner2.classList.add('restoring');
+      showPanelLines();
+      isCollapsed = false;
+      lastCollapsedSourceIdx = null;
+      return;
+    }
 
-      clearTimeout(restoreTimeout);
-      restoreTimeout = setTimeout(() => {
-        // restore all texts and visibility
-        panels.forEach((p, i) => {
-          const t = p.querySelector('.panel-text');
-          if (t) {
-            t.textContent = originalTexts[i] || '';
-            t.style.visibility = '';
-            t.style.opacity = '';
-            t.style.whiteSpace = '';
-          }
-          if (i > 0) p.querySelectorAll('.line').forEach(l => { l.style.display = ''; });
-        });
-        if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
-        movingEl = null;
-        inner2.classList.remove('restoring', 'animating');
-        isCollapsed = false;
-        lastCollapsedSourceIdx = null;
-      }, 700);
+    // hide panel lines while animating back
+    hidePanelLines();
+
+    if (srcIdx !== 0) {
+      const fromRect = targetText.getBoundingClientRect();
+      const destPanel = panels[srcIdx];
+      const destText = destPanel ? destPanel.querySelector('.panel-text') : null;
+
+      const saved = savedSourceRects[srcIdx];
+      let finalToRect;
+      if (saved) {
+        finalToRect = {
+          left: saved.left - window.scrollX,
+          top: saved.top - window.scrollY,
+          width: saved.width,
+          height: saved.height,
+        };
+      } else if (destText) {
+        const destRect = destText.getBoundingClientRect();
+        finalToRect = {
+          left: destRect.left,
+          top: destRect.top,
+          width: destRect.width,
+          height: destRect.height,
+        };
+      } else {
+        finalToRect = {
+          left: fromRect.left,
+          top: fromRect.top,
+          width: fromRect.width,
+          height: fromRect.height,
+        };
+      }
+
+      targetText.style.visibility = 'hidden';
+      movingEl = createCloneAt(targetText, fromRect);
+
+      requestAnimationFrame(() => {
+        animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
+
+        inner2.classList.remove('collapsed');
+        inner2.classList.add('restoring');
+
+        clearTimeout(restoreTimeout);
+        restoreTimeout = setTimeout(() => {
+          panels.forEach((p, i) => {
+            const t = p.querySelector('.panel-text');
+            if (t) {
+              t.textContent = originalTexts[i] || '';
+              t.style.visibility = '';
+              t.style.opacity = '';
+              t.style.whiteSpace = '';
+            }
+          });
+          if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+          movingEl = null;
+          inner2.classList.remove('restoring', 'animating');
+          showPanelLines();
+          isCollapsed = false;
+          lastCollapsedSourceIdx = null;
+        }, 700);
+      });
+
+      return;
+    }
+
+    // collapsed from panel-1 itself: fade panels back in, keep panel lines hidden until finalize
+    panels.slice(1).forEach(p => {
+      const t = p.querySelector('.panel-text');
+      if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
     });
+    hidePanelLines();
 
-    return;
-  }
+    inner2.classList.add('restoring');
+    inner2.classList.remove('animating');
+    panels.forEach((p, i) => {
+      const t = p.querySelector('.panel-text');
+      if (t) {
+        t.textContent = originalTexts[i] || '';
+        t.style.visibility = '';
+        t.style.opacity = '';
+        t.style.whiteSpace = '';
+      }
+    });
+    inner2.classList.remove('collapsed');
+    clearTimeout(restoreTimeout);
+    restoreTimeout = setTimeout(() => {
+      inner2.classList.remove('restoring');
+      showPanelLines();
+      isCollapsed = false;
+      lastCollapsedSourceIdx = null;
+    }, 480);
+  };
 
-  // If collapsed from panel-1 itself: just fade panels back in
-  panels.slice(1).forEach(p => {
-  const t = p.querySelector('.panel-text');
-  if (t) {
-    t.style.visibility = 'hidden';
-    t.style.opacity = '0';
-  }
-  p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; });
-});
-
-inner2.classList.add('restoring');
-inner2.classList.remove('animating');
-panels.forEach((p, i) => {
-  const t = p.querySelector('.panel-text');
-  if (t) {
-    t.textContent = originalTexts[i] || '';
-    t.style.visibility = '';
-    t.style.opacity = '';
-    t.style.whiteSpace = '';
-  }
-  if (i > 0) p.querySelectorAll('.line').forEach(l => { l.style.display = ''; });
-});
-inner2.classList.remove('collapsed');
-clearTimeout(restoreTimeout);
-restoreTimeout = setTimeout(() => {
-  inner2.classList.remove('restoring');
-  isCollapsed = false;
-  lastCollapsedSourceIdx = null;
-}, 480);
-};
-  // attach click handlers
   const handlers = panels.map((p, i) => {
     const fn = (ev) => {
       ev.stopPropagation();
       if (i === 0) {
-        // panel-1 click toggles: collapse -> restore or collapse (no clone)
         if (isCollapsed) {
           restoreAll();
         } else {
@@ -863,14 +844,12 @@ restoreTimeout = setTimeout(() => {
         }
         return;
       }
-      // clicking another panel while not collapsed collapses + animate into panel-1
       if (!isCollapsed) collapseTo(i);
     };
     p.addEventListener('click', fn);
     return { el: p, fn };
   });
 
-  // cleanup
   return () => {
     handlers.forEach(h => h.el.removeEventListener('click', h.fn));
     inner2.classList.remove('collapsed', 'animating', 'restoring');
@@ -885,7 +864,6 @@ restoreTimeout = setTimeout(() => {
     clearTimeout(restoreTimeout);
   };
 }, []);
-
   
 return (
   <div className="App">

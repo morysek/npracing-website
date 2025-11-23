@@ -695,17 +695,19 @@ const tgtRect = targetText.getBoundingClientRect();
     // fade other panels down (CSS handles opacity/transform)
     inner2.classList.add('collapsed');
 
-    const hideOtherPanels = () => {
+const hideOtherPanels = () => {
   panels.slice(1).forEach(p => {
     const t = p.querySelector('.panel-text');
     if (t) {
       t.style.visibility = 'hidden';
       t.style.opacity = '0';
     }
-    p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = 'none'; });
+    // hide only .line inside the other panels (leave .car-line alone)
+    p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; });
   });
 };
 hideOtherPanels();
+    
     // animate clone on next frame so CSS collapse starts first
     requestAnimationFrame(() => {
       animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
@@ -790,7 +792,7 @@ const restoreAll = () => {
     movingEl = createCloneAt(targetText, fromRect);
 
     requestAnimationFrame(() => {
-      animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
+      animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1 });
 
       inner2.classList.remove('collapsed');
       inner2.classList.add('restoring');
@@ -806,7 +808,7 @@ const restoreAll = () => {
             t.style.opacity = '';
             t.style.whiteSpace = '';
           }
-          p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
+          if (i > 0) p.querySelectorAll('.line').forEach(l => { l.style.display = ''; });
         });
         if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
         movingEl = null;
@@ -826,7 +828,7 @@ const restoreAll = () => {
     t.style.visibility = 'hidden';
     t.style.opacity = '0';
   }
-  p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = 'none'; });
+  p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; });
 });
 
 inner2.classList.add('restoring');
@@ -839,7 +841,7 @@ panels.forEach((p, i) => {
     t.style.opacity = '';
     t.style.whiteSpace = '';
   }
-  p.querySelectorAll('.line, .car-line').forEach(l => { l.style.display = ''; });
+  if (i > 0) p.querySelectorAll('.line').forEach(l => { l.style.display = ''; });
 });
 inner2.classList.remove('collapsed');
 clearTimeout(restoreTimeout);

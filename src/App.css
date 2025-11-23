@@ -450,6 +450,41 @@ html:not(.is-device) .text--two {
   pointer-events: none;
 }
 
+.inner-second .collapsed-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--bg-dark);
+  color: var(--bg-yellow);
+  border-radius: 14px;
+  z-index: 10003;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5vh 3vw;
+  box-sizing: border-box;
+  transition: opacity 360ms ease, transform 360ms cubic-bezier(.2,.9,.2,1);
+  opacity: 0;
+  transform-origin: top center;
+}
+
+/* visible when collapsed */
+.inner-second.collapsed .collapsed-overlay {
+  opacity: 1;
+  transform: none;
+}
+
+/* text inside overlay */
+.inner-second .collapsed-overlay .overlay-text {
+  max-width: 100%;
+  text-align: center;
+  font-size: 3.2vh;
+  line-height: 1.15;
+  white-space: pre-wrap;
+  pointer-events: none;
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

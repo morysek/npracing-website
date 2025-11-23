@@ -1,4 +1,3 @@
-
 import React from 'react';
 import './App.css';
 export default function App() {
@@ -710,7 +709,7 @@ hideOtherPanels();
     
     // animate clone on next frame so CSS collapse starts first
     requestAnimationFrame(() => {
-      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
+      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1. });
       // cleanup after animation completes
       const cleanup = () => {
         if (targetText) targetText.textContent = sourceText.textContent;

@@ -624,8 +624,6 @@ const getOverlayTextEl = () => {
   return ensureCollapsedOverlay().querySelector('.overlay-text');
 };
 
-  let collapsedOverlay = inner2.querySelector('.collapsed-overlay') || null;
-
 function ensureCollapsedOverlay() {
   if (collapsedOverlay && collapsedOverlay.parentNode) return collapsedOverlay;
   // recreate element
@@ -637,11 +635,6 @@ function ensureCollapsedOverlay() {
   inner2.appendChild(collapsedOverlay);
   return collapsedOverlay;
 }
-
-const getOverlayTextEl = () => {
-  const ov = collapsedOverlay && collapsedOverlay.querySelector('.overlay-text');
-  return ov || (ensureCollapsedOverlay().querySelector('.overlay-text'));
-};
   
   if (!panels.length) return;
 

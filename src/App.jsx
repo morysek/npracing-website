@@ -641,43 +641,14 @@ React.useEffect(() => {
     if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
 
-const hidePanelLines = () => {
-  // hide panel-local .line for panels 2..n (direct children) and hide their panel-text
-  panels.slice(1).forEach(p => {
-    p.querySelectorAll(':scope > .line').forEach(l => {
-      l.style.transition = 'none';
-      l.style.display = 'none';
-    });
-    const t = p.querySelector('.panel-text');
-    if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
-  });
+  const hidePanelLines = () => {
+    // hide only .line inside panels 2..n
+    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
+  };
 
-  // also hide the single .line inside the page .inner (updateLine creates this)
-  const innerLine = page.querySelector('.inner > .line');
-  if (innerLine) {
-    innerLine.style.transition = 'none';
-    innerLine.style.display = 'none';
-  }
-};
-
-const showPanelLines = () => {
-  // restore panel-local .line and panel-text
-  panels.slice(1).forEach(p => {
-    p.querySelectorAll(':scope > .line').forEach(l => {
-      l.style.display = '';
-      l.style.transition = '';
-    });
-    const t = p.querySelector('.panel-text');
-    if (t) { t.style.visibility = ''; t.style.opacity = ''; }
-  });
-
-  // restore the page .inner line
-  const innerLine = page.querySelector('.inner > .line');
-  if (innerLine) {
-    innerLine.style.display = '';
-    innerLine.style.transition = '';
-  }
-};
+  const showPanelLines = () => {
+    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
+  };
 
   const collapseTo = (idx) => {
     if (isCollapsed) return;
@@ -728,7 +699,7 @@ const showPanelLines = () => {
     hidePanelLines();
 
     requestAnimationFrame(() => {
-      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1.02 });
+      animateClone(movingEl, srcRect, tgtRect, { opacityTo: 1, scale: 1 });
       const cleanup = () => {
         if (targetText) targetText.textContent = sourceText.textContent;
         if (targetText) targetText.style.visibility = '';
@@ -806,7 +777,7 @@ const showPanelLines = () => {
       movingEl = createCloneAt(targetText, fromRect);
 
       requestAnimationFrame(() => {
-        animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1.02 });
+        animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1 });
 
         inner2.classList.remove('collapsed');
         inner2.classList.add('restoring');

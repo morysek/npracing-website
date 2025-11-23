@@ -641,14 +641,43 @@ React.useEffect(() => {
     if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
 
-  const hidePanelLines = () => {
-    // hide only .line inside panels 2..n
-    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
-  };
+const hidePanelLines = () => {
+  // hide panel-local .line for panels 2..n (direct children) and hide their panel-text
+  panels.slice(1).forEach(p => {
+    p.querySelectorAll(':scope > .line').forEach(l => {
+      l.style.transition = 'none';
+      l.style.display = 'none';
+    });
+    const t = p.querySelector('.panel-text');
+    if (t) { t.style.visibility = 'hidden'; t.style.opacity = '0'; }
+  });
 
-  const showPanelLines = () => {
-    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
-  };
+  // also hide the single .line inside the page .inner (updateLine creates this)
+  const innerLine = page.querySelector('.inner > .line');
+  if (innerLine) {
+    innerLine.style.transition = 'none';
+    innerLine.style.display = 'none';
+  }
+};
+
+const showPanelLines = () => {
+  // restore panel-local .line and panel-text
+  panels.slice(1).forEach(p => {
+    p.querySelectorAll(':scope > .line').forEach(l => {
+      l.style.display = '';
+      l.style.transition = '';
+    });
+    const t = p.querySelector('.panel-text');
+    if (t) { t.style.visibility = ''; t.style.opacity = ''; }
+  });
+
+  // restore the page .inner line
+  const innerLine = page.querySelector('.inner > .line');
+  if (innerLine) {
+    innerLine.style.display = '';
+    innerLine.style.transition = '';
+  }
+};
 
   const collapseTo = (idx) => {
     if (isCollapsed) return;

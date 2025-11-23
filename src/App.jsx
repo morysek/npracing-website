@@ -596,16 +596,52 @@ React.useEffect(() => {
 
   const panels = Array.from(inner2.querySelectorAll('.panel'));
   
-  let collapsedOverlay = inner2.querySelector('.collapsed-overlay');
-if (!collapsedOverlay) {
+// overlay used while collapsed: create lazily and return it
+let collapsedOverlay = inner2.querySelector('.collapsed-overlay') || null;
+
+function ensureCollapsedOverlay() {
+  // if already present in DOM and referenced, return it
+  if (collapsedOverlay && collapsedOverlay.parentNode) return collapsedOverlay;
+
+  // create (or recreate) the overlay and its content
+  collapsedOverlay = document.createElement('div');
+  collapsedOverlay.className = 'collapsed-overlay';
+  const overlayText = document.createElement('div');
+  overlayText.className = 'overlay-text';
+  collapsedOverlay.appendChild(overlayText);
+
+  // append to inner2 and return
+  inner2.appendChild(collapsedOverlay);
+  return collapsedOverlay;
+}
+
+const getOverlayTextEl = () => {
+  if (collapsedOverlay && collapsedOverlay.querySelector) {
+    const el = collapsedOverlay.querySelector('.overlay-text');
+    if (el) return el;
+  }
+  // ensure overlay exists if the text element is requested
+  return ensureCollapsedOverlay().querySelector('.overlay-text');
+};
+
+  let collapsedOverlay = inner2.querySelector('.collapsed-overlay') || null;
+
+function ensureCollapsedOverlay() {
+  if (collapsedOverlay && collapsedOverlay.parentNode) return collapsedOverlay;
+  // recreate element
   collapsedOverlay = document.createElement('div');
   collapsedOverlay.className = 'collapsed-overlay';
   const overlayText = document.createElement('div');
   overlayText.className = 'overlay-text';
   collapsedOverlay.appendChild(overlayText);
   inner2.appendChild(collapsedOverlay);
+  return collapsedOverlay;
 }
-const getOverlayTextEl = () => collapsedOverlay.querySelector('.overlay-text');
+
+const getOverlayTextEl = () => {
+  const ov = collapsedOverlay && collapsedOverlay.querySelector('.overlay-text');
+  return ov || (ensureCollapsedOverlay().querySelector('.overlay-text'));
+};
   
   if (!panels.length) return;
 
@@ -710,17 +746,19 @@ const panelTopRect = panels[1].getBoundingClientRect();
 const panelBottomRect = panels[3].getBoundingClientRect();
 const innerRect = inner2.getBoundingClientRect();
 
-// position/size overlay relative to inner2
+// ensure overlay exists, then position/size it relative to inner2
+const ov = ensureCollapsedOverlay();
 const overlayTop = Math.round(panelTopRect.top - innerRect.top);
-const overlayHeight = Math.round((panelBottomRect.bottom - panelTopRect.top));
-collapsedOverlay.style.top = `${overlayTop}px`;
-collapsedOverlay.style.height = `${overlayHeight}px`;
-collapsedOverlay.style.left = `0px`;
-collapsedOverlay.style.right = `0px`;
+const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
 
-// set overlay text depending on clicked panel (customize messages here)
+ov.style.position = 'absolute';
+ov.style.top = `${overlayTop}px`;
+ov.style.height = `${overlayHeight}px`;
+ov.style.left = `0px`;
+ov.style.right = `0px`;
+
+// set overlay text depending on clicked panel (customize messages)
 const overlayTextEl = getOverlayTextEl();
-    
 const panelMessages = {
   0: 'Engineer — short summary or CTA for Engineer',
   1: 'Team leader — short summary or CTA for Team leader',

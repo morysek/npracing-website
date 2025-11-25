@@ -743,15 +743,60 @@ savedSourceRects[idx] = {
 };
 const tgtRect = targetText.getBoundingClientRect();
 
-// --- IMMEDITATE: set targetText to clicked text so DOM reflects chosen content
+// --- IMMEDIATE: set targetText to clicked text but keep it hidden until animation ends
 targetText.textContent = sourceText.textContent;
 targetText.style.visibility = 'hidden';
+targetText.style.opacity = '0';
+targetText.style.whiteSpace = 'normal';
 
 // create the clone for the moving animation
 movingEl = createCloneAt(sourceText, srcRect);
 
-// allow multi-line inside the collapsed target
-targetText.style.whiteSpace = 'normal';
+// compute target rect AFTER we updated targetText content (but before revealing)
+const finalTargetRect = targetText.getBoundingClientRect();
+
+// animate clone from source -> target and fade it out
+animateClone(movingEl, srcRect, finalTargetRect, {
+  transition: 'transform 600ms cubic-bezier(.2,.9,.2,1), opacity 420ms ease',
+  opacityTo: 0,
+});
+
+// finalize after animation completes
+const onCloneTransitionEnd = (ev) => {
+  // only respond to transform or opacity transitions
+  if (ev.propertyName !== 'transform' && ev.propertyName !== 'opacity') return;
+
+  if (movingEl) movingEl.removeEventListener('transitionend', onCloneTransitionEnd);
+
+  // reveal the real target text with a short fade-in
+  targetText.style.visibility = '';
+  targetText.style.transition = 'opacity 220ms ease';
+  // force reflow so the transition runs
+  void targetText.offsetWidth;
+  targetText.style.opacity = '1';
+
+  // remove the clone shortly after reveal so the swap is smooth
+  setTimeout(() => {
+    if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
+    movingEl = null;
+  }, 40);
+
+  // restore UI state now that animation finished
+  inner2.classList.remove('animating');
+  inner2.classList.add('restoring');
+
+  // re-show any panel lines hidden during animation
+  showPanelLines();
+
+  clearTimeout(restoreTimeout);
+  restoreTimeout = setTimeout(() => {
+    inner2.classList.remove('restoring');
+  }, 300);
+};
+
+// attach listener
+if (movingEl) movingEl.addEventListener('transitionend', onCloneTransitionEnd);
+
 
 // compute overlay vertical span: top of panel 2 to bottom of panel 4 (relative to inner2)
 const panelTopRect = panels[1].getBoundingClientRect();

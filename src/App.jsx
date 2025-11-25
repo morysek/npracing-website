@@ -690,44 +690,44 @@ const getOverlayTextEl = () => {
     inner2.classList.remove('restoring');
 
     if (idx === 0) {
-  // apply collapsed state and animate class immediately
+  // create/position overlay spanning panel 2 → panel 4, and set overlay text for panel 1
+  const panelTopRect = panels[1].getBoundingClientRect();
+  const panelBottomRect = panels[3].getBoundingClientRect();
+  const innerRect = inner2.getBoundingClientRect();
+
+  const ov = ensureCollapsedOverlay();
+  const overlayTop = Math.round(panelTopRect.top - innerRect.top);
+  const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
+
+  ov.style.position = 'absolute';
+  ov.style.top = `${overlayTop}px`;
+  ov.style.height = `${overlayHeight}px`;
+  ov.style.left = `0px`;
+  ov.style.right = `0px`;
+
+  // set overlay text for panel 1 (use 0..3 index mapping)
+  const overlayTextEl = getOverlayTextEl();
+  const panelMessages = {
+    0: 'Engineer — short summary or CTA for Engineer',
+    1: 'Team leader — short summary or CTA for Team leader',
+    2: 'Communication — short summary or CTA for Communication',
+    3: 'Networking — short summary or CTA for Networking',
+  };
+  overlayTextEl.textContent = panelMessages[0] || originalTexts[0] || '';
+
+  // ensure overlay is appended (ensureCollapsedOverlay already appended it)
+  // apply collapsed state and animate class
   inner2.classList.add('collapsed');
   inner2.classList.add('animating');
 
   clearTimeout(restoreTimeout);
   restoreTimeout = setTimeout(() => {
-    // remove animating class (end of short collapse animation)
     inner2.classList.remove('animating');
-
-    // AFTER animation ends: create/position overlay and set text for panel 1
-    const panelTopRect = panels[1].getBoundingClientRect();
-    const panelBottomRect = panels[3].getBoundingClientRect();
-    const innerRect = inner2.getBoundingClientRect();
-
-    const ov = ensureCollapsedOverlay();
-    const overlayTop = Math.round(panelTopRect.top - innerRect.top);
-    const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
-
-    ov.style.position = 'absolute';
-    ov.style.top = `${overlayTop}px`;
-    ov.style.height = `${overlayHeight}px`;
-    ov.style.left = `0px`;
-    ov.style.right = `0px`;
-
-    const overlayTextEl = getOverlayTextEl();
-    const panelMessages = {
-      0: 'Engineer — short summary or CTA for Engineer',
-      1: 'Team leader — short summary or CTA for Team leader',
-      2: 'Communication — short summary or CTA for Communication',
-      3: 'Networking — short summary or CTA for Networking',
-    };
-    overlayTextEl.textContent = panelMessages[0] || originalTexts[0] || '';
   }, 420);
 
   lastCollapsedSourceIdx = 0;
   return;
 }
-
 
 
 const sourcePanel = panels[idx];
@@ -752,7 +752,33 @@ movingEl = createCloneAt(sourceText, srcRect);
 
 // allow multi-line inside the collapsed target
 targetText.style.whiteSpace = 'normal';
-    
+
+// compute overlay vertical span: top of panel 2 to bottom of panel 4 (relative to inner2)
+const panelTopRect = panels[1].getBoundingClientRect();
+const panelBottomRect = panels[3].getBoundingClientRect();
+const innerRect = inner2.getBoundingClientRect();
+
+// ensure overlay exists, then position/size it relative to inner2
+const ov = ensureCollapsedOverlay();
+const overlayTop = Math.round(panelTopRect.top - innerRect.top);
+const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
+
+ov.style.position = 'absolute';
+ov.style.top = `${overlayTop}px`;
+ov.style.height = `${overlayHeight}px`;
+ov.style.left = `0px`;
+ov.style.right = `0px`;
+
+// set overlay text depending on clicked panel (customize messages)
+const overlayTextEl = getOverlayTextEl();
+const panelMessages = {
+  0: 'Engineer — short summary or CTA for Engineer',
+  1: 'Team leader — short summary or CTA for Team leader',
+  2: 'Communication — short summary or CTA for Communication',
+  3: 'Networking — short summary or CTA for Networking',
+};
+overlayTextEl.textContent = panelMessages[idx] || sourceText.textContent;
+
 // ensure overlay is present and styled (will be shown via `.collapsed` class)
 if (!collapsedOverlay.parentNode) inner2.appendChild(collapsedOverlay);
 
@@ -775,30 +801,6 @@ requestAnimationFrame(() => {
     if (targetText) targetText.style.whiteSpace = '';
     if (movingEl && movingEl.parentNode) movingEl.parentNode.removeChild(movingEl);
     movingEl = null;
-    // AFTER animation ends: create/position overlay and set text
-const panelTopRect = panels[1].getBoundingClientRect();
-const panelBottomRect = panels[3].getBoundingClientRect();
-const innerRect = inner2.getBoundingClientRect();
-
-const ov = ensureCollapsedOverlay();
-const overlayTop = Math.round(panelTopRect.top - innerRect.top);
-const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
-
-ov.style.position = 'absolute';
-ov.style.top = `${overlayTop}px`;
-ov.style.height = `${overlayHeight}px`;
-ov.style.left = `0px`;
-ov.style.right = `0px`;
-
-const overlayTextEl = getOverlayTextEl();
-const panelMessages = {
-  0: 'Engineer — short summary or CTA for Engineer',
-  1: 'Team leader — short summary or CTA for Team leader',
-  2: 'Communication — short summary or CTA for Communication',
-  3: 'Networking — short summary or CTA for Networking',
-};
-overlayTextEl.textContent = panelMessages[idx] || sourceText.textContent;
-
     inner2.classList.remove('animating');
     // overlay remains visible while inner2 has .collapsed; restoreAll will remove it
   };

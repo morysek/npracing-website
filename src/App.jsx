@@ -670,14 +670,15 @@ const getOverlayTextEl = () => {
     if (typeof opts.opacityTo !== 'undefined') clone.style.opacity = String(opts.opacityTo);
   };
 
-  const hidePanelLines = () => {
-    // hide only .line inside panels 2..n
-    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
-  };
+const hidePanelLines = () => {
+  // hide .line inside all panels 1..n
+  panels.forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
+};
 
-  const showPanelLines = () => {
-    panels.slice(1).forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
-  };
+const showPanelLines = () => {
+  // restore display for .line inside all panels 1..n
+  panels.forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
+};
 
   const collapseTo = (idx) => {
     if (isCollapsed) return;

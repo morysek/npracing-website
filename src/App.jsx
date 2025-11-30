@@ -671,13 +671,17 @@ const getOverlayTextEl = () => {
   };
 
 const hidePanelLines = () => {
-  // hide .line inside all panels 1..n
+  // hide .line inside each panel and any .line directly inside inner2
   panels.forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; }));
+  const innerLines = inner2.querySelectorAll('.line');
+  innerLines.forEach(l => { l.style.display = 'none'; });
 };
 
 const showPanelLines = () => {
-  // restore display for .line inside all panels 1..n
+  // restore display for .line inside panels and inside inner2
   panels.forEach(p => p.querySelectorAll('.line').forEach(l => { l.style.display = ''; }));
+  const innerLines = inner2.querySelectorAll('.line');
+  innerLines.forEach(l => { l.style.display = ''; });
 };
 
   const collapseTo = (idx) => {
@@ -720,6 +724,7 @@ const showPanelLines = () => {
   // apply collapsed state and animate class
   inner2.classList.add('collapsed');
   inner2.classList.add('animating');
+  hidePanelLines();
 
   clearTimeout(restoreTimeout);
   restoreTimeout = setTimeout(() => {
@@ -831,6 +836,7 @@ if (!collapsedOverlay.parentNode) inner2.appendChild(collapsedOverlay);
 // apply collapsed state
 inner2.classList.add('collapsed');
 inner2.classList.add('animating');
+hidePanelLines();
 
 // hide other panel texts and lines during animation
 panels.slice(1).forEach(p => {
@@ -923,6 +929,7 @@ lastCollapsedSourceIdx = idx;
         animateClone(movingEl, fromRect, finalToRect, { opacityTo: 1, scale: 1 });
 
         inner2.classList.remove('collapsed');
+        showPanelLines();
         inner2.classList.add('restoring');
 
         clearTimeout(restoreTimeout);
@@ -971,6 +978,7 @@ lastCollapsedSourceIdx = idx;
       }
     });
     inner2.classList.remove('collapsed');
+    showPanelLines();
     clearTimeout(restoreTimeout);
     restoreTimeout = setTimeout(() => {
       inner2.classList.remove('restoring');

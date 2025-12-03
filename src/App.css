@@ -485,6 +485,10 @@ html:not(.is-device) .text--two {
   white-space: pre-wrap;
   pointer-events: none;
 }
+/* hide panel bottom lines when inner-second is collapsed */
+.page:nth-of-type(3) .inner-second.collapsed .panel::after {
+  display: none !important;
+}
 /* Ensure responsive scaling */
 @media (max-width: 900px){
   .text--one{ font-size: clamp(40px, 6vw, 80px); }

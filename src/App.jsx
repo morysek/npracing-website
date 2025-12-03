@@ -285,6 +285,15 @@ export default function App() {
     document.querySelectorAll('.page').forEach((page) => {
       const inner = page.querySelector('.inner');
       if (!inner) return;
+      
+      const collapsedAncestor = inner.closest('.inner-second');
+      
+      if (collapsedAncestor && collapsedAncestor.classList.contains('collapsed')) {
+      const existingLine = inner.querySelector('.line');
+      if (existingLine) existingLine.style.display = 'none';
+      return;
+      }
+      
       const t1 = inner.querySelector('.text--one');
       const t2 = inner.querySelector('.text--two');
       let line = inner.querySelector('.line');

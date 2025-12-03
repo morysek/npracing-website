@@ -702,23 +702,18 @@ const showPanelLines = () => {
     inner2.classList.add('animating');
     inner2.classList.remove('restoring');
 
-    if (idx === 0) {
-  // create/position overlay spanning panel 2 → panel 4, and set overlay text for panel 1
-  const panelTopRect = panels[1].getBoundingClientRect();
-  const panelBottomRect = panels[3].getBoundingClientRect();
-  const innerRect = inner2.getBoundingClientRect();
+// --- replace the existing `if (idx === 0) { ... }` branch with this ---
+if (idx === 0) {
+  // start the collapse animation (panels fade out)
+  isCollapsed = true;
+  inner2.classList.add('animating');
+  inner2.classList.remove('restoring');
 
+  // hide panel lines immediately so they don't flash during animation
+  hidePanelLines();
+
+  // ensure overlay exists but keep it hidden (CSS .collapsed-overlay has opacity:0 by default)
   const ov = ensureCollapsedOverlay();
-  const overlayTop = Math.round(panelTopRect.top - innerRect.top);
-  const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
-
-  ov.style.position = 'absolute';
-  ov.style.top = `${overlayTop}px`;
-  ov.style.height = `${overlayHeight}px`;
-  ov.style.left = `0px`;
-  ov.style.right = `0px`;
-
-  // set overlay text for panel 1 (use 0..3 index mapping)
   const overlayTextEl = getOverlayTextEl();
   const panelMessages = {
     0: 'Engineer — short summary or CTA for Engineer',
@@ -728,20 +723,48 @@ const showPanelLines = () => {
   };
   overlayTextEl.textContent = panelMessages[0] || originalTexts[0] || '';
 
-  // ensure overlay is appended (ensureCollapsedOverlay already appended it)
-  // apply collapsed state and animate class
-  inner2.classList.add('collapsed');
-  inner2.classList.add('animating');
-  hidePanelLines();
+  // compute overlay geometry now (so it is ready when we show it)
+  const panelTopRect = panels[1].getBoundingClientRect();
+  const panelBottomRect = panels[3].getBoundingClientRect();
+  const innerRect = inner2.getBoundingClientRect();
+  const overlayTop = Math.round(panelTopRect.top - innerRect.top);
+  const overlayHeight = Math.round(panelBottomRect.bottom - panelTopRect.top);
+  Object.assign(ov.style, {
+    position: 'absolute',
+    top: `${overlayTop}px`,
+    height: `${overlayHeight}px`,
+    left: '0px',
+    right: '0px',
+    // keep it visually hidden until we add .collapsed to inner2
+    opacity: '0',
+    pointerEvents: 'none',
+    transform: 'none',
+  });
 
+  // duration should match your CSS animation timing (420ms used elsewhere)
+  const COLLAPSE_ANIM_MS = 420;
+
+  // after the collapse animation finishes, reveal the overlay and finalize collapsed state
   clearTimeout(restoreTimeout);
   restoreTimeout = setTimeout(() => {
-    inner2.classList.remove('animating');
-  }, 420);
+    // mark collapsed (CSS rules tied to .collapsed will hide panels and show overlay)
+    inner2.classList.add('collapsed');
 
-  lastCollapsedSourceIdx = 0;
+    // make overlay visible (CSS also toggles via .inner-second.collapsed .collapsed-overlay,
+    // but we set opacity here to be explicit and avoid flicker)
+    ov.style.opacity = '';
+    ov.style.pointerEvents = 'none';
+
+    // remove animating flag after a short delay so any "animating" styles are cleared
+    inner2.classList.remove('animating');
+
+    // store last collapsed index
+    lastCollapsedSourceIdx = 0;
+  }, COLLAPSE_ANIM_MS);
+
   return;
 }
+
 
 
 const sourcePanel = panels[idx];

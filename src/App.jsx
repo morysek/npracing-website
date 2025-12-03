@@ -286,11 +286,10 @@ export default function App() {
       const inner = page.querySelector('.inner');
       if (!inner) return;
       
-      const collapsedAncestor = inner.closest('.inner-second');
+      const collapsedInnerSecond = page.querySelector('.inner-second');
       
-      if (collapsedAncestor && collapsedAncestor.classList.contains('collapsed')) {
-      const existingLine = inner.querySelector('.line');
-      if (existingLine) existingLine.style.display = 'none';
+      if (collapsedInnerSecond && collapsedInnerSecond.classList.contains('collapsed')) {
+      page.querySelectorAll('.line').forEach(l => { l.style.display = 'none'; });
       return;
       }
       
